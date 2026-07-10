@@ -18,6 +18,8 @@
     <string>1</string>
     <key>UILaunchScreen</key>
     <dict/>
+    <key>UIRequiresFullScreen</key>
+    <true/>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Travel Globe records your journey route so it can replay your trip later.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

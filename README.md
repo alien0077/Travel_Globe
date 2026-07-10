@@ -28,6 +28,9 @@ npm --prefix replay-engine run preview
 npm --prefix replay-engine run verify:preview
 node scripts/prepare-geo-data.mjs
 scripts/copy-replay-to-ios.sh
+scripts/deploy-web-static.sh
+scripts/serve-web-static.sh
+./deploy.sh
 /Users/alien/Desktop/xcodegen/bin/xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build-for-testing -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
@@ -35,6 +38,11 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -quiet 
 ```
 
 The production build uses relative asset paths so `replay-engine/dist` can be served from static hosting or opened by an offline-capable local server.
+
+## Deployment
+
+- iOS app: `./deploy.sh` mirrors the TWStockTracker deployment flow with XcodeGen, automatic signing, physical-device build, `xctrace` device detection, and `ios-deploy` launch.
+- Web static hosting: `.github/workflows/web-static.yml` builds `replay-engine/dist` and deploys it through GitHub Pages after the repository is pushed to GitHub and Pages is enabled.
 
 ## Verification Boundary
 

@@ -2,10 +2,30 @@ name: iOS
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ios/**'
+      - 'project.yml'
+      - 'TravelGlobe.xcodeproj/**'
+      - 'scripts/copy-replay-to-ios.sh'
+      - '.github/workflows/ios.yml'
 
 jobs:
-  placeholder:
+  build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "iOS shell begins in Phase 2."
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: replay-engine/package-lock.json
+      - run: npm --prefix replay-engine ci
+      - run: npm --prefix replay-engine run build
+      - run: scripts/copy-replay-to-ios.sh
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - run: xcodebuild build -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
+      - run: xcodebuild test -quiet -scheme TravelGlobe -destination 'platform=iOS Simulator,name=iPhone 15' -derivedDataPath /tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO

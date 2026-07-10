@@ -19,3 +19,5 @@ Future data sources must be evaluated for:
 - offline indexing strategy
 
 SQLite R-Tree indexes are reserved for licensed geographic search and label ranking work once production data sources are selected.
+
+See `docs/data-sources.md` for the current production source decision.

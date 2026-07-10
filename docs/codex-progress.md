@@ -29,3 +29,8 @@
 - Replaced the remaining in-memory iOS journey repository behavior with SQLite inserts, ordered point queries, and completion updates.
 - Added deterministic offline geo pack manifest generation from local fixture landmarks.
 - Switched Replay Engine build output to stable asset names for safer iOS resource embedding.
+- Adopted the TWStockTracker iOS signing/deploy pattern for Travel Globe with automatic signing and physical-device deployment script.
+- Added GitHub Pages static hosting workflow and local static web deployment helpers.
+- Documented production data-source choices for Natural Earth, NASA, OurAirports, and isolated OSM packs.
+- Verified physical-device build, install, and launch on `Alien iPhone 14` using `devicectl` with bundle id `com.alienchang.TravelGlobe`.
+- Updated iOS resource packaging so the embedded Replay Engine is preserved as a `ReplayEngine` folder inside the app bundle.
