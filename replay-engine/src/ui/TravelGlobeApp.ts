@@ -7,10 +7,17 @@ import { findNearestLandmark } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
+import { generateOfflineJournal } from '../journal/generateJournal';
+import { evaluateNotifications } from '../notifications/notificationRules';
+import { coreOfflinePacks, formatBytes, getInstalledSizeBytes, installPack, type OfflinePackState } from '../offline/offlinePacks';
 import { createShareSafeJourney } from '../privacy/redactJourney';
+import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { ReplayClock } from '../replay/ReplayClock';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
+import { summarizeJourney } from '../statistics/journeyStatistics';
 import { formatEventTime, getSortedTimelineEvents } from '../timeline/timeline';
+import { buildTimeMachineState } from '../time-machine/timeMachine';
+import { buildPlanSummary } from '../travel-plan/planEngine';
 
 export class TravelGlobeApp {
   private readonly root: HTMLElement;
@@ -21,6 +28,8 @@ export class TravelGlobeApp {
   private segment?: JourneySegment;
   private cameraMode: CameraMode = 'global';
   private lastFrameMs?: number;
+  private packState: OfflinePackState = { packs: [] };
+  private autoRecordingContext?: AutoRecordingContext;
 
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
@@ -34,6 +43,7 @@ export class TravelGlobeApp {
   private readonly belowMe = document.createElement('div');
   private readonly capability = document.createElement('div');
   private readonly timelineList = document.createElement('div');
+  private readonly productPanel = document.createElement('section');
   private readonly fileInput = document.createElement('input');
 
   constructor(root: HTMLElement, journey: Journey) {
@@ -84,6 +94,8 @@ export class TravelGlobeApp {
     timelineTitle.textContent = 'Timeline';
     this.timelineList.className = 'timeline-list';
     timeline.append(timelineTitle, this.timelineList);
+
+    this.productPanel.className = 'product-panel';
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -145,6 +157,21 @@ export class TravelGlobeApp {
     shareButton.textContent = 'Share JSON';
     shareButton.addEventListener('click', () => this.exportShareSafeJson());
 
+    const journalButton = document.createElement('button');
+    journalButton.type = 'button';
+    journalButton.className = 'control-button';
+    journalButton.textContent = 'Journal';
+    journalButton.addEventListener('click', () => this.exportJournalMarkdown());
+
+    const packButton = document.createElement('button');
+    packButton.type = 'button';
+    packButton.className = 'control-button';
+    packButton.textContent = 'Install Pack';
+    packButton.addEventListener('click', () => {
+      this.packState = installPack(this.packState, coreOfflinePacks[1]);
+      this.renderProductPanel();
+    });
+
     this.fileInput.type = 'file';
     this.fileInput.accept = '.json,.travelglobe,application/json,application/zip';
     this.fileInput.hidden = true;
@@ -163,15 +190,18 @@ export class TravelGlobeApp {
       importButton,
       exportButton,
       shareButton,
+      journalButton,
+      packButton,
       this.scrubber
     );
-    overlay.append(hud, timeline, controls);
+    overlay.append(hud, timeline, this.productPanel, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
 
     this.hudTitle.textContent = journey.title;
     this.hudRoute.textContent = `${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
     this.capability.textContent = this.adapter.getLocationCapability().reason ?? 'Standalone browser replay';
     this.renderTimeline(journey.events);
+    this.renderProductPanel();
     this.syncPlayButton();
   }
 
@@ -218,6 +248,21 @@ export class TravelGlobeApp {
     this.belowMe.textContent = nearest
       ? `Below me: nearest ${nearest.feature.name}, ${formatDistance(nearest.distanceMeters)}, ${nearest.relativeWindow} window`
       : 'Below me: no nearby landmark fixture';
+
+    if (this.journey) {
+      this.autoRecordingContext = reduceAutoRecordingState(
+        this.autoRecordingContext ?? {
+          home: this.journey.segments[0].origin,
+          state: 'Idle'
+        },
+        {
+          timestamp: point.timestamp,
+          location: point,
+          speedMetersPerSecond: point.speedMetersPerSecond ?? 0
+        }
+      );
+      this.renderProductPanel(sample.point);
+    }
   }
 
   private syncPlayButton(): void {
@@ -271,5 +316,53 @@ export class TravelGlobeApp {
     }
     const shareSafe = createShareSafeJourney(this.journey);
     downloadBlob(createJsonBlob(shareSafe), `${this.journey.id}.share-safe.json`);
+  }
+
+  private exportJournalMarkdown(): void {
+    if (!this.journey) {
+      return;
+    }
+    const journal = generateOfflineJournal(this.journey);
+    downloadBlob(new Blob([journal.markdown], { type: 'text/markdown' }), `${this.journey.id}.journal.md`);
+  }
+
+  private renderProductPanel(currentPoint?: ReturnType<typeof sampleReplayAt>['point']): void {
+    if (!this.journey) {
+      return;
+    }
+
+    const summary = summarizeJourney(this.journey);
+    const plan = buildPlanSummary(this.journey);
+    const journal = generateOfflineJournal(this.journey);
+    const timeMachine = buildTimeMachineState([this.journey]);
+    const notifications = currentPoint ? evaluateNotifications(currentPoint, 2_000_000_000) : [];
+    const rows = [
+      ['Plan', `${plan.completedCount}/${plan.plannedPlaces.length} places completed`],
+      ['Journal', `${journal.markdown.split('\n').length} markdown lines ready`],
+      ['Time Machine', `${timeMachine.years.join(', ')} | ${formatDistance(timeMachine.lifetimeDistanceMeters)}`],
+      ['Stats', `${formatDistance(summary.totalDistanceMeters)} | ${summary.countriesVisited.join(' -> ')}`],
+      ['Offline Packs', `${this.packState.packs.length} installed | ${formatBytes(getInstalledSizeBytes(this.packState))}`],
+      ['Auto Recording', this.autoRecordingContext?.state ?? 'Idle'],
+      ['Notifications', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
+    ];
+
+    const title = document.createElement('div');
+    title.className = 'panel-title';
+    title.textContent = 'Product Modes';
+    const list = document.createElement('div');
+    list.className = 'product-list';
+
+    for (const [label, value] of rows) {
+      const item = document.createElement('div');
+      item.className = 'product-row';
+      const key = document.createElement('span');
+      key.textContent = label;
+      const detail = document.createElement('strong');
+      detail.textContent = value;
+      item.append(key, detail);
+      list.append(item);
+    }
+
+    this.productPanel.replaceChildren(title, list);
   }
 }

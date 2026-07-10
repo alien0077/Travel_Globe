@@ -1,0 +1,576 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		079BB072A982691ACAD9F484 /* JourneyRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0693491944C655290E455C92 /* JourneyRecord.swift */; };
+		0F5B2DF41EB9CD11EC0C8712 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988F30E45DBC58A0FA903548 /* RecordingState.swift */; };
+		2381243831EED84045B9A3FE /* TravelGlobeDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 794326EAB7082990842AB9B3 /* TravelGlobeDatabase.swift */; };
+		3519058A7A83BDA3734A356A /* PhotoImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6605B0F7B43C257869FBFF /* PhotoImportService.swift */; };
+		40F57AC42534FDCEFBCFD72C /* TravelGlobeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 480CB427495C0810C8840F72 /* TravelGlobeBridge.swift */; };
+		4AF67D71C339F7A455757501 /* SQLiteJourneyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4607B68952B6B53CA818579B /* SQLiteJourneyRepository.swift */; };
+		50634ABEC173D056B3E7E199 /* JourneyExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC25B7A8FA5E272E0413C970 /* JourneyExportService.swift */; };
+		5A2F08B71458636E10293FD8 /* index-MXAUP_Vt.js in Resources */ = {isa = PBXBuildFile; fileRef = 3DF860E1E8A83AC99350BC3E /* index-MXAUP_Vt.js */; };
+		6ABC5695B16FF7940CE14A8D /* TravelNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 732A7E600DBEA8B007D415AE /* TravelNotificationService.swift */; };
+		7957001D24D1D0198CF89DE1 /* OfflinePackDownloadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20411AAEC9255C82B83EF47B /* OfflinePackDownloadService.swift */; };
+		814283ACF7BC2EBCC65E02B5 /* TravelGlobeSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77FCF9E0EEDD334E3ECC7EED /* TravelGlobeSmokeTests.swift */; };
+		82A6A8C53C8BCF671BFD0C57 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB983C97E2BBF993C6407F3D /* RootView.swift */; };
+		843E685F0D919D95291D1012 /* index-BLdT3pRI.css in Resources */ = {isa = PBXBuildFile; fileRef = 04083472ED7CF199453F3686 /* index-BLdT3pRI.css */; };
+		B28E9D099B044862FD9E68AB /* JourneyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */; };
+		BCE0B58F4BCA5B06506F93F7 /* TravelGlobeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */; };
+		C90AD1C85D96B80CA72368C0 /* ReplayEngineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47184B7B785052BAA17EE18 /* ReplayEngineView.swift */; };
+		D292B4405487DE9638BA05CF /* LocationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */; };
+		D3DC5FD1E2CC0FAA60BCA74C /* index-BuBSYRG2.js in Resources */ = {isa = PBXBuildFile; fileRef = F978858DD180200ABCB02DE0 /* index-BuBSYRG2.js */; };
+		DA1B5F2319A2892B69689ED6 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = A026A9A1FBC36FC6DB59FE8D /* index.html */; };
+		F83920EC52F92CC621098816 /* TravelGlobeAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A42DFDE7618914BF855595C5 /* TravelGlobeAppModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1F83006F54971F2786DC2620 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F59DEAB2A985C33D7ACFAA0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 39B185F2E1CC044C255B1494;
+			remoteInfo = TravelGlobe;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		04083472ED7CF199453F3686 /* index-BLdT3pRI.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "index-BLdT3pRI.css"; sourceTree = "<group>"; };
+		05203CD31CF9B3907D19B036 /* TravelGlobe.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TravelGlobe.entitlements; sourceTree = "<group>"; };
+		0693491944C655290E455C92 /* JourneyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyRecord.swift; sourceTree = "<group>"; };
+		20411AAEC9255C82B83EF47B /* OfflinePackDownloadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflinePackDownloadService.swift; sourceTree = "<group>"; };
+		37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRecorder.swift; sourceTree = "<group>"; };
+		3DF860E1E8A83AC99350BC3E /* index-MXAUP_Vt.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "index-MXAUP_Vt.js"; sourceTree = "<group>"; };
+		4607B68952B6B53CA818579B /* SQLiteJourneyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteJourneyRepository.swift; sourceTree = "<group>"; };
+		480CB427495C0810C8840F72 /* TravelGlobeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeBridge.swift; sourceTree = "<group>"; };
+		60F4769D88B1264D396C82B8 /* TravelGlobe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TravelGlobe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeApp.swift; sourceTree = "<group>"; };
+		732A7E600DBEA8B007D415AE /* TravelNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelNotificationService.swift; sourceTree = "<group>"; };
+		77FCF9E0EEDD334E3ECC7EED /* TravelGlobeSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeSmokeTests.swift; sourceTree = "<group>"; };
+		794326EAB7082990842AB9B3 /* TravelGlobeDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeDatabase.swift; sourceTree = "<group>"; };
+		988F30E45DBC58A0FA903548 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
+		9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyRepository.swift; sourceTree = "<group>"; };
+		A026A9A1FBC36FC6DB59FE8D /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
+		A42DFDE7618914BF855595C5 /* TravelGlobeAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeAppModel.swift; sourceTree = "<group>"; };
+		CB983C97E2BBF993C6407F3D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		CC25B7A8FA5E272E0413C970 /* JourneyExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyExportService.swift; sourceTree = "<group>"; };
+		D2130156756EBB607EF28643 /* TravelGlobeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TravelGlobeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD5D8C09E9C726E207102BE9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E47184B7B785052BAA17EE18 /* ReplayEngineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayEngineView.swift; sourceTree = "<group>"; };
+		F978858DD180200ABCB02DE0 /* index-BuBSYRG2.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "index-BuBSYRG2.js"; sourceTree = "<group>"; };
+		FB6605B0F7B43C257869FBFF /* PhotoImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImportService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0463B7864C27CD31A943F055 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E47184B7B785052BAA17EE18 /* ReplayEngineView.swift */,
+				CB983C97E2BBF993C6407F3D /* RootView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		089749AA9A4C08FDFFB48251 = {
+			isa = PBXGroup;
+			children = (
+				6B1049370768CE9708BFC5C7 /* Tests */,
+				71C5F8C9D844D7A8310589FB /* TravelGlobe */,
+				A60878B77BE639630A5750D7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		199049862475290ED18B4BE6 /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				794326EAB7082990842AB9B3 /* TravelGlobeDatabase.swift */,
+			);
+			path = Database;
+			sourceTree = "<group>";
+		};
+		221DB9F3AE68F7A61989D019 /* ReplayEngine */ = {
+			isa = PBXGroup;
+			children = (
+				A026A9A1FBC36FC6DB59FE8D /* index.html */,
+				6B8755208A35C7C1129D6876 /* assets */,
+			);
+			path = ReplayEngine;
+			sourceTree = "<group>";
+		};
+		36D183A8897926BE8FF6E644 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */,
+				A42DFDE7618914BF855595C5 /* TravelGlobeAppModel.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		45705DE7438AF1564CE6794B /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				CC25B7A8FA5E272E0413C970 /* JourneyExportService.swift */,
+			);
+			path = Export;
+			sourceTree = "<group>";
+		};
+		53C9D5FFD465004C82C80048 /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */,
+				4607B68952B6B53CA818579B /* SQLiteJourneyRepository.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		58A260DF1790FE0B29F7AF16 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				0693491944C655290E455C92 /* JourneyRecord.swift */,
+				988F30E45DBC58A0FA903548 /* RecordingState.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		630A7AD949DD4C1FAFB72534 /* Location */ = {
+			isa = PBXGroup;
+			children = (
+				37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */,
+			);
+			path = Location;
+			sourceTree = "<group>";
+		};
+		6B1049370768CE9708BFC5C7 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				77FCF9E0EEDD334E3ECC7EED /* TravelGlobeSmokeTests.swift */,
+			);
+			name = Tests;
+			path = ios/TravelGlobe/Tests;
+			sourceTree = "<group>";
+		};
+		6B8755208A35C7C1129D6876 /* assets */ = {
+			isa = PBXGroup;
+			children = (
+				04083472ED7CF199453F3686 /* index-BLdT3pRI.css */,
+				F978858DD180200ABCB02DE0 /* index-BuBSYRG2.js */,
+				3DF860E1E8A83AC99350BC3E /* index-MXAUP_Vt.js */,
+			);
+			path = assets;
+			sourceTree = "<group>";
+		};
+		71C5F8C9D844D7A8310589FB /* TravelGlobe */ = {
+			isa = PBXGroup;
+			children = (
+				36D183A8897926BE8FF6E644 /* App */,
+				BEF55688B886917D1B94E7BE /* Bridge */,
+				199049862475290ED18B4BE6 /* Database */,
+				F5CC354412FCB3DB5FEF17DE /* Downloads */,
+				45705DE7438AF1564CE6794B /* Export */,
+				630A7AD949DD4C1FAFB72534 /* Location */,
+				88B4A206E4911BD3F07AFFD7 /* Media */,
+				58A260DF1790FE0B29F7AF16 /* Models */,
+				9AF9FDCE67AC35A065849F7B /* Notifications */,
+				53C9D5FFD465004C82C80048 /* Repositories */,
+				A34FA2CB25354FC5CF557119 /* Resources */,
+				0463B7864C27CD31A943F055 /* Views */,
+			);
+			name = TravelGlobe;
+			path = ios/TravelGlobe;
+			sourceTree = "<group>";
+		};
+		88B4A206E4911BD3F07AFFD7 /* Media */ = {
+			isa = PBXGroup;
+			children = (
+				FB6605B0F7B43C257869FBFF /* PhotoImportService.swift */,
+			);
+			path = Media;
+			sourceTree = "<group>";
+		};
+		9AF9FDCE67AC35A065849F7B /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				732A7E600DBEA8B007D415AE /* TravelNotificationService.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		A34FA2CB25354FC5CF557119 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				DD5D8C09E9C726E207102BE9 /* Info.plist */,
+				05203CD31CF9B3907D19B036 /* TravelGlobe.entitlements */,
+				221DB9F3AE68F7A61989D019 /* ReplayEngine */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A60878B77BE639630A5750D7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				60F4769D88B1264D396C82B8 /* TravelGlobe.app */,
+				D2130156756EBB607EF28643 /* TravelGlobeTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BEF55688B886917D1B94E7BE /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				480CB427495C0810C8840F72 /* TravelGlobeBridge.swift */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		F5CC354412FCB3DB5FEF17DE /* Downloads */ = {
+			isa = PBXGroup;
+			children = (
+				20411AAEC9255C82B83EF47B /* OfflinePackDownloadService.swift */,
+			);
+			path = Downloads;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		39B185F2E1CC044C255B1494 /* TravelGlobe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5F7541D57C4BD034DC8F12AF /* Build configuration list for PBXNativeTarget "TravelGlobe" */;
+			buildPhases = (
+				40CCB4947F06D9174B68CC1A /* Sources */,
+				63E868E7EBD3D64BFCBEF569 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TravelGlobe;
+			productName = TravelGlobe;
+			productReference = 60F4769D88B1264D396C82B8 /* TravelGlobe.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E77232FA528E6D95FC3B6C3F /* TravelGlobeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5E2ECDB3D78A51A5A6DE266 /* Build configuration list for PBXNativeTarget "TravelGlobeTests" */;
+			buildPhases = (
+				EEA6AF28D35DAC4A7DD73150 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				33282590D68E085BAE280245 /* PBXTargetDependency */,
+			);
+			name = TravelGlobeTests;
+			productName = TravelGlobeTests;
+			productReference = D2130156756EBB607EF28643 /* TravelGlobeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5F59DEAB2A985C33D7ACFAA0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 60442A9E626D594D385158EA /* Build configuration list for PBXProject "TravelGlobe" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 089749AA9A4C08FDFFB48251;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				39B185F2E1CC044C255B1494 /* TravelGlobe */,
+				E77232FA528E6D95FC3B6C3F /* TravelGlobeTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		63E868E7EBD3D64BFCBEF569 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				843E685F0D919D95291D1012 /* index-BLdT3pRI.css in Resources */,
+				D3DC5FD1E2CC0FAA60BCA74C /* index-BuBSYRG2.js in Resources */,
+				5A2F08B71458636E10293FD8 /* index-MXAUP_Vt.js in Resources */,
+				DA1B5F2319A2892B69689ED6 /* index.html in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		40CCB4947F06D9174B68CC1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				50634ABEC173D056B3E7E199 /* JourneyExportService.swift in Sources */,
+				079BB072A982691ACAD9F484 /* JourneyRecord.swift in Sources */,
+				B28E9D099B044862FD9E68AB /* JourneyRepository.swift in Sources */,
+				D292B4405487DE9638BA05CF /* LocationRecorder.swift in Sources */,
+				7957001D24D1D0198CF89DE1 /* OfflinePackDownloadService.swift in Sources */,
+				3519058A7A83BDA3734A356A /* PhotoImportService.swift in Sources */,
+				0F5B2DF41EB9CD11EC0C8712 /* RecordingState.swift in Sources */,
+				C90AD1C85D96B80CA72368C0 /* ReplayEngineView.swift in Sources */,
+				82A6A8C53C8BCF671BFD0C57 /* RootView.swift in Sources */,
+				4AF67D71C339F7A455757501 /* SQLiteJourneyRepository.swift in Sources */,
+				BCE0B58F4BCA5B06506F93F7 /* TravelGlobeApp.swift in Sources */,
+				F83920EC52F92CC621098816 /* TravelGlobeAppModel.swift in Sources */,
+				40F57AC42534FDCEFBCFD72C /* TravelGlobeBridge.swift in Sources */,
+				2381243831EED84045B9A3FE /* TravelGlobeDatabase.swift in Sources */,
+				6ABC5695B16FF7940CE14A8D /* TravelNotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EEA6AF28D35DAC4A7DD73150 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				814283ACF7BC2EBCC65E02B5 /* TravelGlobeSmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		33282590D68E085BAE280245 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 39B185F2E1CC044C255B1494 /* TravelGlobe */;
+			targetProxy = 1F83006F54971F2786DC2620 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		502DB7544893F00E92554461 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.travelglobe.TravelGlobe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		80CFE8B87914A1F3B0012626 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelGlobe.app/TravelGlobe";
+			};
+			name = Release;
+		};
+		80D0A449A27D51BDBFD00FD4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ios/TravelGlobe/Resources/TravelGlobe.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = ios/TravelGlobe/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9B13E5CCF4718A9FE0A2A59B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ios/TravelGlobe/Resources/TravelGlobe.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = ios/TravelGlobe/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		ADF7322710FED1D926904AF7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TravelGlobe.app/TravelGlobe";
+			};
+			name = Debug;
+		};
+		CA5965A4A8D037C9216DA55B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.travelglobe.TravelGlobe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5F7541D57C4BD034DC8F12AF /* Build configuration list for PBXNativeTarget "TravelGlobe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9B13E5CCF4718A9FE0A2A59B /* Debug */,
+				80D0A449A27D51BDBFD00FD4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		60442A9E626D594D385158EA /* Build configuration list for PBXProject "TravelGlobe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA5965A4A8D037C9216DA55B /* Debug */,
+				502DB7544893F00E92554461 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A5E2ECDB3D78A51A5A6DE266 /* Build configuration list for PBXNativeTarget "TravelGlobeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADF7322710FED1D926904AF7 /* Debug */,
+				80CFE8B87914A1F3B0012626 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5F59DEAB2A985C33D7ACFAA0 /* Project object */;
+}

@@ -11,3 +11,18 @@
 - Added share-safe JSON export with endpoint coordinate redaction.
 - Added timeline event navigation, local browser persistence, and nearest-landmark / window-side guidance.
 - Added Playwright preview verification for desktop and mobile WebGL rendering.
+- Created the Figma UI/UX reference file: https://www.figma.com/design/xeQEwHGHGe4WtArLk7OIpY
+- Added product-mode services for travel planning, journal markdown, time-machine summaries, route statistics, offline packs, photo matching, auto recording, and notifications.
+- Added Replay Engine product panel controls for journal export and offline pack installation.
+- Added responsive desktop/mobile product-panel styling and expanded Playwright verification to cover the product modes.
+- Added SwiftUI iOS shell with CoreLocation-facing recorder, SQLite schema setup, WKWebView bridge, PhotoKit import service, offline pack download service, notification service, and Replay Engine resource bundle.
+- Added XcodeGen project generation and iOS smoke test target.
+- Verified `npm --prefix replay-engine run typecheck`.
+- Verified `npm --prefix replay-engine run test`.
+- Verified `npm --prefix replay-engine run build`.
+- Verified `npm --prefix replay-engine run verify:preview`.
+- Verified `scripts/copy-replay-to-ios.sh`.
+- Verified `/Users/alien/Desktop/xcodegen/bin/xcodegen generate`.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.
+- Verified iOS `xcodebuild build-for-testing` for generic iOS Simulator.
+- Noted full simulator `xcodebuild test` runner hang during simulator materialization; physical-device and simulator-runtime validation remain follow-up verification gates.

@@ -115,11 +115,45 @@ input {
   backdrop-filter: blur(12px);
 }
 
+.product-panel {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+  width: min(680px, 100%);
+  padding: 12px;
+  border: 1px solid rgb(139 199 255 / 18%);
+  border-radius: 8px;
+  background: rgb(3 9 20 / 68%);
+  pointer-events: auto;
+  backdrop-filter: blur(12px);
+}
+
 .panel-title {
   color: #f6d365;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.product-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.product-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  color: #b8c9d9;
+  font-size: 12px;
+}
+
+.product-row strong {
+  color: #f8fbff;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .timeline-list {
@@ -150,7 +184,7 @@ input {
   grid-column: 1 / -1;
   grid-row: 3;
   display: grid;
-  grid-template-columns: auto auto auto auto auto auto minmax(180px, 1fr);
+  grid-template-columns: auto auto auto auto auto auto auto auto minmax(180px, 1fr);
   gap: 10px;
   align-items: center;
   width: min(760px, 100%);
@@ -192,7 +226,7 @@ input {
 @media (max-width: 640px) {
   .overlay {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(120px, 1fr) auto;
+    grid-template-rows: auto auto auto auto;
     padding: 12px;
   }
 
@@ -211,9 +245,14 @@ input {
     max-height: 136px;
   }
 
-  .controls {
+  .product-panel {
     grid-row: 3;
-    grid-template-columns: 1fr 1fr 1fr;
+    align-self: start;
+  }
+
+  .controls {
+    grid-row: 4;
+    grid-template-columns: 1fr 1fr;
   }
 
   .timeline-scrubber {

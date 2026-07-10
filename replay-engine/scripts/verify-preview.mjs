@@ -30,6 +30,7 @@ for (const viewport of [
     const scrubber = document.querySelector('.timeline-scrubber');
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
     const timelineItems = document.querySelectorAll('.timeline-item').length;
+    const productText = document.querySelector('.product-panel')?.textContent ?? '';
 
     if (!(canvas instanceof HTMLCanvasElement) || !(scrubber instanceof HTMLInputElement)) {
       return {
@@ -40,7 +41,8 @@ for (const viewport of [
         coloredPixels: 0,
         scrubberValue: '',
         controls,
-        timelineItems
+        timelineItems,
+        productText
       };
     }
 
@@ -72,14 +74,22 @@ for (const viewport of [
         controls.includes('Import') &&
         controls.includes('Export') &&
         controls.includes('Share JSON') &&
-        timelineItems >= 4,
+        controls.includes('Journal') &&
+        controls.includes('Install Pack') &&
+        timelineItems >= 4 &&
+        productText.includes('Plan') &&
+        productText.includes('Journal') &&
+        productText.includes('Time Machine') &&
+        productText.includes('Auto Recording') &&
+        productText.includes('0 B'),
       reason: '',
       hud,
       title,
       coloredPixels,
       scrubberValue: scrubber.value,
       controls,
-      timelineItems
+      timelineItems,
+      productText
     };
   });
 
