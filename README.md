@@ -26,14 +26,16 @@ npm --prefix replay-engine run test
 npm --prefix replay-engine run build
 npm --prefix replay-engine run preview
 npm --prefix replay-engine run verify:preview
+node scripts/prepare-geo-data.mjs
 scripts/copy-replay-to-ios.sh
 /Users/alien/Desktop/xcodegen/bin/xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build-for-testing -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -quiet -scheme TravelGlobe -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
 ```
 
 The production build uses relative asset paths so `replay-engine/dist` can be served from static hosting or opened by an offline-capable local server.
 
 ## Verification Boundary
 
-The browser replay layer is verified with typecheck, unit tests, static build, and Playwright desktop/mobile checks. The iOS app and test bundle compile with Xcode, but real CoreLocation background behavior, PhotoKit permissions, notification delivery, production offline geographic datasets, and long-running recording recovery still require physical-device and data-license verification.
+The browser replay layer is verified with typecheck, unit tests, static build, and Playwright desktop/mobile checks. The iOS app builds and its simulator tests pass with Xcode. Real CoreLocation background behavior, PhotoKit permissions, notification delivery, production offline geographic datasets, and long-running recording recovery still require physical-device and data-license verification.

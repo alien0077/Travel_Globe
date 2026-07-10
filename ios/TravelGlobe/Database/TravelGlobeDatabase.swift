@@ -2,9 +2,21 @@ import Foundation
 import SQLite3
 
 final class TravelGlobeDatabase {
+    private let configuredURL: URL?
     private var db: OpaquePointer?
 
+    init(url: URL? = nil) {
+        self.configuredURL = url
+    }
+
+    deinit {
+        close()
+    }
+
     func open() throws {
+        if db != nil {
+            return
+        }
         let url = try databaseURL()
         if sqlite3_open(url.path, &db) != SQLITE_OK {
             throw DatabaseError.openFailed
@@ -21,6 +33,19 @@ final class TravelGlobeDatabase {
         if sqlite3_exec(db, sql, nil, nil, nil) != SQLITE_OK {
             throw DatabaseError.executionFailed(String(cString: sqlite3_errmsg(db)))
         }
+    }
+
+    func connection() throws -> OpaquePointer {
+        try open()
+        guard let db else {
+            throw DatabaseError.openFailed
+        }
+        return db
+    }
+
+    func errorMessage() -> String {
+        guard let db else { return "Database is not open" }
+        return String(cString: sqlite3_errmsg(db))
     }
 
     private func migrate() throws {
@@ -51,9 +76,21 @@ final class TravelGlobeDatabase {
             source TEXT NOT NULL
         );
         """)
+
+        try execute("""
+        CREATE INDEX IF NOT EXISTS idx_location_points_journey_time
+        ON location_points (journey_id, timestamp);
+        """)
     }
 
     private func databaseURL() throws -> URL {
+        if let configuredURL {
+            try FileManager.default.createDirectory(
+                at: configuredURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            return configuredURL
+        }
         let directory = try FileManager.default.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
@@ -66,5 +103,8 @@ final class TravelGlobeDatabase {
 
 enum DatabaseError: Error {
     case openFailed
+    case prepareFailed(String)
+    case bindFailed(String)
+    case stepFailed(String)
     case executionFailed(String)
 }

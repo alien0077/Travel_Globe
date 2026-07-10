@@ -1,0 +1,26 @@
+{
+  "id": "core-global-fixture",
+  "version": "1.0.0",
+  "generatedAt": "2026-07-10T00:00:00.000Z",
+  "source": {
+    "kind": "local-fixture",
+    "path": "shared/fixtures/landmarks.json",
+    "licenseStatus": "project-fixture-only",
+    "productionReplacementRequired": true
+  },
+  "contents": {
+    "landmarks": 3,
+    "regionCodes": [
+      "JP",
+      "TW"
+    ],
+    "countryBorders": {
+      "status": "placeholder",
+      "productionReplacementRequired": true
+    },
+    "rtreeIndex": {
+      "status": "not-required-for-fixture-pack",
+      "productionReplacementRequired": true
+    }
+  }
+}

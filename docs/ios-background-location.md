@@ -22,4 +22,4 @@ Real-device verification must confirm current Apple CoreLocation behavior for:
 
 The WebView must never be the canonical recorder.
 
-The app and test bundle compile with Xcode. A full simulator `xcodebuild test` run previously reached simulator materialization and was interrupted after hanging; use `build-for-testing` as the reliable CI gate until the simulator runtime issue is cleared.
+The app, test bundle, and simulator test suite compile and pass with Xcode. Physical-device testing is still required for background delivery timing, reduced accuracy behavior, low-power behavior, and termination recovery.

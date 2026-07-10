@@ -25,4 +25,7 @@
 - Verified `/Users/alien/Desktop/xcodegen/bin/xcodegen generate`.
 - Verified iOS `xcodebuild build` for generic iOS Simulator.
 - Verified iOS `xcodebuild build-for-testing` for generic iOS Simulator.
-- Noted full simulator `xcodebuild test` runner hang during simulator materialization; physical-device and simulator-runtime validation remain follow-up verification gates.
+- Verified full iOS `xcodebuild test` on iPhone 15 simulator, including SQLite persistence coverage.
+- Replaced the remaining in-memory iOS journey repository behavior with SQLite inserts, ordered point queries, and completion updates.
+- Added deterministic offline geo pack manifest generation from local fixture landmarks.
+- Switched Replay Engine build output to stable asset names for safer iOS resource embedding.

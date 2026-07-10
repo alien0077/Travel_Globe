@@ -6,7 +6,22 @@ final class TravelGlobeBridge: NSObject, WKScriptMessageHandler, ObservableObjec
     @Published var receivedMessages: [NativeBridgeMessage] = []
 
     func configure(_ webView: WKWebView) {
-        webView.configuration.userContentController.add(self, name: "travelGlobe")
+        let controller = webView.configuration.userContentController
+        controller.addUserScript(WKUserScript(
+            source: """
+            window.TravelGlobeNative = window.TravelGlobeNative || {
+              post: function(message) {
+                window.webkit.messageHandlers.travelGlobe.postMessage(message);
+              },
+              receive: function(message) {
+                window.dispatchEvent(new CustomEvent('travelglobe:native', { detail: message }));
+              }
+            };
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        ))
+        controller.add(self, name: "travelGlobe")
     }
 
     func send(_ message: NativeBridgeMessage, to webView: WKWebView) {
@@ -20,12 +35,25 @@ final class TravelGlobeBridge: NSObject, WKScriptMessageHandler, ObservableObjec
         Task { @MainActor in
             let bridgeMessage = NativeBridgeMessage(
                 version: "1.0",
-                requestId: nil,
+                requestId: (message.body as? [String: Any])?["requestId"] as? String,
                 type: "web.message",
-                payload: "\(message.body)"
+                payload: Self.stringifyPayload(message.body)
             )
             receivedMessages.append(bridgeMessage)
         }
+    }
+
+    private static func stringifyPayload(_ body: Any) -> String {
+        if let body = body as? String {
+            return body
+        }
+        guard JSONSerialization.isValidJSONObject(body),
+              let data = try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8)
+        else {
+            return "\(body)"
+        }
+        return json
     }
 }
 

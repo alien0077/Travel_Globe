@@ -1,13 +1,12 @@
 import Foundation
+import SQLite3
 
 actor SQLiteJourneyRepository: JourneyRepository {
     private let database: TravelGlobeDatabase
-    private var inMemoryJourneys: [UUID: JourneyRecord] = [:]
-    private var inMemoryPoints: [UUID: [LocationPointRecord]] = [:]
+    private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
     init(database: TravelGlobeDatabase) {
         self.database = database
-        try? database.open()
     }
 
     func createJourney(title: String, segmentType: JourneySegmentType) async throws -> JourneyRecord {
@@ -18,24 +17,218 @@ actor SQLiteJourneyRepository: JourneyRepository {
             status: .recording,
             segmentType: segmentType
         )
-        inMemoryJourneys[journey.id] = journey
+        let db = try database.connection()
+        let statement = try prepare("""
+        INSERT INTO journeys (id, title, start_time, end_time, status, segment_type)
+        VALUES (?, ?, ?, NULL, ?, ?);
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(journey.id.uuidString, at: 1, statement: statement)
+        try bindText(journey.title, at: 2, statement: statement)
+        try bindDouble(journey.startTime.timeIntervalSince1970, at: 3, statement: statement)
+        try bindText(journey.status.rawValue, at: 4, statement: statement)
+        try bindText(journey.segmentType.rawValue, at: 5, statement: statement)
+        try stepDone(statement)
         return journey
     }
 
     func saveLocationPoint(_ point: LocationPointRecord) async throws {
-        inMemoryPoints[point.journeyId, default: []].append(point)
+        let db = try database.connection()
+        let statement = try prepare("""
+        INSERT OR REPLACE INTO location_points (
+            id, journey_id, segment_id, timestamp, latitude, longitude,
+            altitude_meters, speed_mps, course_degrees,
+            horizontal_accuracy_meters, vertical_accuracy_meters, source
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(point.id.uuidString, at: 1, statement: statement)
+        try bindText(point.journeyId.uuidString, at: 2, statement: statement)
+        try bindOptionalText(point.segmentId?.uuidString, at: 3, statement: statement)
+        try bindDouble(point.timestamp.timeIntervalSince1970, at: 4, statement: statement)
+        try bindDouble(point.latitude, at: 5, statement: statement)
+        try bindDouble(point.longitude, at: 6, statement: statement)
+        try bindOptionalDouble(point.altitudeMeters, at: 7, statement: statement)
+        try bindOptionalDouble(point.speedMetersPerSecond, at: 8, statement: statement)
+        try bindOptionalDouble(point.courseDegrees, at: 9, statement: statement)
+        try bindDouble(point.horizontalAccuracyMeters, at: 10, statement: statement)
+        try bindOptionalDouble(point.verticalAccuracyMeters, at: 11, statement: statement)
+        try bindText(point.source, at: 12, statement: statement)
+        try stepDone(statement)
     }
 
     func locationPoints(journeyId: UUID, since: Date?) async throws -> [LocationPointRecord] {
-        let points = inMemoryPoints[journeyId, default: []]
-        guard let since else { return points }
-        return points.filter { $0.timestamp > since }
+        let db = try database.connection()
+        let sql: String
+        if since == nil {
+            sql = """
+            SELECT id, journey_id, segment_id, timestamp, latitude, longitude,
+                   altitude_meters, speed_mps, course_degrees,
+                   horizontal_accuracy_meters, vertical_accuracy_meters, source
+            FROM location_points
+            WHERE journey_id = ?
+            ORDER BY timestamp ASC;
+            """
+        } else {
+            sql = """
+            SELECT id, journey_id, segment_id, timestamp, latitude, longitude,
+                   altitude_meters, speed_mps, course_degrees,
+                   horizontal_accuracy_meters, vertical_accuracy_meters, source
+            FROM location_points
+            WHERE journey_id = ? AND timestamp > ?
+            ORDER BY timestamp ASC;
+            """
+        }
+        let statement = try prepare(sql, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(journeyId.uuidString, at: 1, statement: statement)
+        if let since {
+            try bindDouble(since.timeIntervalSince1970, at: 2, statement: statement)
+        }
+
+        var points: [LocationPointRecord] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            points.append(try decodePoint(statement))
+        }
+        return points
     }
 
     func completeJourney(id: UUID, endedAt: Date) async throws {
-        guard var journey = inMemoryJourneys[id] else { return }
-        journey.status = .completed
-        journey.endTime = endedAt
-        inMemoryJourneys[id] = journey
+        let db = try database.connection()
+        let statement = try prepare("""
+        UPDATE journeys
+        SET status = ?, end_time = ?
+        WHERE id = ?;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(JourneyStatus.completed.rawValue, at: 1, statement: statement)
+        try bindDouble(endedAt.timeIntervalSince1970, at: 2, statement: statement)
+        try bindText(id.uuidString, at: 3, statement: statement)
+        try stepDone(statement)
+    }
+
+    func journey(id: UUID) async throws -> JourneyRecord? {
+        let db = try database.connection()
+        let statement = try prepare("""
+        SELECT id, title, start_time, end_time, status, segment_type
+        FROM journeys
+        WHERE id = ?;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(id.uuidString, at: 1, statement: statement)
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            return nil
+        }
+        return try decodeJourney(statement)
+    }
+
+    private func prepare(_ sql: String, db: OpaquePointer) throws -> OpaquePointer {
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            throw DatabaseError.prepareFailed(database.errorMessage())
+        }
+        return statement
+    }
+
+    private func bindText(_ value: String, at index: Int32, statement: OpaquePointer) throws {
+        guard sqlite3_bind_text(statement, index, value, -1, transient) == SQLITE_OK else {
+            throw DatabaseError.bindFailed(database.errorMessage())
+        }
+    }
+
+    private func bindOptionalText(_ value: String?, at index: Int32, statement: OpaquePointer) throws {
+        guard let value else {
+            sqlite3_bind_null(statement, index)
+            return
+        }
+        try bindText(value, at: index, statement: statement)
+    }
+
+    private func bindDouble(_ value: Double, at index: Int32, statement: OpaquePointer) throws {
+        guard sqlite3_bind_double(statement, index, value) == SQLITE_OK else {
+            throw DatabaseError.bindFailed(database.errorMessage())
+        }
+    }
+
+    private func bindOptionalDouble(_ value: Double?, at index: Int32, statement: OpaquePointer) throws {
+        guard let value else {
+            sqlite3_bind_null(statement, index)
+            return
+        }
+        try bindDouble(value, at: index, statement: statement)
+    }
+
+    private func stepDone(_ statement: OpaquePointer) throws {
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.stepFailed(database.errorMessage())
+        }
+    }
+
+    private func decodeJourney(_ statement: OpaquePointer) throws -> JourneyRecord {
+        guard
+            let id = UUID(uuidString: try textColumn(0, statement: statement)),
+            let status = JourneyStatus(rawValue: try textColumn(4, statement: statement)),
+            let segmentType = JourneySegmentType(rawValue: try textColumn(5, statement: statement))
+        else {
+            throw DatabaseError.stepFailed("Unable to decode journey row")
+        }
+        let endTime = sqlite3_column_type(statement, 3) == SQLITE_NULL
+            ? nil
+            : Date(timeIntervalSince1970: sqlite3_column_double(statement, 3))
+        return JourneyRecord(
+            id: id,
+            title: try textColumn(1, statement: statement),
+            startTime: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2)),
+            endTime: endTime,
+            status: status,
+            segmentType: segmentType
+        )
+    }
+
+    private func decodePoint(_ statement: OpaquePointer) throws -> LocationPointRecord {
+        guard
+            let id = UUID(uuidString: try textColumn(0, statement: statement)),
+            let journeyId = UUID(uuidString: try textColumn(1, statement: statement))
+        else {
+            throw DatabaseError.stepFailed("Unable to decode location point row")
+        }
+        return LocationPointRecord(
+            id: id,
+            journeyId: journeyId,
+            segmentId: try optionalUUIDColumn(2, statement: statement),
+            timestamp: Date(timeIntervalSince1970: sqlite3_column_double(statement, 3)),
+            latitude: sqlite3_column_double(statement, 4),
+            longitude: sqlite3_column_double(statement, 5),
+            altitudeMeters: optionalDoubleColumn(6, statement: statement),
+            speedMetersPerSecond: optionalDoubleColumn(7, statement: statement),
+            courseDegrees: optionalDoubleColumn(8, statement: statement),
+            horizontalAccuracyMeters: sqlite3_column_double(statement, 9),
+            verticalAccuracyMeters: optionalDoubleColumn(10, statement: statement),
+            source: try textColumn(11, statement: statement)
+        )
+    }
+
+    private func textColumn(_ index: Int32, statement: OpaquePointer) throws -> String {
+        guard let value = sqlite3_column_text(statement, index) else {
+            throw DatabaseError.stepFailed("Expected non-null text column \(index)")
+        }
+        return String(cString: value)
+    }
+
+    private func optionalUUIDColumn(_ index: Int32, statement: OpaquePointer) throws -> UUID? {
+        guard sqlite3_column_type(statement, index) != SQLITE_NULL else {
+            return nil
+        }
+        return UUID(uuidString: try textColumn(index, statement: statement))
+    }
+
+    private func optionalDoubleColumn(_ index: Int32, statement: OpaquePointer) -> Double? {
+        sqlite3_column_type(statement, index) == SQLITE_NULL ? nil : sqlite3_column_double(statement, index)
     }
 }

@@ -1,6 +1,14 @@
 # Offline Data
 
-Phase 0-1 uses procedural visuals and small fixture landmarks only. Real offline geographic datasets are deferred until the Replay Engine is stable.
+The current offline data layer uses procedural visuals, small fixture landmarks, and a deterministic core offline pack manifest generated from local fixtures.
+
+Run:
+
+```bash
+node scripts/prepare-geo-data.mjs
+```
+
+This writes `shared/offline-packs/core-global/manifest.json`. The manifest is intentionally marked `project-fixture-only` so production builds cannot mistake fixture labels or placeholder borders for licensed geographic data.
 
 Future data sources must be evaluated for:
 
@@ -10,4 +18,4 @@ Future data sources must be evaluated for:
 - update cadence
 - offline indexing strategy
 
-SQLite R-Tree indexes are reserved for later geographic search and label ranking work.
+SQLite R-Tree indexes are reserved for licensed geographic search and label ranking work once production data sources are selected.

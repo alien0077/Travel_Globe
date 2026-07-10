@@ -39,7 +39,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
   getLocationCapability(): LocationCapability {
     return {
       canRecord: false,
-      reason: 'Native recording begins in Phase 3'
+      reason: 'Browser replay only; native recording is available in the iOS shell'
     };
   }
 }
