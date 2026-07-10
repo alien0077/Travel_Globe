@@ -28,6 +28,8 @@ for (const viewport of [
     const hud = document.querySelector('.hud-stats')?.textContent ?? '';
     const title = document.querySelector('.hud-title')?.textContent ?? '';
     const scrubber = document.querySelector('.timeline-scrubber');
+    const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
+    const timelineItems = document.querySelectorAll('.timeline-item').length;
 
     if (!(canvas instanceof HTMLCanvasElement) || !(scrubber instanceof HTMLInputElement)) {
       return {
@@ -36,7 +38,9 @@ for (const viewport of [
         hud,
         title,
         coloredPixels: 0,
-        scrubberValue: ''
+        scrubberValue: '',
+        controls,
+        timelineItems
       };
     }
 
@@ -64,12 +68,18 @@ for (const viewport of [
         canvas.height > 0 &&
         coloredPixels > 100 &&
         hud.includes('ALT') &&
-        title.includes('Taipei'),
+        title.includes('Taipei') &&
+        controls.includes('Import') &&
+        controls.includes('Export') &&
+        controls.includes('Share JSON') &&
+        timelineItems >= 4,
       reason: '',
       hud,
       title,
       coloredPixels,
-      scrubberValue: scrubber.value
+      scrubberValue: scrubber.value,
+      controls,
+      timelineItems
     };
   });
 

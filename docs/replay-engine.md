@@ -12,6 +12,11 @@ The Replay Engine is a standalone Vite + TypeScript + Three.js app.
 - play, pause, timeline scrubber, and speed controls
 - global and follow camera modes
 - basic flight HUD
+- import journey JSON or stored `.travelglobe` packages
+- export `.travelglobe` packages
+- export share-safe redacted journey JSON
+- timeline event navigation
+- nearest landmark and window-side guidance
 
 ## Determinism
 

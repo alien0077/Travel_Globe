@@ -13,18 +13,27 @@ export interface LocationCapability {
 }
 
 export class BrowserRuntimeAdapter implements RuntimeAdapter {
-  constructor(private readonly journey: Journey) {}
+  constructor(private journey: Journey) {}
 
   async loadJourney(): Promise<Journey> {
+    const stored = localStorage.getItem(storageKey(this.journey.id));
+    if (!stored) {
+      return this.journey;
+    }
+    this.journey = JSON.parse(stored) as Journey;
     return this.journey;
   }
 
-  async saveJourney(_journey: Journey): Promise<void> {
-    throw new Error('BrowserRuntimeAdapter cannot persist journeys in Phase 1');
+  async saveJourney(journey: Journey): Promise<void> {
+    this.journey = journey;
+    localStorage.setItem(storageKey(journey.id), JSON.stringify(journey));
+    const index = new Set(JSON.parse(localStorage.getItem(indexKey) ?? '[]') as string[]);
+    index.add(journey.id);
+    localStorage.setItem(indexKey, JSON.stringify([...index]));
   }
 
   async exportJourney(): Promise<void> {
-    throw new Error('Portable export begins after the replay prototype is stable');
+    throw new Error('Use createTravelGlobePackage for browser export');
   }
 
   getLocationCapability(): LocationCapability {
@@ -33,4 +42,10 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
       reason: 'Native recording begins in Phase 3'
     };
   }
+}
+
+const indexKey = 'travel-globe:journey-index';
+
+function storageKey(journeyId: string): string {
+  return `travel-globe:journey:${journeyId}`;
 }

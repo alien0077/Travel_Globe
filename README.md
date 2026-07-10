@@ -10,6 +10,9 @@ Travel Globe is a local-first travel recording and replay system. Phase 0-1 focu
 - Versioned JSON Schema contracts for portable journey data.
 - Vite + TypeScript + Three.js standalone Replay Engine prototype.
 - Vitest coverage for geodesic distance, bearing, great-circle interpolation, and journey schema validation.
+- Browser import for journey JSON and stored `.travelglobe` packages.
+- Browser export for `.travelglobe` packages and share-safe redacted JSON.
+- Timeline event navigation and nearest-landmark guidance.
 
 ## Commands
 
@@ -25,4 +28,4 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 
 ## Phase Boundary
 
-This phase intentionally does not implement CoreLocation, native iOS recording, PhotoKit, AI journal generation, real geographic datasets, cloud sync, or static web sharing. Those features begin after the replay prototype is stable.
+The current build pushes the browser replay layer as far as this workspace can verify. Native iOS recording, PhotoKit, real geographic datasets, cloud sync, AI journal generation, and production static sharing remain active product work that require additional implementation plus real-device or data-license verification.

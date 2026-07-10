@@ -69,6 +69,7 @@ export interface Journey {
   subtitle?: string;
   startTime: string;
   endTime?: string;
+  homeLocation?: GeographicPoint;
   status: 'planned' | 'recording' | 'completed' | 'archived';
   plans: unknown[];
   segments: JourneySegment[];
