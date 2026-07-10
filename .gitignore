@@ -6,3 +6,6 @@ logs/
 coverage/
 replay-engine/node_modules/
 replay-engine/dist/
+
+# Local Netlify folder
+.netlify

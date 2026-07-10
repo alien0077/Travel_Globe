@@ -16,6 +16,9 @@
     "three": "^0.185.0"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.11.1",
+    "@emnapi/runtime": "^1.11.1",
+    "@emnapi/wasi-threads": "^1.2.2",
     "@types/three": "^0.185.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
