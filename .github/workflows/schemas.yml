@@ -1,0 +1,25 @@
+name: Schemas
+
+on:
+  push:
+    paths:
+      - 'contracts/**'
+      - 'shared/**'
+      - 'replay-engine/src/test/schema.test.ts'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'shared/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: replay-engine/package-lock.json
+      - run: npm --prefix replay-engine ci
+      - run: npm --prefix replay-engine run validate:schemas

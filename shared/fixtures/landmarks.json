@@ -1,0 +1,37 @@
+[
+  {
+    "id": "landmark-mount-fuji",
+    "name": "Mount Fuji",
+    "type": "volcano",
+    "latitude": 35.3606,
+    "longitude": 138.7274,
+    "minZoomRank": 2,
+    "importance": 0.96,
+    "countryCode": "JP",
+    "admin1": "Shizuoka/Yamanashi"
+  },
+  {
+    "id": "city-tokyo",
+    "name": "Tokyo",
+    "type": "majorCity",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
+    "minZoomRank": 1,
+    "importance": 1,
+    "population": 14000000,
+    "countryCode": "JP",
+    "admin1": "Tokyo"
+  },
+  {
+    "id": "city-taipei",
+    "name": "Taipei",
+    "type": "majorCity",
+    "latitude": 25.033,
+    "longitude": 121.5654,
+    "minZoomRank": 1,
+    "importance": 0.9,
+    "population": 2500000,
+    "countryCode": "TW",
+    "admin1": "Taipei"
+  }
+]

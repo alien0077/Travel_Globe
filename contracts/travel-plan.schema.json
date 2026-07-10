@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://travelglobe.app/schemas/travel-plan.schema.json",
+  "title": "TravelPlan",
+  "type": "object",
+  "required": ["id", "journeyId", "title", "status", "plannedPlaces", "plannedSegments"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "journeyId": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "completed", "archived"]
+    },
+    "plannedPlaces": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "plannedSegments": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  }
+}

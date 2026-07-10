@@ -1,0 +1,410 @@
+{
+  "schemaVersion": "1.0.0",
+  "appVersion": "0.1.0",
+  "id": "journey-tpe-hnd-2026-07-10",
+  "title": "Taipei to Tokyo Flight",
+  "subtitle": "Phase 1 sample replay from Taoyuan to Haneda",
+  "startTime": "2026-07-10T02:15:00Z",
+  "endTime": "2026-07-10T05:58:00Z",
+  "status": "completed",
+  "plans": [],
+  "segments": [
+    {
+      "id": "segment-br190-2026-07-10",
+      "journeyId": "journey-tpe-hnd-2026-07-10",
+      "type": "flight",
+      "startTime": "2026-07-10T02:15:00Z",
+      "endTime": "2026-07-10T05:58:00Z",
+      "origin": {
+        "id": "airport-tpe",
+        "name": "Taiwan Taoyuan International Airport",
+        "iataCode": "TPE",
+        "latitude": 25.0797,
+        "longitude": 121.2342,
+        "countryCode": "TW"
+      },
+      "destination": {
+        "id": "airport-hnd",
+        "name": "Tokyo Haneda Airport",
+        "iataCode": "HND",
+        "latitude": 35.5494,
+        "longitude": 139.7798,
+        "countryCode": "JP"
+      },
+      "rawRoute": {
+        "kind": "raw",
+        "points": [
+          {
+            "id": "raw-001",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T02:15:00Z",
+            "latitude": 25.0797,
+            "longitude": 121.2342,
+            "altitudeMeters": 40,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 45,
+            "horizontalAccuracyMeters": 18,
+            "source": "gps"
+          },
+          {
+            "id": "raw-002",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T02:34:00Z",
+            "latitude": 25.2382,
+            "longitude": 121.5005,
+            "altitudeMeters": 3100,
+            "speedMetersPerSecond": 132,
+            "courseDegrees": 52,
+            "horizontalAccuracyMeters": 28,
+            "source": "gps"
+          },
+          {
+            "id": "raw-003",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:05:00Z",
+            "latitude": 26.7023,
+            "longitude": 124.0641,
+            "altitudeMeters": 10970,
+            "speedMetersPerSecond": 246,
+            "courseDegrees": 54,
+            "horizontalAccuracyMeters": 45,
+            "source": "gps"
+          },
+          {
+            "id": "raw-004",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:52:00Z",
+            "latitude": 29.1504,
+            "longitude": 128.7778,
+            "altitudeMeters": 11280,
+            "speedMetersPerSecond": 252,
+            "courseDegrees": 56,
+            "horizontalAccuracyMeters": 50,
+            "source": "gps"
+          },
+          {
+            "id": "raw-005",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T04:35:00Z",
+            "latitude": 32.2871,
+            "longitude": 133.2742,
+            "altitudeMeters": 11260,
+            "speedMetersPerSecond": 248,
+            "courseDegrees": 47,
+            "horizontalAccuracyMeters": 55,
+            "source": "gps"
+          },
+          {
+            "id": "raw-006",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T05:18:00Z",
+            "latitude": 34.3448,
+            "longitude": 137.2079,
+            "altitudeMeters": 7200,
+            "speedMetersPerSecond": 210,
+            "courseDegrees": 53,
+            "horizontalAccuracyMeters": 35,
+            "source": "gps"
+          },
+          {
+            "id": "raw-007",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T05:58:00Z",
+            "latitude": 35.5494,
+            "longitude": 139.7798,
+            "altitudeMeters": 6,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 40,
+            "horizontalAccuracyMeters": 16,
+            "source": "gps"
+          }
+        ]
+      },
+      "processedRoute": {
+        "kind": "processed",
+        "points": [
+          {
+            "id": "processed-001",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T02:15:00Z",
+            "latitude": 25.0797,
+            "longitude": 121.2342,
+            "altitudeMeters": 40,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 45,
+            "horizontalAccuracyMeters": 18,
+            "source": "gps"
+          },
+          {
+            "id": "processed-002",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:05:00Z",
+            "latitude": 26.7023,
+            "longitude": 124.0641,
+            "altitudeMeters": 10970,
+            "speedMetersPerSecond": 246,
+            "courseDegrees": 54,
+            "horizontalAccuracyMeters": 45,
+            "source": "gps"
+          },
+          {
+            "id": "processed-003",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:52:00Z",
+            "latitude": 29.1504,
+            "longitude": 128.7778,
+            "altitudeMeters": 11280,
+            "speedMetersPerSecond": 252,
+            "courseDegrees": 56,
+            "horizontalAccuracyMeters": 50,
+            "source": "gps"
+          },
+          {
+            "id": "processed-004",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T04:35:00Z",
+            "latitude": 32.2871,
+            "longitude": 133.2742,
+            "altitudeMeters": 11260,
+            "speedMetersPerSecond": 248,
+            "courseDegrees": 47,
+            "horizontalAccuracyMeters": 55,
+            "source": "gps"
+          },
+          {
+            "id": "processed-005",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T05:58:00Z",
+            "latitude": 35.5494,
+            "longitude": 139.7798,
+            "altitudeMeters": 6,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 40,
+            "horizontalAccuracyMeters": 16,
+            "source": "gps"
+          }
+        ]
+      },
+      "derivedReplayRoute": {
+        "kind": "derivedReplay",
+        "points": [
+          {
+            "id": "replay-001",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T02:15:00Z",
+            "latitude": 25.0797,
+            "longitude": 121.2342,
+            "altitudeMeters": 40,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 45,
+            "source": "gps"
+          },
+          {
+            "id": "replay-002",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T02:45:00Z",
+            "latitude": 25.9051,
+            "longitude": 122.6669,
+            "altitudeMeters": 8200,
+            "speedMetersPerSecond": 220,
+            "courseDegrees": 53,
+            "source": "interpolated"
+          },
+          {
+            "id": "replay-003",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:15:00Z",
+            "latitude": 27.1874,
+            "longitude": 125.0548,
+            "altitudeMeters": 11100,
+            "speedMetersPerSecond": 250,
+            "courseDegrees": 55,
+            "source": "interpolated"
+          },
+          {
+            "id": "replay-004",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T03:52:00Z",
+            "latitude": 29.1504,
+            "longitude": 128.7778,
+            "altitudeMeters": 11280,
+            "speedMetersPerSecond": 252,
+            "courseDegrees": 56,
+            "source": "gps"
+          },
+          {
+            "id": "replay-005",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T04:25:00Z",
+            "latitude": 31.5348,
+            "longitude": 132.2294,
+            "altitudeMeters": 11280,
+            "speedMetersPerSecond": 250,
+            "courseDegrees": 48,
+            "source": "interpolated"
+          },
+          {
+            "id": "replay-006",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T04:58:00Z",
+            "latitude": 33.4302,
+            "longitude": 135.5759,
+            "altitudeMeters": 9800,
+            "speedMetersPerSecond": 232,
+            "courseDegrees": 50,
+            "source": "interpolated"
+          },
+          {
+            "id": "replay-007",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T05:28:00Z",
+            "latitude": 34.7131,
+            "longitude": 138.0587,
+            "altitudeMeters": 5200,
+            "speedMetersPerSecond": 190,
+            "courseDegrees": 51,
+            "source": "interpolated"
+          },
+          {
+            "id": "replay-008",
+            "journeyId": "journey-tpe-hnd-2026-07-10",
+            "segmentId": "segment-br190-2026-07-10",
+            "timestamp": "2026-07-10T05:58:00Z",
+            "latitude": 35.5494,
+            "longitude": 139.7798,
+            "altitudeMeters": 6,
+            "speedMetersPerSecond": 0,
+            "courseDegrees": 40,
+            "source": "gps"
+          }
+        ]
+      },
+      "events": [
+        "event-depart-tpe",
+        "event-cruise-east-china-sea",
+        "event-descend-japan",
+        "event-arrive-hnd"
+      ],
+      "statistics": {
+        "distanceMeters": 2130000,
+        "durationSeconds": 13380,
+        "maxAltitudeMeters": 11280,
+        "maxSpeedMetersPerSecond": 252
+      },
+      "metadata": {
+        "flightNumber": "BR190",
+        "aircraftType": "Boeing 787-10",
+        "privacy": "synthetic-fixture"
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "event-depart-tpe",
+      "journeyId": "journey-tpe-hnd-2026-07-10",
+      "segmentId": "segment-br190-2026-07-10",
+      "timestamp": "2026-07-10T02:34:00Z",
+      "type": "flightTakeoff",
+      "title": "Departed Taoyuan",
+      "subtitle": "Climbing northeast from Taiwan",
+      "location": {
+        "latitude": 25.2382,
+        "longitude": 121.5005,
+        "altitudeMeters": 3100
+      },
+      "mediaIds": [],
+      "importance": 1,
+      "source": "detected",
+      "metadata": {}
+    },
+    {
+      "id": "event-cruise-east-china-sea",
+      "journeyId": "journey-tpe-hnd-2026-07-10",
+      "segmentId": "segment-br190-2026-07-10",
+      "timestamp": "2026-07-10T03:52:00Z",
+      "type": "flightCruise",
+      "title": "Cruising over the East China Sea",
+      "subtitle": "Ocean crossing between Taiwan and Japan",
+      "location": {
+        "latitude": 29.1504,
+        "longitude": 128.7778,
+        "altitudeMeters": 11280
+      },
+      "mediaIds": [],
+      "importance": 0.6,
+      "source": "detected",
+      "metadata": {}
+    },
+    {
+      "id": "event-descend-japan",
+      "journeyId": "journey-tpe-hnd-2026-07-10",
+      "segmentId": "segment-br190-2026-07-10",
+      "timestamp": "2026-07-10T05:18:00Z",
+      "type": "flightTopOfDescent",
+      "title": "Top of descent",
+      "subtitle": "Descending toward Tokyo Bay",
+      "location": {
+        "latitude": 34.3448,
+        "longitude": 137.2079,
+        "altitudeMeters": 7200
+      },
+      "mediaIds": [],
+      "importance": 0.8,
+      "source": "detected",
+      "metadata": {}
+    },
+    {
+      "id": "event-arrive-hnd",
+      "journeyId": "journey-tpe-hnd-2026-07-10",
+      "segmentId": "segment-br190-2026-07-10",
+      "timestamp": "2026-07-10T05:58:00Z",
+      "type": "flightLanding",
+      "title": "Arrived at Haneda",
+      "subtitle": "Touchdown in Tokyo",
+      "location": {
+        "latitude": 35.5494,
+        "longitude": 139.7798,
+        "altitudeMeters": 6
+      },
+      "mediaIds": [],
+      "importance": 1,
+      "source": "detected",
+      "metadata": {}
+    }
+  ],
+  "media": [],
+  "journal": [],
+  "statistics": {
+    "distanceMeters": 2130000,
+    "durationSeconds": 13380,
+    "countriesVisited": ["TW", "JP"],
+    "transportModes": ["flight"]
+  },
+  "settings": {
+    "preferredTheme": "night-flight",
+    "defaultCameraMode": "global"
+  },
+  "metadata": {
+    "fixture": true,
+    "createdFor": "Travel Globe Phase 1"
+  }
+}

@@ -1,0 +1,11 @@
+name: iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "iOS shell begins in Phase 2."

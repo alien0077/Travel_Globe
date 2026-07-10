@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://travelglobe.app/schemas/location-point.schema.json",
+  "title": "LocationPoint",
+  "type": "object",
+  "required": ["id", "journeyId", "timestamp", "latitude", "longitude", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "journeyId": { "type": "string", "minLength": 1 },
+    "segmentId": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+    "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+    "altitudeMeters": { "type": "number" },
+    "speedMetersPerSecond": { "type": "number", "minimum": 0 },
+    "courseDegrees": { "type": "number", "minimum": 0, "maximum": 360 },
+    "horizontalAccuracyMeters": { "type": "number", "minimum": 0 },
+    "verticalAccuracyMeters": { "type": "number", "minimum": 0 },
+    "source": {
+      "type": "string",
+      "enum": ["gps", "estimated", "interpolated", "imported", "planned"]
+    }
+  }
+}

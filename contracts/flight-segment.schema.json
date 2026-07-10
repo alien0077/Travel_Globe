@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://travelglobe.app/schemas/flight-segment.schema.json",
+  "title": "FlightSegment",
+  "type": "object",
+  "required": [
+    "id",
+    "journeyId",
+    "type",
+    "startTime",
+    "endTime",
+    "origin",
+    "destination",
+    "rawRoute",
+    "processedRoute",
+    "derivedReplayRoute",
+    "events",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "journeyId": { "type": "string", "minLength": 1 },
+    "type": { "const": "flight" },
+    "startTime": { "type": "string", "format": "date-time" },
+    "endTime": { "type": "string", "format": "date-time" },
+    "origin": { "$ref": "#/$defs/placeReference" },
+    "destination": { "$ref": "#/$defs/placeReference" },
+    "rawRoute": { "$ref": "#/$defs/route" },
+    "processedRoute": { "$ref": "#/$defs/route" },
+    "derivedReplayRoute": { "$ref": "#/$defs/route" },
+    "events": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "placeReference": {
+      "type": "object",
+      "required": ["id", "name", "latitude", "longitude"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "iataCode": { "type": "string", "minLength": 3, "maxLength": 3 },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "countryCode": { "type": "string", "minLength": 2, "maxLength": 2 }
+      }
+    },
+    "route": {
+      "type": "object",
+      "required": ["kind", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["raw", "processed", "derivedReplay", "planned"]
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "https://travelglobe.app/schemas/location-point.schema.json" }
+        }
+      }
+    }
+  }
+}

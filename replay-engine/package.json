@@ -1,0 +1,27 @@
+{
+  "name": "@travel-globe/replay-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "verify:preview": "node scripts/verify-preview.mjs",
+    "validate:schemas": "vitest run src/test/schema.test.ts"
+  },
+  "dependencies": {
+    "three": "^0.185.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "playwright": "^1.61.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.6"
+  }
+}
