@@ -1,0 +1,17 @@
+[build]
+  command = "npm --prefix replay-engine ci && npm --prefix replay-engine run typecheck && npm --prefix replay-engine run test && npm --prefix replay-engine run build"
+  publish = "replay-engine/dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
