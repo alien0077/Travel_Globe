@@ -88,3 +88,13 @@
 - Verified `./scripts/copy-replay-to-ios.sh`.
 - Verified `npm --prefix replay-engine run verify:preview` for desktop/mobile with external requests blocked.
 - Verified iOS `xcodebuild build` for generic iOS Simulator.
+- Added a Traditional Chinese `readme.html` web manual with quick start, HUD/overlay explanations, controls, camera modes, export formats, offline usage, iOS app notes, and testing guidance.
+- Added a `使用手冊` control in the Replay Engine web UI that opens `readme.html`.
+- Expanded Playwright preview verification to open and validate the manual page.
+- Synced the manual into the iOS Replay Engine resource bundle and regenerated the Xcode project so `readme.html` is copied into the app bundle.
+- Verified `npm --prefix replay-engine run typecheck`.
+- Verified `npm --prefix replay-engine run test`.
+- Verified `npm --prefix replay-engine run build`.
+- Verified `./scripts/copy-replay-to-ios.sh`.
+- Verified `npm --prefix replay-engine run verify:preview`.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.

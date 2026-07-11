@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Globe 使用手冊</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #030914;
+        color: #f8fbff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100svh;
+        background:
+          radial-gradient(circle at 72% 8%, rgb(52 135 180 / 26%), transparent 32rem),
+          linear-gradient(180deg, #071322 0%, #030914 48%, #02050d 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 34px;
+      }
+
+      .brand {
+        display: grid;
+        gap: 4px;
+      }
+
+      .brand strong {
+        font-size: clamp(26px, 4vw, 46px);
+        letter-spacing: 0;
+      }
+
+      .brand span {
+        color: #9ed8ff;
+        font-size: 15px;
+      }
+
+      .back {
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 14px;
+        border: 1px solid rgb(255 255 255 / 18%);
+        border-radius: 6px;
+        background: #102134;
+        color: #f8fbff;
+        text-decoration: none;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .toc,
+      section {
+        border: 1px solid rgb(139 199 255 / 18%);
+        border-radius: 8px;
+        background: rgb(3 9 20 / 68%);
+        box-shadow: 0 18px 58px rgb(0 0 0 / 26%);
+        backdrop-filter: blur(12px);
+      }
+
+      .toc {
+        position: sticky;
+        top: 18px;
+        display: grid;
+        gap: 8px;
+        padding: 14px;
+      }
+
+      .toc a {
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: #cdefff;
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        background: rgb(158 216 255 / 12%);
+      }
+
+      main {
+        display: grid;
+        gap: 18px;
+      }
+
+      section {
+        padding: 22px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        color: #f6d365;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        color: #9ed8ff;
+        font-size: 16px;
+      }
+
+      p,
+      li {
+        color: #c6d3df;
+        line-height: 1.72;
+      }
+
+      ul,
+      ol {
+        padding-left: 22px;
+        margin-bottom: 0;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        padding: 14px;
+        border: 1px solid rgb(255 255 255 / 12%);
+        border-radius: 8px;
+        background: rgb(16 33 52 / 72%);
+      }
+
+      .card p:last-child {
+        margin-bottom: 0;
+      }
+
+      .hud-table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 8px;
+      }
+
+      .hud-table th,
+      .hud-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgb(255 255 255 / 10%);
+        text-align: left;
+      }
+
+      .hud-table th {
+        width: 170px;
+        color: #9ed8ff;
+      }
+
+      .hud-table td {
+        color: #f8fbff;
+      }
+
+      code {
+        padding: 2px 5px;
+        border-radius: 4px;
+        background: rgb(255 255 255 / 10%);
+        color: #f6d365;
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: min(100% - 20px, 640px);
+          padding-top: 18px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .toc {
+          position: static;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        section {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <strong>Travel Globe 使用手冊</strong>
+          <span>飛行回放、視角切換、航跡匯出與離線使用指南</span>
+        </div>
+        <a class="back" href="./index.html">返回 Replay Engine</a>
+      </header>
+
+      <div class="layout">
+        <nav class="toc" aria-label="使用手冊目錄">
+          <a href="#quick-start">快速開始</a>
+          <a href="#screen">畫面說明</a>
+          <a href="#controls">操作控制</a>
+          <a href="#camera">視角模式</a>
+          <a href="#exports">匯出資料</a>
+          <a href="#offline">離線使用</a>
+          <a href="#ios">iOS App</a>
+          <a href="#tips">測試建議</a>
+        </nav>
+
+        <main>
+          <section id="quick-start">
+            <h2>快速開始</h2>
+            <div class="steps">
+              <div class="card">
+                <h3>1. 打開回放</h3>
+                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，畫面中央是地球、白線是預計航線、綠線是已飛航跡。</p>
+              </div>
+              <div class="card">
+                <h3>2. 播放或暫停</h3>
+                <p>按 <code>Play</code> 或 <code>Pause</code> 控制飛行回放。時間軸可拖曳到任意進度。</p>
+              </div>
+              <div class="card">
+                <h3>3. 切換視角</h3>
+                <p>預設是 <code>Global View</code>。你可以切到跟機、座艙、窗邊、尾追、俯視或 Orbit cinema。</p>
+              </div>
+              <div class="card">
+                <h3>4. 匯出紀錄</h3>
+                <p>按 <code>Export</code> 下載 Travel Globe 專用包；按 <code>GPX</code> 或 <code>KML</code> 給 GPS 工具或 Google Earth 使用。</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="screen">
+            <h2>畫面說明</h2>
+            <table class="hud-table">
+              <tr>
+                <th>HUD 卡片</th>
+                <td>顯示航班號、航線、高度、速度、地速、航向、已飛距離、總距離與 ETA。</td>
+              </tr>
+              <tr>
+                <th>Flight Overlay</th>
+                <td>白線代表 Flight Plan，綠線代表目前已飛航跡，黃色點代表 Takeoff、TOC、TOD、Landing 等事件。</td>
+              </tr>
+              <tr>
+                <th>Timeline</th>
+                <td>可點擊事件直接跳到該時間點，例如 Top of Climb、Cruise、Top of Descent。</td>
+              </tr>
+              <tr>
+                <th>Below / Nearby</th>
+                <td>顯示目前下方區域、正在穿越的空域/海域，以及附近城市或地標距離。</td>
+              </tr>
+            </table>
+          </section>
+
+          <section id="controls">
+            <h2>操作控制</h2>
+            <ul>
+              <li><code>Play / Pause</code>：開始或暫停回放。</li>
+              <li><code>1x / 5x / 20x / 100x</code>：調整回放速度。</li>
+              <li><code>Camera</code>：切換視角。</li>
+              <li><code>Import</code>：匯入 <code>.json</code> 或 <code>.travelglobe</code> 旅程檔。</li>
+              <li><code>Export</code>：匯出完整 Travel Globe 回放包。</li>
+              <li><code>Share JSON</code>：匯出隱私處理後的分享版 JSON。</li>
+              <li><code>Journal</code>：產生離線飛行日誌 Markdown。</li>
+              <li><code>Install Pack</code>：安裝示範離線資料包。</li>
+            </ul>
+          </section>
+
+          <section id="camera">
+            <h2>視角模式</h2>
+            <ul>
+              <li><code>Global View</code>：像機上娛樂系統的地球總覽，適合看完整航線。</li>
+              <li><code>Follow camera</code>：鏡頭跟著飛機移動，適合觀察實際航跡。</li>
+              <li><code>Orbit cinema</code>：鏡頭繞著飛機旋轉，適合影片式回放。</li>
+              <li><code>Cockpit view</code>：接近座艙視角，朝飛行方向看。</li>
+              <li><code>Left / Right window</code>：模擬窗邊視角，可看地球與航跡。</li>
+              <li><code>Tail chase</code>：從機尾後方追蹤飛機。</li>
+              <li><code>Top down</code>：從上方看航線，適合判斷偏航與航跡形狀。</li>
+            </ul>
+          </section>
+
+          <section id="exports">
+            <h2>匯出資料</h2>
+            <ul>
+              <li><code>.travelglobe</code>：App 自己的完整回放格式，保留旅程、航線、事件與設定。</li>
+              <li><code>.json</code>：適合開發、檢查 schema 或分享給其他工具處理。</li>
+              <li><code>.gpx</code>：可匯入 GPS 工具、運動紀錄工具或航跡分析工具。</li>
+              <li><code>.kml</code>：可匯入 Google Earth，會包含白色 Flight Plan、綠色 Actual Track 與事件點。</li>
+            </ul>
+          </section>
+
+          <section id="offline">
+            <h2>離線使用</h2>
+            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble 地球貼圖、航線、城市光點和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
+            <p>未來輸入航班號自動下載 Flight Plan 會接到 provider 介面；有網路時下載 route、airports、waypoints、major cities 和 landmarks，飛機上則使用離線包。</p>
+          </section>
+
+          <section id="ios">
+            <h2>iOS App 使用</h2>
+            <ul>
+              <li><code>Start Flight Recording</code>：開始紀錄 GPS 航跡。</li>
+              <li><code>Stop Recording</code>：停止並保存旅程。</li>
+              <li><code>Open Replay Engine</code>：打開內嵌 Web Replay Engine。</li>
+              <li><code>Request Photo Access</code>：測試照片權限，未來用於旅程照片匹配。</li>
+              <li><code>Request Notifications</code>：測試通知權限，未來用於飛行事件提醒。</li>
+            </ul>
+          </section>
+
+          <section id="tips">
+            <h2>測試建議</h2>
+            <ol>
+              <li>先用範例 <code>CI100</code> 檢查地球、白線、綠線、A380、HUD 和 timeline 是否正常。</li>
+              <li>拖動時間軸，確認綠色已飛航跡會跟著變長，ETA 和距離會更新。</li>
+              <li>切換每個 Camera 模式，確認畫面不是黑屏且可以滑動旋轉、縮放。</li>
+              <li>按 <code>GPX</code>、<code>KML</code> 匯出後，用文字編輯器確認有 track point 和 waypoint。</li>
+              <li>手機版打開時，Timeline 和 Product Modes 預設收合，避免遮住地球。</li>
+            </ol>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

@@ -27,6 +27,7 @@
 		D292B4405487DE9638BA05CF /* LocationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */; };
 		DA1B5F2319A2892B69689ED6 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = A026A9A1FBC36FC6DB59FE8D /* index.html */; };
 		F83920EC52F92CC621098816 /* TravelGlobeAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A42DFDE7618914BF855595C5 /* TravelGlobeAppModel.swift */; };
+		FF3402AC7A4BA42C40C9A680 /* readme.html in Resources */ = {isa = PBXBuildFile; fileRef = 34014465DDA650F223924FAD /* readme.html */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,7 @@
 		0693491944C655290E455C92 /* JourneyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyRecord.swift; sourceTree = "<group>"; };
 		0959C8470FA9FDE7683F9D4C /* index.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = index.js; sourceTree = "<group>"; };
 		20411AAEC9255C82B83EF47B /* OfflinePackDownloadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflinePackDownloadService.swift; sourceTree = "<group>"; };
+		34014465DDA650F223924FAD /* readme.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = readme.html; sourceTree = "<group>"; };
 		34331F5EB756BB2C265FBC06 /* index.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = index.css; sourceTree = "<group>"; };
 		37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRecorder.swift; sourceTree = "<group>"; };
 		4607B68952B6B53CA818579B /* SQLiteJourneyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteJourneyRepository.swift; sourceTree = "<group>"; };
@@ -100,6 +102,7 @@
 				34331F5EB756BB2C265FBC06 /* index.css */,
 				A026A9A1FBC36FC6DB59FE8D /* index.html */,
 				0959C8470FA9FDE7683F9D4C /* index.js */,
+				34014465DDA650F223924FAD /* readme.html */,
 			);
 			path = ReplayEngine;
 			sourceTree = "<group>";
@@ -308,6 +311,7 @@
 				703B32B3EF51A9B82BCD6922 /* index.css in Resources */,
 				DA1B5F2319A2892B69689ED6 /* index.html in Resources */,
 				0B636F317105731D47E92FCC /* index.js in Resources */,
+				FF3402AC7A4BA42C40C9A680 /* readme.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

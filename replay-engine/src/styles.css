@@ -23,7 +23,8 @@ body,
 
 button,
 select,
-input {
+input,
+a {
   font: inherit;
 }
 
@@ -280,9 +281,16 @@ input {
 }
 
 .control-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 78px;
   padding: 0 14px;
   cursor: pointer;
+}
+
+.control-link {
+  text-decoration: none;
 }
 
 .control-button:hover,

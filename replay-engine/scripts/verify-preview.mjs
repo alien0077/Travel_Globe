@@ -115,6 +115,7 @@ for (const viewport of [
         controls.includes('Import') &&
         controls.includes('Export') &&
         controls.includes('Share JSON') &&
+        controls.includes('使用手冊') &&
         controls.includes('GPX') &&
         controls.includes('KML') &&
         controls.includes('Journal') &&
@@ -217,6 +218,22 @@ for (const viewport of [
         return coloredPixels;
       })()
     }));
+
+    await page.goto(new URL('./readme.html', url).href, { waitUntil: 'networkidle' });
+    const manualCheck = await page.evaluate(() => ({
+      title: document.title,
+      heading: document.querySelector('strong')?.textContent ?? '',
+      hasBackLink: Boolean(document.querySelector('a[href="./index.html"]')),
+      hasExports: document.body.textContent?.includes('GPX') && document.body.textContent?.includes('KML')
+    }));
+    if (
+      !manualCheck.title.includes('使用手冊') ||
+      !manualCheck.heading.includes('Travel Globe') ||
+      !manualCheck.hasBackLink ||
+      !manualCheck.hasExports
+    ) {
+      errors.push(`manual page check failed: ${JSON.stringify(manualCheck)}`);
+    }
   }
 
   results.push({ viewport: viewport.name, errors, blockedExternalRequests, assetRequests, check, paused, afterScrub });

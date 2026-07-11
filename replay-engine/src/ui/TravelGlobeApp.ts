@@ -191,6 +191,11 @@ export class TravelGlobeApp {
     shareButton.textContent = 'Share JSON';
     shareButton.addEventListener('click', () => this.exportShareSafeJson());
 
+    const manualLink = document.createElement('a');
+    manualLink.className = 'control-button control-link';
+    manualLink.href = './readme.html';
+    manualLink.textContent = '使用手冊';
+
     const gpxButton = document.createElement('button');
     gpxButton.type = 'button';
     gpxButton.className = 'control-button';
@@ -236,6 +241,7 @@ export class TravelGlobeApp {
       importButton,
       exportButton,
       shareButton,
+      manualLink,
       gpxButton,
       kmlButton,
       journalButton,
