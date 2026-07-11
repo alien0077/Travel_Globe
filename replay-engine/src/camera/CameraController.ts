@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 
-export type CameraMode = 'follow' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown' | 'global';
+export type CameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
 
 export class CameraController {
-  mode: CameraMode = 'follow';
+  mode: CameraMode = 'global';
   private orbitYaw = 0;
   private orbitPitch = 0;
   private zoom = 1;
@@ -40,6 +40,21 @@ export class CameraController {
       base.applyAxisAngle(new THREE.Vector3(1, 0, 0), this.orbitPitch);
       this.camera.position.lerp(base, 0.06);
       this.camera.lookAt(0, 0, 0);
+      return;
+    }
+
+    if (this.mode === 'orbit') {
+      const orbitAngle = performance.now() * 0.00022 + this.orbitYaw;
+      const orbitRight = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const cinematicOffset = forward
+        .clone()
+        .multiplyScalar(Math.cos(orbitAngle) * -1.1)
+        .add(orbitRight.multiplyScalar(Math.sin(orbitAngle) * 1.1))
+        .add(normal.clone().multiplyScalar(0.5 + this.orbitPitch * 0.28))
+        .multiplyScalar(this.zoom);
+      this.camera.position.lerp(this.target.clone().add(cinematicOffset), 0.08);
+      this.camera.up.copy(normal);
+      this.camera.lookAt(this.target.clone().add(normal.clone().multiplyScalar(0.08)));
       return;
     }
 
@@ -79,7 +94,7 @@ export class CameraController {
 }
 
 const cameraProfiles: Record<
-  Exclude<CameraMode, 'global'>,
+  Exclude<CameraMode, 'global' | 'orbit'>,
   {
     forward: number;
     right: number;

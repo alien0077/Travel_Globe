@@ -2,7 +2,16 @@ import type { CameraMode } from '../camera/CameraController';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
+import { createGpx, createKml } from '../export/geoExport';
 import { createJsonBlob, createTravelGlobePackage, downloadBlob } from '../export/travelglobePackage';
+import {
+  buildFlightHudMetrics,
+  buildFlightOverlay,
+  calculateRouteDeviationMeters,
+  getActualRouteThrough,
+  summarizeBelowMe,
+  type FlightOverlay
+} from '../flight/flightAnalytics';
 import { findNearestLandmark } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
@@ -26,7 +35,8 @@ export class TravelGlobeApp {
   private scene?: TravelGlobeScene;
   private clock?: ReplayClock;
   private segment?: JourneySegment;
-  private cameraMode: CameraMode = 'follow';
+  private flightOverlay?: FlightOverlay;
+  private cameraMode: CameraMode = 'global';
   private lastFrameMs?: number;
   private packState: OfflinePackState = { packs: [] };
   private autoRecordingContext?: AutoRecordingContext;
@@ -59,13 +69,14 @@ export class TravelGlobeApp {
   private async loadJourney(journey: Journey): Promise<void> {
     this.journey = journey;
     this.segment = getPrimaryFlightSegment(journey);
+    this.flightOverlay = buildFlightOverlay(journey, this.segment);
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
     this.lastFrameMs = undefined;
 
     this.renderShell(journey, this.segment);
     this.scene?.dispose();
-    this.scene = new TravelGlobeScene(this.viewport, this.segment);
+    this.scene = new TravelGlobeScene(this.viewport, this.segment, this.flightOverlay);
     this.scene.start((timeMs) => this.frame(timeMs));
     await this.adapter.saveJourney(journey);
   }
@@ -133,13 +144,14 @@ export class TravelGlobeApp {
 
     this.cameraSelect.className = 'control-select camera-select';
     const cameraOptions: Array<{ mode: CameraMode; label: string }> = [
+      { mode: 'global', label: 'Global View' },
       { mode: 'follow', label: 'Follow camera' },
+      { mode: 'orbit', label: 'Orbit cinema' },
       { mode: 'cockpit', label: 'Cockpit view' },
       { mode: 'leftWindow', label: 'Left window' },
       { mode: 'rightWindow', label: 'Right window' },
       { mode: 'tail', label: 'Tail chase' },
-      { mode: 'topDown', label: 'Top down' },
-      { mode: 'global', label: 'Global orbit' }
+      { mode: 'topDown', label: 'Top down' }
     ];
     for (const { mode, label } of cameraOptions) {
       const option = document.createElement('option');
@@ -179,6 +191,18 @@ export class TravelGlobeApp {
     shareButton.textContent = 'Share JSON';
     shareButton.addEventListener('click', () => this.exportShareSafeJson());
 
+    const gpxButton = document.createElement('button');
+    gpxButton.type = 'button';
+    gpxButton.className = 'control-button';
+    gpxButton.textContent = 'GPX';
+    gpxButton.addEventListener('click', () => this.exportGpx());
+
+    const kmlButton = document.createElement('button');
+    kmlButton.type = 'button';
+    kmlButton.className = 'control-button';
+    kmlButton.textContent = 'KML';
+    kmlButton.addEventListener('click', () => this.exportKml());
+
     const journalButton = document.createElement('button');
     journalButton.type = 'button';
     journalButton.className = 'control-button';
@@ -212,6 +236,8 @@ export class TravelGlobeApp {
       importButton,
       exportButton,
       shareButton,
+      gpxButton,
+      kmlButton,
       journalButton,
       packButton,
       this.scrubber
@@ -239,7 +265,8 @@ export class TravelGlobeApp {
 
     this.clock.update(deltaSeconds);
     const sample = sampleReplayAt(this.segment, this.clock.currentSeconds);
-    this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode);
+    const actualRoute = getActualRouteThrough(this.segment, this.clock.currentSeconds);
+    this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode, actualRoute);
 
     this.scrubber.value = String(Math.round(this.clock.progressPercent * 1000));
     this.syncPlayButton();
@@ -251,41 +278,47 @@ export class TravelGlobeApp {
     elapsedSeconds: number
   ): void {
     const point = sample.point;
-    const altitudeFeet = ((point.altitudeMeters ?? 0) * 3.28084).toFixed(0);
-    const speedKnots = ((point.speedMetersPerSecond ?? 0) * 1.94384).toFixed(0);
+    if (!this.journey || !this.segment || !this.flightOverlay) {
+      return;
+    }
+    const metrics = buildFlightHudMetrics(this.journey, this.segment, sample, elapsedSeconds);
     const elapsedMinutes = Math.floor(elapsedSeconds / 60);
     const elapsedRemainder = Math.floor(elapsedSeconds % 60).toString().padStart(2, '0');
+    const deviationMeters = calculateRouteDeviationMeters(sample, this.flightOverlay.plannedRoute);
 
-    this.hudStats.textContent = [
-      `ALT ${altitudeFeet} ft`,
-      `GS ${speedKnots} kt`,
-      `HDG ${sample.bearingDegrees.toFixed(0)}`,
-      `FLOWN ${formatDistance(sample.distanceFlownMeters)}`,
-      `REM ${formatDistance(sample.remainingDistanceMeters)}`,
-      `T+${elapsedMinutes}:${elapsedRemainder}`
-    ].join('  ');
+    this.hudTitle.textContent = metrics.flightNumber;
+    this.hudRoute.textContent = metrics.routeLabel;
+    this.hudStats.replaceChildren(
+      metricItem('Altitude', metrics.altitudeFeet),
+      metricItem('Speed', metrics.speedKmh),
+      metricItem('Ground Speed', metrics.groundSpeedKmh),
+      metricItem('Heading', metrics.headingDegrees),
+      metricItem('Distance', metrics.distanceLabel),
+      metricItem('ETA', metrics.etaLabel)
+    );
 
-    this.hudPoint.textContent = `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)} | ${point.source}`;
+    this.hudPoint.textContent = [
+      metrics.phaseLabel,
+      `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`,
+      point.source,
+      `T+${elapsedMinutes}:${elapsedRemainder}`,
+      `Deviation ${formatDistance(deviationMeters)}`
+    ].join(' | ');
 
-    const nearest = findNearestLandmark(point, sample.bearingDegrees);
-    this.belowMe.textContent = nearest
-      ? `Below me: nearest ${nearest.feature.name}, ${formatDistance(nearest.distanceMeters)}, ${nearest.relativeWindow} window`
-      : 'Below me: no nearby landmark fixture';
+    this.renderBelowMe(sample);
 
-    if (this.journey) {
-      this.autoRecordingContext = reduceAutoRecordingState(
-        this.autoRecordingContext ?? {
-          home: this.journey.segments[0].origin,
-          state: 'Idle'
-        },
-        {
-          timestamp: point.timestamp,
-          location: point,
-          speedMetersPerSecond: point.speedMetersPerSecond ?? 0
-        }
-      );
-      this.renderProductPanel(sample.point);
-    }
+    this.autoRecordingContext = reduceAutoRecordingState(
+      this.autoRecordingContext ?? {
+        home: this.journey.segments[0].origin,
+        state: 'Idle'
+      },
+      {
+        timestamp: point.timestamp,
+        location: point,
+        speedMetersPerSecond: point.speedMetersPerSecond ?? 0
+      }
+    );
+    this.renderProductPanel(sample.point);
   }
 
   private syncPlayButton(): void {
@@ -293,24 +326,30 @@ export class TravelGlobeApp {
   }
 
   private renderTimeline(events: TimelineEvent[]): void {
-    const items = getSortedTimelineEvents({ events } as Journey).map((event) => {
+    const sourceEvents = this.flightOverlay
+      ? this.flightOverlay.events.map((event) => ({
+          timestamp: event.timestamp,
+          title: event.title
+        }))
+      : getSortedTimelineEvents({ events } as Journey);
+    const items = sourceEvents.map((event) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'timeline-item';
-      button.textContent = `${formatEventTime(event)} ${event.title}`;
-      button.addEventListener('click', () => this.seekToEvent(event));
+      button.textContent = `${formatTimestampUtc(event.timestamp)} ${event.title}`;
+      button.addEventListener('click', () => this.seekToTimestamp(event.timestamp));
       return button;
     });
 
     this.timelineList.replaceChildren(...items);
   }
 
-  private seekToEvent(event: TimelineEvent): void {
+  private seekToTimestamp(timestamp: string): void {
     if (!this.segment || !this.clock) {
       return;
     }
     const bounds = getRouteTimeBounds(this.segment);
-    const elapsedSeconds = (Date.parse(event.timestamp) - bounds.startMs) / 1000;
+    const elapsedSeconds = (Date.parse(timestamp) - bounds.startMs) / 1000;
     this.clock.seekPercent(elapsedSeconds / bounds.durationSeconds);
   }
 
@@ -349,6 +388,39 @@ export class TravelGlobeApp {
     downloadBlob(new Blob([journal.markdown], { type: 'text/markdown' }), `${this.journey.id}.journal.md`);
   }
 
+  private exportGpx(): void {
+    if (!this.journey) {
+      return;
+    }
+    downloadBlob(new Blob([createGpx(this.journey)], { type: 'application/gpx+xml' }), `${this.journey.id}.gpx`);
+  }
+
+  private exportKml(): void {
+    if (!this.journey) {
+      return;
+    }
+    downloadBlob(new Blob([createKml(this.journey)], { type: 'application/vnd.google-earth.kml+xml' }), `${this.journey.id}.kml`);
+  }
+
+  private renderBelowMe(sample: ReturnType<typeof sampleReplayAt>): void {
+    const nearest = findNearestLandmark(sample.point, sample.bearingDegrees);
+    const summary = summarizeBelowMe(sample.point, sample.bearingDegrees);
+    const nearby = summary.nearby
+      .slice(0, 3)
+      .map((item) => `${item.feature.name} ${formatDistance(item.distanceMeters)}`)
+      .join(' | ');
+    const nextCity = summary.nextMajorCity
+      ? `Next major city: ${summary.nextMajorCity.feature.name} ${formatDistance(summary.nextMajorCity.distanceMeters)}`
+      : '';
+
+    this.belowMe.replaceChildren(
+      textLine(`Below: ${summary.belowLabel}`),
+      textLine(`Crossing: ${summary.crossingLabel}`),
+      textLine(`Nearby: ${nearby}`),
+      textLine(nextCity || (nearest ? `Window: ${nearest.feature.name}, ${nearest.relativeWindow}` : 'Window: no nearby landmark fixture'))
+    );
+  }
+
   private renderProductPanel(currentPoint?: ReturnType<typeof sampleReplayAt>['point']): void {
     if (!this.journey) {
       return;
@@ -385,4 +457,25 @@ export class TravelGlobeApp {
 
     this.productPanel.replaceChildren(list);
   }
+}
+
+function metricItem(label: string, value: string): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'hud-metric';
+  const key = document.createElement('span');
+  key.textContent = label;
+  const detail = document.createElement('strong');
+  detail.textContent = value;
+  item.append(key, detail);
+  return item;
+}
+
+function textLine(value: string): HTMLElement {
+  const line = document.createElement('div');
+  line.textContent = value;
+  return line;
+}
+
+function formatTimestampUtc(timestamp: string): string {
+  return formatEventTime({ timestamp } as TimelineEvent);
 }

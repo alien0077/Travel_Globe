@@ -74,3 +74,17 @@
 - Verified `npm --prefix replay-engine run build`.
 - Verified `npm --prefix replay-engine run verify:preview`.
 - Verified iOS `xcodebuild build` for generic iOS Simulator.
+- Added Flight Overlay analytics for planned route, actual route, TOC/TOD, cruise, landing, max altitude, max speed, route deviation, ETA, heading, and below/nearby summaries.
+- Changed the sample flight display to `CI100` and restored Global View as the default Replay Engine camera mode while keeping Follow, Orbit cinema, cockpit, window, tail, and top-down views.
+- Rendered the Flight Plan as a white route, the actual flown track as a green route, and flight-event markers on the Three.js globe.
+- Upgraded the HUD into an airline-style flight card with altitude, speed, ground speed, heading, distance, ETA, phase, source, and deviation readouts.
+- Added GPX and KML exports with route tracks and flight event waypoints.
+- Added an offline flight-plan provider interface plus fixture fallback for future network flight-plan downloads.
+- Added city-light points, whiter border overlays, and Blue Marble bump relief styling for a stronger night-flight globe presentation.
+- Added unit tests for flight overlay analytics and GPX/KML exports.
+- Verified `npm --prefix replay-engine run typecheck`.
+- Verified `npm --prefix replay-engine run test`.
+- Verified `npm --prefix replay-engine run build`.
+- Verified `./scripts/copy-replay-to-ios.sh`.
+- Verified `npm --prefix replay-engine run verify:preview` for desktop/mobile with external requests blocked.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.

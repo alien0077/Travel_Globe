@@ -311,7 +311,7 @@
         "maxSpeedMetersPerSecond": 252
       },
       "metadata": {
-        "flightNumber": "BR190",
+        "flightNumber": "CI100",
         "aircraftType": "Airbus A380-800",
         "privacy": "synthetic-fixture"
       }
@@ -401,7 +401,7 @@
   },
   "settings": {
     "preferredTheme": "night-flight",
-    "defaultCameraMode": "follow"
+    "defaultCameraMode": "global"
   },
   "metadata": {
     "fixture": true,

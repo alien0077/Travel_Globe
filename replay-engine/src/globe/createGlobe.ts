@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { fixtureLandmarks } from '../geo/landmarks';
+import { geographicToVector3 } from '../geo/geodesy';
 
 export interface GlobeObjects {
   globe: THREE.Group;
@@ -20,6 +22,8 @@ export function createGlobe(radius = 2): GlobeObjects {
   const earthGeometry = new THREE.SphereGeometry(radius, 96, 64);
   const earthMaterial = new THREE.MeshStandardMaterial({
     map: earthTexture,
+    bumpMap: earthTexture,
+    bumpScale: 0.018,
     color: 0xffffff,
     roughness: 0.92,
     metalness: 0.0
@@ -41,6 +45,7 @@ export function createGlobe(radius = 2): GlobeObjects {
 
   globe.add(createLatLongGrid(radius * 1.014));
   globe.add(createPlaceholderBorders(radius * 1.018));
+  globe.add(createCityLights(radius * 1.024));
   globe.add(createAtmosphere(radius));
   globe.add(createTerminatorShade(radius));
 
@@ -157,9 +162,9 @@ function createLongitudeLine(longitude: number, radius: number, material: THREE.
 function createPlaceholderBorders(radius: number): THREE.Group {
   const group = new THREE.Group();
   const material = new THREE.LineDashedMaterial({
-    color: 0xfff3b0,
+    color: 0xffffff,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.46,
     dashSize: 0.06,
     gapSize: 0.035
   });
@@ -201,6 +206,38 @@ function createPlaceholderBorders(radius: number): THREE.Group {
   }
 
   return group;
+}
+
+function createCityLights(radius: number): THREE.Points {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const color = new THREE.Color();
+
+  for (const feature of fixtureLandmarks) {
+    if (feature.type !== 'majorCity') {
+      continue;
+    }
+    const vector = geographicToVector3(feature, radius, 900000);
+    positions.push(vector.x, vector.y, vector.z);
+    color.set(feature.countryCode === 'JP' ? 0xfff1b0 : 0x9ed8ff);
+    colors.push(color.r, color.g, color.b);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+  return new THREE.Points(
+    geometry,
+    new THREE.PointsMaterial({
+      size: 0.075,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    })
+  );
 }
 
 function createAtmosphere(radius: number): THREE.Mesh {

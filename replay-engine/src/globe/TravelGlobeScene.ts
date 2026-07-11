@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
 import type { JourneySegment, LocationPoint } from '../data/types';
+import type { FlightOverlay } from '../flight/flightAnalytics';
 import { createGlobe, createStarField } from './createGlobe';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
-import { createRouteLine } from '../route/createRouteLine';
+import { createRouteEventMarkers, createRouteLine, updateRouteLine } from '../route/createRouteLine';
 
 export class TravelGlobeScene {
   private readonly scene = new THREE.Scene();
@@ -12,11 +13,12 @@ export class TravelGlobeScene {
   private readonly cameraController: CameraController;
   private readonly aircraft = createAircraftMarker();
   private readonly clouds: THREE.Mesh;
+  private readonly actualRouteLine: THREE.Line;
   private readonly resizeObserver: ResizeObserver;
   private readonly activePointers = new Map<number, PointerEvent>();
   private previousPinchDistance?: number;
 
-  constructor(private readonly container: HTMLElement, segment: JourneySegment) {
+  constructor(private readonly container: HTMLElement, segment: JourneySegment, overlay: FlightOverlay) {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     this.camera.position.set(0, 2.45, 5.2);
     this.cameraController = new CameraController(this.camera);
@@ -37,7 +39,14 @@ export class TravelGlobeScene {
     const { globe, clouds } = createGlobe();
     this.clouds = clouds;
     this.scene.add(globe);
-    this.scene.add(createRouteLine(segment.derivedReplayRoute.points));
+    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xffffff, opacity: 0.72, altitudeScaleMeters: 650000 }));
+    this.actualRouteLine = createRouteLine([segment.derivedReplayRoute.points[0]], {
+      color: 0x2bdc70,
+      opacity: 0.98,
+      altitudeScaleMeters: 600000
+    });
+    this.scene.add(this.actualRouteLine);
+    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0xf6d365));
     this.scene.add(this.aircraft);
 
     const ambient = new THREE.AmbientLight(0x8eb7ff, 1.4);
@@ -50,8 +59,9 @@ export class TravelGlobeScene {
     this.resize();
   }
 
-  update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode): void {
+  update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode, actualRoutePoints: LocationPoint[]): void {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
+    updateRouteLine(this.actualRouteLine, actualRoutePoints, 600000);
     this.cameraController.setMode(cameraMode);
     this.cameraController.update(point, bearingDegrees);
   }

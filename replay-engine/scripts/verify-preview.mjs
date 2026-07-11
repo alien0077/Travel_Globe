@@ -110,14 +110,18 @@ for (const viewport of [
         canvas.width > 0 &&
         canvas.height > 0 &&
         coloredPixels > 100 &&
-        hud.includes('ALT') &&
-        title.includes('Taipei') &&
+        hud.includes('Altitude') &&
+        title.includes('CI100') &&
         controls.includes('Import') &&
         controls.includes('Export') &&
         controls.includes('Share JSON') &&
+        controls.includes('GPX') &&
+        controls.includes('KML') &&
         controls.includes('Journal') &&
         controls.includes('Install Pack') &&
-        cameraSelect.value === 'follow' &&
+        cameraSelect.value === 'global' &&
+        cameraOptions.includes('Global View') &&
+        cameraOptions.includes('Orbit cinema') &&
         cameraOptions.includes('Cockpit view') &&
         cameraOptions.includes('Left window') &&
         cameraOptions.includes('Right window') &&
@@ -187,7 +191,7 @@ for (const viewport of [
     afterScrub = await page.evaluate(() => ({
       scrubber: document.querySelector('.timeline-scrubber')?.value ?? '',
       point: document.querySelector('.hud-point')?.textContent ?? '',
-      stats: document.querySelector('.hud-stats')?.textContent ?? '',
+        stats: document.querySelector('.hud-stats')?.textContent ?? '',
       camera: document.querySelector('.camera-select') instanceof HTMLSelectElement
         ? document.querySelector('.camera-select')?.value ?? ''
         : '',
