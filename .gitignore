@@ -4,6 +4,7 @@ dist/
 *.log
 logs/
 coverage/
+.codegraph/
 replay-engine/test-results/
 replay-engine/node_modules/
 replay-engine/dist/
