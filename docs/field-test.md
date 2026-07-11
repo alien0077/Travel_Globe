@@ -1,50 +1,50 @@
-# Field Test
+# 真機測試
 
-Use this guide for the remaining real-device validation. Keep the iPhone unlocked while starting each test, then deliberately move it to the background or lock screen where noted.
+使用本指南完成剩餘的真機驗證。開始每項測試時，請先讓 iPhone 保持解鎖；遇到指定步驟時，再刻意將 app 切到背景或鎖定螢幕。
 
-## 1. Route Recording Test
+## 1. 路線錄製測試
 
-1. Open Travel Globe on the iPhone.
-2. Tap the recording action for a flight or movement profile.
-3. Grant location permission when prompted.
-4. Walk outside for 10 to 15 minutes with the app in the foreground for the first 2 minutes.
-5. Lock the screen for 5 minutes while continuing to move.
-6. Reopen the app and stop recording.
-7. Confirm the route has multiple GPS points and persists after force-closing and reopening the app.
+1. 在 iPhone 上開啟 Travel Globe。
+2. 點選飛行或移動模式的錄製動作。
+3. 系統提示時，授予定位權限。
+4. 到戶外步行 10 到 15 分鐘，前 2 分鐘保持 app 在前景。
+5. 持續移動並鎖定螢幕 5 分鐘。
+6. 重新開啟 app 並停止錄製。
+7. 確認路線包含多個 GPS 點，且強制關閉 app 再重新開啟後，資料仍會保留。
 
-Expected result: SQLite contains ordered points, the journey status becomes completed, and the replay surface can load the recorded route.
+預期結果：SQLite 內有依序排列的定位點，旅程狀態變成 completed，重播畫面可以載入已錄製的路線。
 
-## 2. Permission Test
+## 2. 權限測試
 
-Validate each permission separately:
+請分別驗證每一項權限：
 
-- Location: choose Allow While Using, then upgrade to Always when iOS offers it. Confirm Precise Location is enabled.
-- Photos: grant limited access first, then full access if needed. Import photos whose timestamps overlap a recorded journey.
-- Notifications: allow notifications, schedule a test notification, and confirm it appears on-device.
+- 定位：先選擇「使用 App 期間允許」，當 iOS 提供選項時再升級為「永遠允許」。確認「精確位置」已啟用。
+- 照片：先授予有限取用權限，必要時再改為完整取用。匯入拍攝時間與已錄製旅程重疊的照片。
+- 通知：允許通知、排程一則測試通知，並確認通知會在真機上出現。
 
-Expected result: denied permissions produce visible diagnostics, allowed permissions unlock their matching feature, and no permission is requested before the user starts the related workflow.
+預期結果：被拒絕的權限會顯示可見的診斷資訊；已允許的權限會解鎖對應功能；在使用者開始相關流程前，不應提前要求權限。
 
-## 3. Long Background Test
+## 3. 長時間背景測試
 
-Run this only after the short route recording test passes.
+請只在短時間路線錄製測試通過後，再執行此測試。
 
-1. Start recording outdoors.
-2. Move for 30 to 60 minutes.
-3. During the session, test these states:
-   - screen locked
-   - app in background
-   - low-power mode on
-   - brief network loss
-   - app reopened after at least 15 minutes
-4. Stop recording and replay the route.
+1. 在戶外開始錄製。
+2. 移動 30 到 60 分鐘。
+3. 錄製期間，測試以下狀態：
+   - 螢幕鎖定
+   - app 在背景
+   - 開啟低耗電模式
+   - 短暫網路中斷
+   - 至少 15 分鐘後重新開啟 app
+4. 停止錄製並重播路線。
 
-Expected result: the recorded route has no unexpected multi-minute gaps except where iOS explicitly suspends delivery. Any gap should be marked as estimated/interpolated in replay data, not written over raw GPS data.
+預期結果：除非 iOS 明確暫停定位傳送，否則已錄製路線不應出現非預期的數分鐘資料空缺。任何空缺都應在重播資料中標記為 estimated/interpolated，不應覆寫原始 GPS 資料。
 
-## Evidence To Capture
+## 需要記錄的測試證據
 
-- Device model and iOS version
-- Permission choices
-- Start and stop time
-- Approximate distance moved
-- Whether the app was foreground, background, or locked
-- Screenshots of replay route and permission diagnostics
+- 裝置型號與 iOS 版本
+- 權限選擇
+- 開始與停止時間
+- 大約移動距離
+- app 當時是在前景、背景，或螢幕鎖定狀態
+- 重播路線與權限診斷畫面的截圖
