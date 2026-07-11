@@ -26,7 +26,7 @@ export class TravelGlobeApp {
   private scene?: TravelGlobeScene;
   private clock?: ReplayClock;
   private segment?: JourneySegment;
-  private cameraMode: CameraMode = 'global';
+  private cameraMode: CameraMode = 'follow';
   private lastFrameMs?: number;
   private packState: OfflinePackState = { packs: [] };
   private autoRecordingContext?: AutoRecordingContext;
@@ -132,12 +132,22 @@ export class TravelGlobeApp {
     });
 
     this.cameraSelect.className = 'control-select camera-select';
-    for (const mode of ['global', 'follow'] satisfies CameraMode[]) {
+    const cameraOptions: Array<{ mode: CameraMode; label: string }> = [
+      { mode: 'follow', label: 'Follow camera' },
+      { mode: 'cockpit', label: 'Cockpit view' },
+      { mode: 'leftWindow', label: 'Left window' },
+      { mode: 'rightWindow', label: 'Right window' },
+      { mode: 'tail', label: 'Tail chase' },
+      { mode: 'topDown', label: 'Top down' },
+      { mode: 'global', label: 'Global orbit' }
+    ];
+    for (const { mode, label } of cameraOptions) {
       const option = document.createElement('option');
       option.value = mode;
-      option.textContent = mode === 'global' ? 'Global camera' : 'Follow camera';
+      option.textContent = label;
       this.cameraSelect.appendChild(option);
     }
+    this.cameraSelect.value = this.cameraMode;
     this.cameraSelect.addEventListener('change', () => {
       this.cameraMode = this.cameraSelect.value as CameraMode;
     });

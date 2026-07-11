@@ -61,3 +61,16 @@
 - Upgraded the Replay Engine globe from a procedural placeholder to an offline NASA Blue Marble texture with subtle cloud texture, atmosphere rim, night-side shade, and gentler grid/border overlays.
 - Expanded Playwright preview verification to require the Blue Marble asset request.
 - Verified the iOS app bundle includes `blue-marble-land-ocean-ice-2048.jpg` alongside the flattened Replay Engine `index.html`, `index.js`, and `index.css`.
+- Added canvas drag rotation plus wheel/pinch zoom controls for the Replay Engine camera.
+- Changed the default Replay Engine camera mode to Follow and added Cockpit, Left window, Right window, Tail chase, Top down, and Global orbit views.
+- Replaced the aircraft marker with a four-engine Airbus A380-style marker and updated the sample journey aircraft metadata.
+- Changed the Replay Engine static bundle to a single-layer asset layout so WKWebView loads local `index.html`, `index.js`, `index.css`, and Blue Marble assets without module/file-path ambiguity.
+- Added WKWebView JavaScript/navigation diagnostics so iOS shows Replay Engine load/runtime errors in the native diagnostics panel.
+- Rebuilt the iOS shell dashboard to avoid oversized SwiftUI List rows and Dynamic Island crowding.
+- Expanded Playwright preview verification to assert default Follow camera, flight-view options, drag/zoom interaction, and post-interaction nonblank WebGL rendering.
+- Fixed `deploy.sh` device detection so `unavailable` iPhones are not mistaken for installable `available` devices.
+- Verified `npm --prefix replay-engine run typecheck`.
+- Verified `npm --prefix replay-engine run test`.
+- Verified `npm --prefix replay-engine run build`.
+- Verified `npm --prefix replay-engine run verify:preview`.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.

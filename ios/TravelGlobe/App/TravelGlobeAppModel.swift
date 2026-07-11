@@ -97,6 +97,10 @@ final class TravelGlobeAppModel: ObservableObject {
         }
     }
 
+    func updateReplayEngineStatus(_ status: String) {
+        replayEngineStatus = "Replay Engine: \(status)"
+    }
+
     private func refreshNotificationPermissionStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         notificationPermissionStatus = "Notifications: \(Self.notificationStatusText(settings.authorizationStatus))"

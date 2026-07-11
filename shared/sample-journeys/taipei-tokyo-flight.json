@@ -312,7 +312,7 @@
       },
       "metadata": {
         "flightNumber": "BR190",
-        "aircraftType": "Boeing 787-10",
+        "aircraftType": "Airbus A380-800",
         "privacy": "synthetic-fixture"
       }
     }
@@ -401,7 +401,7 @@
   },
   "settings": {
     "preferredTheme": "night-flight",
-    "defaultCameraMode": "global"
+    "defaultCameraMode": "follow"
   },
   "metadata": {
     "fixture": true,

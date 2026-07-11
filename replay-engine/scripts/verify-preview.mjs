@@ -50,7 +50,12 @@ for (const viewport of [
     const hud = document.querySelector('.hud-stats')?.textContent ?? '';
     const title = document.querySelector('.hud-title')?.textContent ?? '';
     const scrubber = document.querySelector('.timeline-scrubber');
+    const cameraSelect = document.querySelector('.camera-select');
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
+    const cameraOptions =
+      cameraSelect instanceof HTMLSelectElement
+        ? [...cameraSelect.options].map((option) => option.textContent)
+        : [];
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
     const centerElement = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
@@ -59,14 +64,20 @@ for (const viewport of [
     const openDockPanels = document.querySelectorAll('.dock-panel[open]').length;
     const mobileDockStartsCollapsed = window.innerWidth > 640 || openDockPanels === 0;
 
-    if (!(canvas instanceof HTMLCanvasElement) || !(scrubber instanceof HTMLInputElement)) {
+    if (
+      !(canvas instanceof HTMLCanvasElement) ||
+      !(scrubber instanceof HTMLInputElement) ||
+      !(cameraSelect instanceof HTMLSelectElement)
+    ) {
       return {
         ok: false,
-        reason: 'missing canvas or scrubber',
+        reason: 'missing canvas, scrubber, or camera select',
         hud,
         title,
         coloredPixels: 0,
         scrubberValue: '',
+        cameraValue: '',
+        cameraOptions,
         controls,
         timelineItems,
         productText,
@@ -106,6 +117,12 @@ for (const viewport of [
         controls.includes('Share JSON') &&
         controls.includes('Journal') &&
         controls.includes('Install Pack') &&
+        cameraSelect.value === 'follow' &&
+        cameraOptions.includes('Cockpit view') &&
+        cameraOptions.includes('Left window') &&
+        cameraOptions.includes('Right window') &&
+        cameraOptions.includes('Tail chase') &&
+        cameraOptions.includes('Top down') &&
         timelineItems >= 4 &&
         productText.includes('Plan') &&
         productText.includes('Journal') &&
@@ -120,6 +137,8 @@ for (const viewport of [
       title,
       coloredPixels,
       scrubberValue: scrubber.value,
+      cameraValue: cameraSelect.value,
+      cameraOptions,
       controls,
       timelineItems,
       productText,
@@ -129,24 +148,72 @@ for (const viewport of [
     };
   });
 
-  await page.evaluate(() => {
-    document.querySelector('.control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
-  const paused = await page.textContent('.control-button');
-  await page.evaluate(() => {
-    const scrubber = document.querySelector('.timeline-scrubber');
-    if (scrubber instanceof HTMLInputElement) {
-      scrubber.value = '700';
-      scrubber.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  });
-  await page.waitForTimeout(150);
+  let paused = '';
+  let afterScrub = {
+    scrubber: '',
+    point: '',
+    stats: '',
+    camera: '',
+    coloredPixelsAfterInteraction: 0
+  };
 
-  const afterScrub = await page.evaluate(() => ({
-    scrubber: document.querySelector('.timeline-scrubber')?.value,
-    point: document.querySelector('.hud-point')?.textContent,
-    stats: document.querySelector('.hud-stats')?.textContent
-  }));
+  if (check.ok) {
+    await page.evaluate(() => {
+      document.querySelector('.control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    paused = (await page.textContent('.control-button')) ?? '';
+    await page.evaluate(() => {
+      const scrubber = document.querySelector('.timeline-scrubber');
+      if (scrubber instanceof HTMLInputElement) {
+        scrubber.value = '700';
+        scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(150);
+    await page.selectOption('.camera-select', 'cockpit');
+    await page.waitForTimeout(100);
+    await page.mouse.move(viewport.width / 2, viewport.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(viewport.width / 2 + 70, viewport.height / 2 - 30, { steps: 8 });
+    await page.mouse.up();
+    await page.mouse.wheel(0, -280);
+    await page.selectOption('.camera-select', 'leftWindow');
+    await page.selectOption('.camera-select', 'rightWindow');
+    await page.selectOption('.camera-select', 'tail');
+    await page.selectOption('.camera-select', 'topDown');
+    await page.selectOption('.camera-select', 'global');
+    await page.waitForTimeout(250);
+
+    afterScrub = await page.evaluate(() => ({
+      scrubber: document.querySelector('.timeline-scrubber')?.value ?? '',
+      point: document.querySelector('.hud-point')?.textContent ?? '',
+      stats: document.querySelector('.hud-stats')?.textContent ?? '',
+      camera: document.querySelector('.camera-select') instanceof HTMLSelectElement
+        ? document.querySelector('.camera-select')?.value ?? ''
+        : '',
+      coloredPixelsAfterInteraction: (() => {
+        const canvas = document.querySelector('canvas');
+        if (!(canvas instanceof HTMLCanvasElement)) {
+          return 0;
+        }
+        const sampleCanvas = document.createElement('canvas');
+        sampleCanvas.width = 64;
+        sampleCanvas.height = 64;
+        const context = sampleCanvas.getContext('2d');
+        context?.drawImage(canvas, 0, 0, 64, 64);
+        const image = context?.getImageData(0, 0, 64, 64).data;
+        let coloredPixels = 0;
+        if (image) {
+          for (let index = 0; index < image.length; index += 4) {
+            if (image[index] + image[index + 1] + image[index + 2] > 8) {
+              coloredPixels += 1;
+            }
+          }
+        }
+        return coloredPixels;
+      })()
+    }));
+  }
 
   results.push({ viewport: viewport.name, errors, blockedExternalRequests, assetRequests, check, paused, afterScrub });
   await page.close();
@@ -159,7 +226,8 @@ const failed = results.filter(
     !result.check.ok ||
     result.errors.length > 0 ||
     result.blockedExternalRequests > 0 ||
-    result.assetRequests.length === 0
+    result.assetRequests.length === 0 ||
+    result.afterScrub.coloredPixelsAfterInteraction <= 100
 );
 console.log(JSON.stringify(results, null, 2));
 

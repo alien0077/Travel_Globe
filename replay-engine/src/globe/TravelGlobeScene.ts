@@ -13,6 +13,8 @@ export class TravelGlobeScene {
   private readonly aircraft = createAircraftMarker();
   private readonly clouds: THREE.Mesh;
   private readonly resizeObserver: ResizeObserver;
+  private readonly activePointers = new Map<number, PointerEvent>();
+  private previousPinchDistance?: number;
 
   constructor(private readonly container: HTMLElement, segment: JourneySegment) {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
@@ -27,6 +29,7 @@ export class TravelGlobeScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.container.appendChild(this.renderer.domElement);
+    this.bindInteraction();
 
     this.scene.background = new THREE.Color(0x030914);
     this.scene.add(createStarField());
@@ -50,7 +53,7 @@ export class TravelGlobeScene {
   update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode): void {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.cameraController.setMode(cameraMode);
-    this.cameraController.update(point);
+    this.cameraController.update(point, bearingDegrees);
   }
 
   start(onFrame: (timeMs: number) => void): void {
@@ -64,6 +67,7 @@ export class TravelGlobeScene {
   dispose(): void {
     this.renderer.setAnimationLoop(null);
     this.resizeObserver.disconnect();
+    this.unbindInteraction();
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) {
         object.geometry.dispose();
@@ -80,6 +84,74 @@ export class TravelGlobeScene {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+  }
+
+  private bindInteraction(): void {
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener('pointerdown', this.handlePointerDown);
+    canvas.addEventListener('pointermove', this.handlePointerMove);
+    canvas.addEventListener('pointerup', this.handlePointerUp);
+    canvas.addEventListener('pointercancel', this.handlePointerUp);
+    canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+  }
+
+  private unbindInteraction(): void {
+    const canvas = this.renderer.domElement;
+    canvas.removeEventListener('pointerdown', this.handlePointerDown);
+    canvas.removeEventListener('pointermove', this.handlePointerMove);
+    canvas.removeEventListener('pointerup', this.handlePointerUp);
+    canvas.removeEventListener('pointercancel', this.handlePointerUp);
+    canvas.removeEventListener('wheel', this.handleWheel);
+    this.activePointers.clear();
+  }
+
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.renderer.domElement.setPointerCapture(event.pointerId);
+    this.activePointers.set(event.pointerId, event);
+    this.previousPinchDistance = this.currentPinchDistance();
+  };
+
+  private readonly handlePointerMove = (event: PointerEvent): void => {
+    const previous = this.activePointers.get(event.pointerId);
+    if (!previous) {
+      return;
+    }
+
+    this.activePointers.set(event.pointerId, event);
+
+    if (this.activePointers.size >= 2) {
+      const currentDistance = this.currentPinchDistance();
+      if (currentDistance && this.previousPinchDistance) {
+        const delta = (this.previousPinchDistance - currentDistance) / Math.max(160, this.previousPinchDistance);
+        this.cameraController.zoomBy(delta);
+      }
+      this.previousPinchDistance = currentDistance;
+      return;
+    }
+
+    this.cameraController.rotate(event.clientX - previous.clientX, event.clientY - previous.clientY);
+  };
+
+  private readonly handlePointerUp = (event: PointerEvent): void => {
+    if (this.renderer.domElement.hasPointerCapture(event.pointerId)) {
+      this.renderer.domElement.releasePointerCapture(event.pointerId);
+    }
+    this.activePointers.delete(event.pointerId);
+    this.previousPinchDistance = this.currentPinchDistance();
+  };
+
+  private readonly handleWheel = (event: WheelEvent): void => {
+    event.preventDefault();
+    this.cameraController.zoomBy(event.deltaY * 0.0012);
+  };
+
+  private currentPinchDistance(): number | undefined {
+    const pointers = [...this.activePointers.values()];
+    if (pointers.length < 2) {
+      return undefined;
+    }
+    const [first, second] = pointers;
+    return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
   }
 }
 

@@ -13,6 +13,7 @@ resolve_device() {
 
   coredevice_id=$(DEVELOPER_DIR="$XCODE_PATH" xcrun devicectl list devices \
     | grep "$DEVICE_KEYWORD" \
+    | grep -v "unavailable" \
     | grep "available" \
     | grep -oE "[0-9A-Fa-f-]{36}" || true)
 

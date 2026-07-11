@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import blueMarbleUrl from '../assets/blue-marble-land-ocean-ice-2048.jpg';
 
 export interface GlobeObjects {
   globe: THREE.Group;
@@ -7,10 +6,12 @@ export interface GlobeObjects {
   clouds: THREE.Mesh;
 }
 
+const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
+
 export function createGlobe(radius = 2): GlobeObjects {
   const globe = new THREE.Group();
 
-  const earthTexture = new THREE.TextureLoader().load(blueMarbleUrl);
+  const earthTexture = new THREE.TextureLoader().load(resolveBundledAsset(BLUE_MARBLE_FILENAME));
   earthTexture.colorSpace = THREE.SRGBColorSpace;
   earthTexture.anisotropy = 8;
   earthTexture.wrapS = THREE.RepeatWrapping;
@@ -44,6 +45,16 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(createTerminatorShade(radius));
 
   return { globe, earth, clouds };
+}
+
+function resolveBundledAsset(filename: string): string {
+  const currentScript = document.currentScript as HTMLScriptElement | null;
+  const bundledScript =
+    currentScript?.src ||
+    [...document.scripts].find((script) => script.src.endsWith('/index.js') || script.src.endsWith('index.js'))?.src ||
+    window.location.href;
+
+  return new URL(filename, bundledScript).href;
 }
 
 export function createStarField(count = 900, radius = 52): THREE.Points {
