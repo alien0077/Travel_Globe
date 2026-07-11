@@ -38,3 +38,16 @@
 - Added `docs/field-test.md` for route recording, permission, and long-background real-device validation.
 - Downloaded the first production source-data baseline from Natural Earth, OurAirports, and NASA Visible Earth.
 - Confirmed App Store/TestFlight work is out of scope for the current phase and custom domain usage is optional.
+
+## 2026-07-11
+
+- Reworked the Replay Engine UI so mobile and desktop keep the globe unobstructed by default.
+- Changed Timeline and Product Modes into edge-docked collapsible panels, with mobile panels collapsed on first load.
+- Compactened the HUD and bottom control tray while preserving play/pause, speed, camera, import/export, share, journal, install-pack, and scrubber controls.
+- Expanded Playwright preview verification to assert desktop/mobile center-globe visibility, no page-level vertical scroll, mobile dock collapsed state, screenshot capture, and blocked external network requests.
+- Synced the rebuilt Replay Engine assets into the iOS shell resource bundle.
+- Verified `npm --prefix replay-engine run typecheck`.
+- Verified `npm --prefix replay-engine run test`.
+- Verified `npm --prefix replay-engine run build`.
+- Verified `npm --prefix replay-engine run verify:preview` with external requests blocked.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.

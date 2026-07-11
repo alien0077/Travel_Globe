@@ -87,15 +87,27 @@ export class TravelGlobeApp {
     this.capability.className = 'capability';
     hud.append(this.hudTitle, this.hudRoute, this.hudStats, this.hudPoint, this.belowMe, this.capability);
 
-    const timeline = document.createElement('section');
-    timeline.className = 'timeline-panel';
-    const timelineTitle = document.createElement('div');
-    timelineTitle.className = 'panel-title';
+    const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
+    const dock = document.createElement('section');
+    dock.className = 'info-dock';
+
+    const timeline = document.createElement('details');
+    timeline.className = 'dock-panel timeline-panel';
+    timeline.open = !isCompactViewport;
+    const timelineTitle = document.createElement('summary');
+    timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = 'Timeline';
     this.timelineList.className = 'timeline-list';
     timeline.append(timelineTitle, this.timelineList);
 
     this.productPanel.className = 'product-panel';
+    const productShell = document.createElement('details');
+    productShell.className = 'dock-panel product-panel-shell';
+    productShell.open = false;
+    const productSummary = document.createElement('summary');
+    productSummary.className = 'panel-summary panel-title';
+    productSummary.textContent = 'Product Modes';
+    productShell.append(productSummary, this.productPanel);
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -119,7 +131,7 @@ export class TravelGlobeApp {
       this.clock?.setSpeed(Number(this.speedSelect.value));
     });
 
-    this.cameraSelect.className = 'control-select';
+    this.cameraSelect.className = 'control-select camera-select';
     for (const mode of ['global', 'follow'] satisfies CameraMode[]) {
       const option = document.createElement('option');
       option.value = mode;
@@ -194,7 +206,8 @@ export class TravelGlobeApp {
       packButton,
       this.scrubber
     );
-    overlay.append(hud, timeline, this.productPanel, controls);
+    dock.append(timeline, productShell);
+    overlay.append(hud, dock, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
 
     this.hudTitle.textContent = journey.title;
@@ -346,9 +359,6 @@ export class TravelGlobeApp {
       ['Notifications', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
     ];
 
-    const title = document.createElement('div');
-    title.className = 'panel-title';
-    title.textContent = 'Product Modes';
     const list = document.createElement('div');
     list.className = 'product-list';
 
@@ -363,6 +373,6 @@ export class TravelGlobeApp {
       list.append(item);
     }
 
-    this.productPanel.replaceChildren(title, list);
+    this.productPanel.replaceChildren(list);
   }
 }

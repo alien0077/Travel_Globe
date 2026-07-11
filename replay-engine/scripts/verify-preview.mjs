@@ -1,6 +1,12 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const url = process.env.TRAVEL_GLOBE_PREVIEW_URL ?? 'http://127.0.0.1:4173/';
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const screenshotDir = path.resolve(scriptDir, '../test-results');
+fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 const results = [];
@@ -11,6 +17,7 @@ for (const viewport of [
 ]) {
   const page = await browser.newPage({ viewport });
   const errors = [];
+  let blockedExternalRequests = 0;
 
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
@@ -18,10 +25,20 @@ for (const viewport of [
       errors.push(message.text());
     }
   });
+  await page.route('**/*', (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.hostname === '127.0.0.1' || requestUrl.hostname === 'localhost') {
+      void route.continue();
+      return;
+    }
+    blockedExternalRequests += 1;
+    void route.abort();
+  });
 
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.waitForSelector('canvas');
+  await page.waitForSelector('canvas', { state: 'attached' });
   await page.waitForTimeout(700);
+  await page.screenshot({ path: path.join(screenshotDir, `preview-${viewport.name}.png`) });
 
   const check = await page.evaluate(() => {
     const canvas = document.querySelector('canvas');
@@ -31,6 +48,11 @@ for (const viewport of [
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
+    const centerElement = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    const centerShowsGlobe = centerElement?.tagName === 'CANVAS' || Boolean(centerElement?.closest('.globe-viewport'));
+    const pageHasNoVerticalScroll = document.documentElement.scrollHeight <= window.innerHeight + 2;
+    const openDockPanels = document.querySelectorAll('.dock-panel[open]').length;
+    const mobileDockStartsCollapsed = window.innerWidth > 640 || openDockPanels === 0;
 
     if (!(canvas instanceof HTMLCanvasElement) || !(scrubber instanceof HTMLInputElement)) {
       return {
@@ -42,7 +64,10 @@ for (const viewport of [
         scrubberValue: '',
         controls,
         timelineItems,
-        productText
+        productText,
+        centerShowsGlobe,
+        pageHasNoVerticalScroll,
+        openDockPanels
       };
     }
 
@@ -81,7 +106,10 @@ for (const viewport of [
         productText.includes('Journal') &&
         productText.includes('Time Machine') &&
         productText.includes('Auto Recording') &&
-        productText.includes('0 B'),
+        productText.includes('0 B') &&
+        centerShowsGlobe &&
+        pageHasNoVerticalScroll &&
+        mobileDockStartsCollapsed,
       reason: '',
       hud,
       title,
@@ -89,14 +117,24 @@ for (const viewport of [
       scrubberValue: scrubber.value,
       controls,
       timelineItems,
-      productText
+      productText,
+      centerShowsGlobe,
+      pageHasNoVerticalScroll,
+      openDockPanels
     };
   });
 
-  await page.click('.control-button');
+  await page.evaluate(() => {
+    document.querySelector('.control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
   const paused = await page.textContent('.control-button');
-  await page.fill('.timeline-scrubber', '700');
-  await page.dispatchEvent('.timeline-scrubber', 'input');
+  await page.evaluate(() => {
+    const scrubber = document.querySelector('.timeline-scrubber');
+    if (scrubber instanceof HTMLInputElement) {
+      scrubber.value = '700';
+      scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
   await page.waitForTimeout(150);
 
   const afterScrub = await page.evaluate(() => ({
@@ -105,13 +143,15 @@ for (const viewport of [
     stats: document.querySelector('.hud-stats')?.textContent
   }));
 
-  results.push({ viewport: viewport.name, errors, check, paused, afterScrub });
+  results.push({ viewport: viewport.name, errors, blockedExternalRequests, check, paused, afterScrub });
   await page.close();
 }
 
 await browser.close();
 
-const failed = results.filter((result) => !result.check.ok || result.errors.length > 0);
+const failed = results.filter(
+  (result) => !result.check.ok || result.errors.length > 0 || result.blockedExternalRequests > 0
+);
 console.log(JSON.stringify(results, null, 2));
 
 if (failed.length > 0) {
