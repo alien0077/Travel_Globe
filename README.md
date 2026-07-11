@@ -42,7 +42,10 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 ## Deployment
 
 - iOS app: `./deploy.sh` mirrors the TWStockTracker deployment flow with XcodeGen, automatic signing, physical-device build, `xctrace` device detection, and `ios-deploy` launch.
-- Web static hosting: `.github/workflows/web-static.yml` builds `replay-engine/dist` and deploys it through GitHub Pages after the repository is pushed to GitHub and Pages is enabled.
+- Web static hosting: Netlify is deployed at `https://travel-globe-alien0077.netlify.app` and is connected to GitHub CI/CD. `.github/workflows/web-static.yml` remains available for GitHub Pages if needed.
+- Field testing: use `docs/field-test.md` for the short route, permission, and long background recording checks.
+- App Store: not in scope for this project phase. Use local physical-device deployment and web static hosting.
+- Custom domain: optional. The Netlify subdomain is production-ready; add a custom domain only when a branded URL is needed.
 
 ## Verification Boundary
 

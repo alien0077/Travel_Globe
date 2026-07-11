@@ -5,10 +5,11 @@ The current offline data layer uses procedural visuals, small fixture landmarks,
 Run:
 
 ```bash
+scripts/download-geo-data.sh
 node scripts/prepare-geo-data.mjs
 ```
 
-This writes `shared/offline-packs/core-global/manifest.json`. The manifest is intentionally marked `project-fixture-only` so production builds cannot mistake fixture labels or placeholder borders for licensed geographic data.
+The download script writes source archives and CSVs to `shared/source-data/`. The prepare script writes `shared/offline-packs/core-global/manifest.json`. The pack manifest is intentionally marked `project-fixture-only` until the downloaded source data is transformed into app-ready indexes.
 
 Future data sources must be evaluated for:
 

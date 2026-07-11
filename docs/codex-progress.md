@@ -34,3 +34,7 @@
 - Documented production data-source choices for Natural Earth, NASA, OurAirports, and isolated OSM packs.
 - Verified physical-device build, install, and launch on `Alien iPhone 14` using `devicectl` with bundle id `com.alienchang.TravelGlobe`.
 - Updated iOS resource packaging so the embedded Replay Engine is preserved as a `ReplayEngine` folder inside the app bundle.
+- Connected Netlify CI/CD to GitHub `alien0077/Travel_Globe` so future pushes and pull requests can trigger Netlify builds.
+- Added `docs/field-test.md` for route recording, permission, and long-background real-device validation.
+- Downloaded the first production source-data baseline from Natural Earth, OurAirports, and NASA Visible Earth.
+- Confirmed App Store/TestFlight work is out of scope for the current phase and custom domain usage is optional.

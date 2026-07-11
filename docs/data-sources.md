@@ -25,3 +25,15 @@ Travel Globe should support every useful geographic layer, but production packs 
 - Each transformed dataset must keep raw source data separate from processed app indexes.
 - OSM-derived data must never be silently mixed into non-ODbL datasets.
 - Production builds must include an attribution surface for every installed pack.
+
+## Downloaded Baseline
+
+The current repository includes a downloaded source baseline under `shared/source-data/`:
+
+- Natural Earth 110m admin countries, populated places, land, and coastline archives
+- OurAirports airports, runways, navaids, countries, and regions CSV files
+- NASA Visible Earth Blue Marble `land_ocean_ice_2048.jpg`
+
+Run `scripts/download-geo-data.sh` to refresh the baseline and regenerate `shared/source-data/source-manifest.tsv`.
+
+OSM is intentionally not downloaded into the baseline yet. It remains an optional isolated pack because ODbL attribution and share-alike requirements must stay separate from the permissive Natural Earth / NASA / OurAirports pack.
