@@ -50,4 +50,5 @@
 - Verified `npm --prefix replay-engine run test`.
 - Verified `npm --prefix replay-engine run build`.
 - Verified `npm --prefix replay-engine run verify:preview` with external requests blocked.
+- Verified `TRAVEL_GLOBE_PREVIEW_URL=https://travel-globe-alien0077.netlify.app npm --prefix replay-engine run verify:preview`.
 - Verified iOS `xcodebuild build` for generic iOS Simulator.

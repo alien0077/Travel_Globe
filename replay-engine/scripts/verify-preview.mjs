@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const url = process.env.TRAVEL_GLOBE_PREVIEW_URL ?? 'http://127.0.0.1:4173/';
+const allowedHosts = new Set(['127.0.0.1', 'localhost', new URL(url).hostname]);
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const screenshotDir = path.resolve(scriptDir, '../test-results');
 fs.mkdirSync(screenshotDir, { recursive: true });
@@ -27,7 +28,7 @@ for (const viewport of [
   });
   await page.route('**/*', (route) => {
     const requestUrl = new URL(route.request().url());
-    if (requestUrl.hostname === '127.0.0.1' || requestUrl.hostname === 'localhost') {
+    if (allowedHosts.has(requestUrl.hostname)) {
       void route.continue();
       return;
     }
