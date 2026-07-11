@@ -1,38 +1,49 @@
 import * as THREE from 'three';
+import blueMarbleUrl from '../assets/blue-marble-land-ocean-ice-2048.jpg';
 
 export interface GlobeObjects {
   globe: THREE.Group;
   earth: THREE.Mesh;
+  clouds: THREE.Mesh;
 }
 
 export function createGlobe(radius = 2): GlobeObjects {
   const globe = new THREE.Group();
 
+  const earthTexture = new THREE.TextureLoader().load(blueMarbleUrl);
+  earthTexture.colorSpace = THREE.SRGBColorSpace;
+  earthTexture.anisotropy = 8;
+  earthTexture.wrapS = THREE.RepeatWrapping;
+  earthTexture.offset.x = 0.25;
+
   const earthGeometry = new THREE.SphereGeometry(radius, 96, 64);
   const earthMaterial = new THREE.MeshStandardMaterial({
-    color: 0x0e5a78,
-    roughness: 0.82,
-    metalness: 0.05
+    map: earthTexture,
+    color: 0xffffff,
+    roughness: 0.92,
+    metalness: 0.0
   });
   const earth = new THREE.Mesh(earthGeometry, earthMaterial);
   globe.add(earth);
 
-  const oceanGlow = new THREE.Mesh(
-    new THREE.SphereGeometry(radius * 1.008, 96, 64),
-    new THREE.MeshBasicMaterial({
-      color: 0x43b8ce,
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(radius * 1.012, 96, 64),
+    new THREE.MeshLambertMaterial({
+      map: createCloudTexture(),
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.12,
-      wireframe: true
+      opacity: 0.22,
+      depthWrite: false
     })
   );
-  globe.add(oceanGlow);
+  globe.add(clouds);
 
-  globe.add(createLatLongGrid(radius * 1.01));
-  globe.add(createPlaceholderBorders(radius * 1.013));
+  globe.add(createLatLongGrid(radius * 1.014));
+  globe.add(createPlaceholderBorders(radius * 1.018));
   globe.add(createAtmosphere(radius));
+  globe.add(createTerminatorShade(radius));
 
-  return { globe, earth };
+  return { globe, earth, clouds };
 }
 
 export function createStarField(count = 900, radius = 52): THREE.Points {
@@ -80,9 +91,9 @@ function createSeededRandom(seed: number): () => number {
 function createLatLongGrid(radius: number): THREE.Group {
   const group = new THREE.Group();
   const material = new THREE.LineBasicMaterial({
-    color: 0x9ad8e8,
+    color: 0xb7e8ff,
     transparent: true,
-    opacity: 0.16
+    opacity: 0.08
   });
 
   for (let lat = -60; lat <= 60; lat += 30) {
@@ -135,9 +146,9 @@ function createLongitudeLine(longitude: number, radius: number, material: THREE.
 function createPlaceholderBorders(radius: number): THREE.Group {
   const group = new THREE.Group();
   const material = new THREE.LineDashedMaterial({
-    color: 0xffffff,
+    color: 0xfff3b0,
     transparent: true,
-    opacity: 0.28,
+    opacity: 0.2,
     dashSize: 0.06,
     gapSize: 0.035
   });
@@ -183,12 +194,97 @@ function createPlaceholderBorders(radius: number): THREE.Group {
 
 function createAtmosphere(radius: number): THREE.Mesh {
   return new THREE.Mesh(
-    new THREE.SphereGeometry(radius * 1.035, 96, 64),
-    new THREE.MeshBasicMaterial({
-      color: 0x5ec8ff,
+    new THREE.SphereGeometry(radius * 1.045, 96, 64),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        glowColor: { value: new THREE.Color(0x56c7ff) }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 glowColor;
+        varying vec3 vNormal;
+        void main() {
+          float rim = pow(0.66 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+          gl_FragColor = vec4(glowColor, clamp(rim, 0.0, 0.36));
+        }
+      `,
       transparent: true,
-      opacity: 0.14,
-      side: THREE.BackSide
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      depthWrite: false
     })
   );
+}
+
+function createTerminatorShade(radius: number): THREE.Mesh {
+  const shade = new THREE.Mesh(
+    new THREE.SphereGeometry(radius * 1.006, 96, 64),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        lightDirection: { value: new THREE.Vector3(-0.45, 0.32, 0.83).normalize() }
+      },
+      vertexShader: `
+        varying vec3 vWorldNormal;
+        void main() {
+          vWorldNormal = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 lightDirection;
+        varying vec3 vWorldNormal;
+        void main() {
+          float night = smoothstep(0.18, -0.42, dot(normalize(vWorldNormal), lightDirection));
+          gl_FragColor = vec4(0.01, 0.025, 0.055, night * 0.48);
+        }
+      `,
+      transparent: true,
+      depthWrite: false
+    })
+  );
+  shade.renderOrder = 2;
+  return shade;
+}
+
+function createCloudTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const random = createSeededRandom(20260711);
+
+  for (let band = 0; band < 7; band += 1) {
+    const centerY = canvas.height * (0.18 + band * 0.11 + (random() - 0.5) * 0.03);
+    const bandHeight = 18 + random() * 34;
+    for (let index = 0; index < 85; index += 1) {
+      const x = random() * canvas.width;
+      const y = centerY + (random() - 0.5) * bandHeight;
+      const width = 34 + random() * 110;
+      const height = 5 + random() * 18;
+      const alpha = 0.025 + random() * 0.075;
+      const gradient = context.createRadialGradient(x, y, 1, x, y, width * 0.55);
+      gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.ellipse(x, y, width, height, random() * Math.PI, 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  return texture;
 }

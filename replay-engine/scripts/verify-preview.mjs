@@ -18,6 +18,7 @@ for (const viewport of [
 ]) {
   const page = await browser.newPage({ viewport });
   const errors = [];
+  const assetRequests = [];
   let blockedExternalRequests = 0;
 
   page.on('pageerror', (error) => errors.push(error.message));
@@ -29,6 +30,9 @@ for (const viewport of [
   await page.route('**/*', (route) => {
     const requestUrl = new URL(route.request().url());
     if (allowedHosts.has(requestUrl.hostname)) {
+      if (requestUrl.pathname.includes('blue-marble-land-ocean-ice-2048')) {
+        assetRequests.push(requestUrl.pathname);
+      }
       void route.continue();
       return;
     }
@@ -144,14 +148,18 @@ for (const viewport of [
     stats: document.querySelector('.hud-stats')?.textContent
   }));
 
-  results.push({ viewport: viewport.name, errors, blockedExternalRequests, check, paused, afterScrub });
+  results.push({ viewport: viewport.name, errors, blockedExternalRequests, assetRequests, check, paused, afterScrub });
   await page.close();
 }
 
 await browser.close();
 
 const failed = results.filter(
-  (result) => !result.check.ok || result.errors.length > 0 || result.blockedExternalRequests > 0
+  (result) =>
+    !result.check.ok ||
+    result.errors.length > 0 ||
+    result.blockedExternalRequests > 0 ||
+    result.assetRequests.length === 0
 );
 console.log(JSON.stringify(results, null, 2));
 

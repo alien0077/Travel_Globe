@@ -11,6 +11,7 @@ export class TravelGlobeScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cameraController: CameraController;
   private readonly aircraft = createAircraftMarker();
+  private readonly clouds: THREE.Mesh;
   private readonly resizeObserver: ResizeObserver;
 
   constructor(private readonly container: HTMLElement, segment: JourneySegment) {
@@ -30,7 +31,8 @@ export class TravelGlobeScene {
     this.scene.background = new THREE.Color(0x030914);
     this.scene.add(createStarField());
 
-    const { globe } = createGlobe();
+    const { globe, clouds } = createGlobe();
+    this.clouds = clouds;
     this.scene.add(globe);
     this.scene.add(createRouteLine(segment.derivedReplayRoute.points));
     this.scene.add(this.aircraft);
@@ -54,6 +56,7 @@ export class TravelGlobeScene {
   start(onFrame: (timeMs: number) => void): void {
     this.renderer.setAnimationLoop((timeMs) => {
       onFrame(timeMs);
+      this.clouds.rotation.y = timeMs * 0.000012;
       this.renderer.render(this.scene, this.camera);
     });
   }

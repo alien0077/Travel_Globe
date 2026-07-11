@@ -54,14 +54,18 @@ final class TravelGlobeSmokeTests: XCTestCase {
 
         let savedJourney = try await repository.journey(id: journey.id)
         let points = try await repository.locationPoints(journeyId: journey.id, since: nil)
+        let pointCount = try await repository.locationPointCount(journeyId: journey.id)
         let recentPoints = try await repository.locationPoints(
             journeyId: journey.id,
             since: Date(timeIntervalSince1970: 150)
         )
+        let recentJourneys = try await repository.recentJourneys(limit: 1)
 
         XCTAssertEqual(savedJourney?.status, .completed)
         XCTAssertEqual(savedJourney?.endTime, Date(timeIntervalSince1970: 300))
+        XCTAssertEqual(pointCount, 2)
         XCTAssertEqual(points.map(\.id), [firstPoint.id, secondPoint.id])
         XCTAssertEqual(recentPoints.map(\.id), [secondPoint.id])
+        XCTAssertEqual(recentJourneys.map(\.id), [journey.id])
     }
 }

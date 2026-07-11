@@ -24,9 +24,11 @@
     <string>Travel Globe records your journey route so it can replay your trip later.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Travel Globe can continue recording your journey while the screen is locked.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Travel Globe can match selected travel photos to your journey timeline.</string>
-    <key>UIBackgroundModes</key>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Travel Globe can match selected travel photos to your journey timeline.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Travel Globe can save selected travel media into your journey timeline.</string>
+	<key>UIBackgroundModes</key>
     <array>
         <string>location</string>
         <string>fetch</string>

@@ -21,6 +21,7 @@
 		82A6A8C53C8BCF671BFD0C57 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB983C97E2BBF993C6407F3D /* RootView.swift */; };
 		B28E9D099B044862FD9E68AB /* JourneyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */; };
 		BCE0B58F4BCA5B06506F93F7 /* TravelGlobeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */; };
+		C4DD8B087C92EB0F58279AF8 /* blue-marble-land-ocean-ice-2048.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C867C51B8211E97DB1317745 /* blue-marble-land-ocean-ice-2048.jpg */; };
 		C90AD1C85D96B80CA72368C0 /* ReplayEngineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47184B7B785052BAA17EE18 /* ReplayEngineView.swift */; };
 		D292B4405487DE9638BA05CF /* LocationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */; };
 		DA1B5F2319A2892B69689ED6 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = A026A9A1FBC36FC6DB59FE8D /* index.html */; };
@@ -56,6 +57,7 @@
 		9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyRepository.swift; sourceTree = "<group>"; };
 		A026A9A1FBC36FC6DB59FE8D /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 		A42DFDE7618914BF855595C5 /* TravelGlobeAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeAppModel.swift; sourceTree = "<group>"; };
+		C867C51B8211E97DB1317745 /* blue-marble-land-ocean-ice-2048.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "blue-marble-land-ocean-ice-2048.jpg"; sourceTree = "<group>"; };
 		CB983C97E2BBF993C6407F3D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		CC25B7A8FA5E272E0413C970 /* JourneyExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyExportService.swift; sourceTree = "<group>"; };
 		D2130156756EBB607EF28643 /* TravelGlobeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TravelGlobeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -155,6 +157,7 @@
 		6B8755208A35C7C1129D6876 /* assets */ = {
 			isa = PBXGroup;
 			children = (
+				C867C51B8211E97DB1317745 /* blue-marble-land-ocean-ice-2048.jpg */,
 				8B30FBE05D6F783F3E2BB3AE /* index.css */,
 				704F707EAD7C86E412B474DB /* index.js */,
 			);
@@ -309,6 +312,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4DD8B087C92EB0F58279AF8 /* blue-marble-land-ocean-ice-2048.jpg in Resources */,
 				24053F2B7F8779C277AD328B /* index.css in Resources */,
 				DA1B5F2319A2892B69689ED6 /* index.html in Resources */,
 				E15C7BAE1D61400B944610DC /* index.js in Resources */,
@@ -421,6 +425,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3K99Q8NGDT;
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -483,6 +488,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3K99Q8NGDT;
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

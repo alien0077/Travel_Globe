@@ -52,3 +52,12 @@
 - Verified `npm --prefix replay-engine run verify:preview` with external requests blocked.
 - Verified `TRAVEL_GLOBE_PREVIEW_URL=https://travel-globe-alien0077.netlify.app npm --prefix replay-engine run verify:preview`.
 - Verified iOS `xcodebuild build` for generic iOS Simulator.
+- Added iOS diagnostics for location/photo/notification permission status, stored journey count, latest journey summary, and GPS point count.
+- Added in-app photo and notification permission request buttons.
+- Fixed iOS Replay Engine white screen by loading the bundle-root fallback index and rewriting embedded static asset paths for Xcode's flattened resource copy.
+- Verified `scripts/copy-replay-to-ios.sh`.
+- Verified iOS `xcodebuild build` for generic iOS Simulator.
+- Verified iOS `xcodebuild build-for-testing` for generic iOS Simulator; full simulator `xcodebuild test` built the test bundle but was interrupted after the simulator runner stalled while materializing.
+- Upgraded the Replay Engine globe from a procedural placeholder to an offline NASA Blue Marble texture with subtle cloud texture, atmosphere rim, night-side shade, and gentler grid/border overlays.
+- Expanded Playwright preview verification to require the Blue Marble asset request.
+- Verified the iOS app bundle includes `blue-marble-land-ocean-ice-2048.jpg` alongside the flattened Replay Engine `index.html`, `index.js`, and `index.css`.

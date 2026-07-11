@@ -29,6 +29,10 @@ struct RecordingDiagnostic: Identifiable, Equatable {
         case error
     }
 
+    static func info(_ message: String) -> RecordingDiagnostic {
+        RecordingDiagnostic(level: .info, message: message)
+    }
+
     static func error(_ message: String) -> RecordingDiagnostic {
         RecordingDiagnostic(level: .error, message: message)
     }

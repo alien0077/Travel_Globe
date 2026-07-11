@@ -97,6 +97,41 @@ actor SQLiteJourneyRepository: JourneyRepository {
         return points
     }
 
+    func locationPointCount(journeyId: UUID) async throws -> Int {
+        let db = try database.connection()
+        let statement = try prepare("""
+        SELECT COUNT(*)
+        FROM location_points
+        WHERE journey_id = ?;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(journeyId.uuidString, at: 1, statement: statement)
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            throw DatabaseError.stepFailed(database.errorMessage())
+        }
+        return Int(sqlite3_column_int(statement, 0))
+    }
+
+    func recentJourneys(limit: Int) async throws -> [JourneyRecord] {
+        let db = try database.connection()
+        let statement = try prepare("""
+        SELECT id, title, start_time, end_time, status, segment_type
+        FROM journeys
+        ORDER BY start_time DESC
+        LIMIT ?;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_int(statement, 1, Int32(max(1, limit)))
+
+        var journeys: [JourneyRecord] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            journeys.append(try decodeJourney(statement))
+        }
+        return journeys
+    }
+
     func completeJourney(id: UUID, endedAt: Date) async throws {
         let db = try database.connection()
         let statement = try prepare("""

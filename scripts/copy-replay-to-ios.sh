@@ -13,4 +13,5 @@ fi
 
 mkdir -p "$TARGET_DIR"
 ditto "$SOURCE_DIR" "$TARGET_DIR"
+LC_ALL=C perl -0pi -e 's#\./assets/index\.js#./index.js#g; s#\./assets/index\.css#./index.css#g' "$TARGET_DIR/index.html"
 echo "Copied Replay Engine build to $TARGET_DIR"

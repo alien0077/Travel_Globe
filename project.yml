@@ -44,3 +44,4 @@ targets:
       base:
         DEVELOPMENT_TEAM: "3K99Q8NGDT"
         CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: true
