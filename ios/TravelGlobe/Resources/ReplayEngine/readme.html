@@ -241,6 +241,7 @@
           <a href="#camera">視角模式</a>
           <a href="#exports">匯出資料</a>
           <a href="#offline">離線使用</a>
+          <a href="#sources">資料來源</a>
           <a href="#ios">iOS App</a>
           <a href="#tips">測試建議</a>
         </nav>
@@ -251,7 +252,7 @@
             <div class="steps">
               <div class="card">
                 <h3>1. 打開回放</h3>
-                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，畫面中央是地球、白線是預計航線、綠線是已飛航跡。</p>
+                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在「航班預載」只輸入航班號，讓離線班表先解析起降機場並建立回放旅程。</p>
               </div>
               <div class="card">
                 <h3>2. 播放或暫停</h3>
@@ -280,8 +281,12 @@
                 <td>白線代表 Flight Plan，綠線代表目前已飛航跡，黃色點代表 Takeoff、TOC、TOD、Landing 等事件。</td>
               </tr>
               <tr>
-                <th>Timeline</th>
-                <td>可點擊事件直接跳到該時間點，例如 Top of Climb、Cruise、Top of Descent。</td>
+                <th>旅遊紀錄</th>
+                <td>可點擊旅程事件直接跳到該時間點，中央紀錄卡會同步顯示地點、區域與航段資訊。</td>
+              </tr>
+              <tr>
+                <th>航班預載</th>
+                <td>使用離線班表與機場索引建立預估 Flight Plan。已知航班如 <code>CI100</code> 可自動解析 <code>TPE → NRT</code>，手動起降機場欄位可留空或覆寫。</td>
               </tr>
               <tr>
                 <th>Below / Nearby</th>
@@ -298,9 +303,9 @@
               <li><code>Camera</code>：切換視角。</li>
               <li><code>Import</code>：匯入 <code>.json</code> 或 <code>.travelglobe</code> 旅程檔。</li>
               <li><code>Export</code>：匯出完整 Travel Globe 回放包。</li>
-              <li><code>Share JSON</code>：匯出隱私處理後的分享版 JSON。</li>
+              <li><code>Share</code>：匯出隱私處理後的分享版 JSON。</li>
               <li><code>Journal</code>：產生離線飛行日誌 Markdown。</li>
-              <li><code>Install Pack</code>：安裝示範離線資料包。</li>
+              <li><code>Pack</code>：安裝示範離線資料包。</li>
             </ul>
           </section>
 
@@ -330,7 +335,17 @@
           <section id="offline">
             <h2>離線使用</h2>
             <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble 地球貼圖、航線、城市光點和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
-            <p>未來輸入航班號自動下載 Flight Plan 會接到 provider 介面；有網路時下載 route、airports、waypoints、major cities 和 landmarks，飛機上則使用離線包。</p>
+            <p>「航班預載」目前使用離線機場索引與大圓航線推估 route、事件、ETA 和旅遊紀錄；實際航路、航班狀態與延誤資訊可在後續接第三方航班 API 後覆蓋同一個 provider 流程。</p>
+          </section>
+
+          <section id="sources">
+            <h2>資料來源</h2>
+            <ul>
+              <li>Airport and runway data provided by OurAirports.</li>
+              <li>Natural Earth 提供國界、海岸線與地理標籤資料基礎。</li>
+              <li>NASA Visible Earth / Blue Marble 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
+              <li>目前航班預載第一版使用離線班表種子與 Great Circle 預估航線，尚未接入付費真實航班 API。</li>
+            </ul>
           </section>
 
           <section id="ios">
@@ -351,7 +366,7 @@
               <li>拖動時間軸，確認綠色已飛航跡會跟著變長，ETA 和距離會更新。</li>
               <li>切換每個 Camera 模式，確認畫面不是黑屏且可以滑動旋轉、縮放。</li>
               <li>按 <code>GPX</code>、<code>KML</code> 匯出後，用文字編輯器確認有 track point 和 waypoint。</li>
-              <li>手機版打開時，Timeline 和 Product Modes 預設收合，避免遮住地球。</li>
+              <li>手機版會把地球、Travel Atlas、航班預載、旅遊紀錄與控制列排成可捲動版面。</li>
             </ol>
           </section>
         </main>

@@ -1,0 +1,35 @@
+name: OurAirports Data Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  refresh-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: replay-engine/package-lock.json
+      - run: npm --prefix replay-engine ci
+      - run: scripts/download-geo-data.sh
+      - run: npm --prefix replay-engine run prepare:airports
+      - run: npm --prefix replay-engine run typecheck
+      - run: npm --prefix replay-engine run test
+      - run: npm --prefix replay-engine run build
+      - name: Report data drift
+        run: |
+          if git diff --quiet -- shared/source-data shared/offline-packs/core-global/airports-index.json; then
+            echo "OurAirports source and generated airport index are unchanged."
+          else
+            echo "::warning::OurAirports data changed. Review the diff and commit regenerated source/index files."
+            git diff --stat -- shared/source-data shared/offline-packs/core-global/airports-index.json
+            git diff --exit-code -- shared/source-data shared/offline-packs/core-global/airports-index.json
+          fi

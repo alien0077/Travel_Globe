@@ -1,6 +1,6 @@
 import type { CameraMode } from '../camera/CameraController';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
-import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
+import type { Journey, JourneySegment } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
 import { createJsonBlob, createTravelGlobePackage, downloadBlob } from '../export/travelglobePackage';
@@ -12,6 +12,9 @@ import {
   summarizeBelowMe,
   type FlightOverlay
 } from '../flight/flightAnalytics';
+import { OfflineAirportFlightPreloadProvider } from '../flight/flightPlanProvider';
+import type { PreloadFlightRequest } from '../flight-preload/buildPreloadedFlightJourney';
+import { listAirportSuggestions } from '../flight-preload/airportIndex';
 import { findNearestLandmark } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
@@ -24,13 +27,20 @@ import { reduceAutoRecordingState, type AutoRecordingContext } from '../recordin
 import { ReplayClock } from '../replay/ReplayClock';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
 import { summarizeJourney } from '../statistics/journeyStatistics';
-import { formatEventTime, getSortedTimelineEvents } from '../timeline/timeline';
 import { buildTimeMachineState } from '../time-machine/timeMachine';
+import {
+  buildTravelRecords,
+  getRegionLabel,
+  summarizeTravelRecords,
+  type TravelRecord,
+  type TravelRegion
+} from '../travel-records/travelRecords';
 import { buildPlanSummary } from '../travel-plan/planEngine';
 
 export class TravelGlobeApp {
   private readonly root: HTMLElement;
   private readonly adapter: BrowserRuntimeAdapter;
+  private readonly flightPreloadProvider = new OfflineAirportFlightPreloadProvider();
   private journey?: Journey;
   private scene?: TravelGlobeScene;
   private clock?: ReplayClock;
@@ -40,6 +50,9 @@ export class TravelGlobeApp {
   private lastFrameMs?: number;
   private packState: OfflinePackState = { packs: [] };
   private autoRecordingContext?: AutoRecordingContext;
+  private travelRecords: TravelRecord[] = [];
+  private activeRecordId?: string;
+  private activeRegion: TravelRegion | 'all' = 'all';
 
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
@@ -53,7 +66,17 @@ export class TravelGlobeApp {
   private readonly belowMe = document.createElement('div');
   private readonly capability = document.createElement('div');
   private readonly timelineList = document.createElement('div');
+  private readonly recordFilterBar = document.createElement('div');
+  private readonly recordPreview = document.createElement('article');
   private readonly productPanel = document.createElement('section');
+  private readonly preloadPanel = document.createElement('section');
+  private readonly flightNumberInput = document.createElement('input');
+  private readonly originInput = document.createElement('input');
+  private readonly destinationInput = document.createElement('input');
+  private readonly departureDateInput = document.createElement('input');
+  private readonly departureTimeInput = document.createElement('input');
+  private readonly durationInput = document.createElement('input');
+  private readonly preloadStatus = document.createElement('div');
   private readonly fileInput = document.createElement('input');
 
   constructor(root: HTMLElement, journey: Journey) {
@@ -70,13 +93,20 @@ export class TravelGlobeApp {
     this.journey = journey;
     this.segment = getPrimaryFlightSegment(journey);
     this.flightOverlay = buildFlightOverlay(journey, this.segment);
+    this.travelRecords = buildTravelRecords(journey);
+    this.activeRecordId = this.travelRecords[0]?.id;
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
     this.lastFrameMs = undefined;
 
     this.renderShell(journey, this.segment);
     this.scene?.dispose();
-    this.scene = new TravelGlobeScene(this.viewport, this.segment, this.flightOverlay);
+    this.scene = new TravelGlobeScene(
+      this.viewport,
+      this.segment,
+      this.flightOverlay,
+      this.travelRecords.map((record) => record.location)
+    );
     this.scene.start((timeMs) => this.frame(timeMs));
     await this.adapter.saveJourney(journey);
   }
@@ -107,18 +137,28 @@ export class TravelGlobeApp {
     timeline.open = !isCompactViewport;
     const timelineTitle = document.createElement('summary');
     timelineTitle.className = 'panel-summary panel-title';
-    timelineTitle.textContent = 'Timeline';
+    timelineTitle.textContent = '旅遊紀錄';
+    this.recordFilterBar.className = 'record-filters';
     this.timelineList.className = 'timeline-list';
-    timeline.append(timelineTitle, this.timelineList);
+    timeline.append(timelineTitle, this.recordFilterBar, this.timelineList);
 
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
     productShell.className = 'dock-panel product-panel-shell';
-    productShell.open = false;
+    productShell.open = true;
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
-    productSummary.textContent = 'Product Modes';
+    productSummary.textContent = 'Travel Atlas';
     productShell.append(productSummary, this.productPanel);
+
+    this.preloadPanel.className = 'preload-panel';
+    const preloadShell = document.createElement('details');
+    preloadShell.className = 'dock-panel preload-panel-shell';
+    preloadShell.open = true;
+    const preloadSummary = document.createElement('summary');
+    preloadSummary.className = 'panel-summary panel-title';
+    preloadSummary.textContent = '航班預載';
+    preloadShell.append(preloadSummary, this.preloadPanel);
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -188,7 +228,7 @@ export class TravelGlobeApp {
     const shareButton = document.createElement('button');
     shareButton.type = 'button';
     shareButton.className = 'control-button';
-    shareButton.textContent = 'Share JSON';
+    shareButton.textContent = 'Share';
     shareButton.addEventListener('click', () => this.exportShareSafeJson());
 
     const manualLink = document.createElement('a');
@@ -217,7 +257,7 @@ export class TravelGlobeApp {
     const packButton = document.createElement('button');
     packButton.type = 'button';
     packButton.className = 'control-button';
-    packButton.textContent = 'Install Pack';
+    packButton.textContent = 'Pack';
     packButton.addEventListener('click', () => {
       this.packState = installPack(this.packState, coreOfflinePacks[1]);
       this.renderProductPanel();
@@ -248,14 +288,18 @@ export class TravelGlobeApp {
       packButton,
       this.scrubber
     );
-    dock.append(timeline, productShell);
-    overlay.append(hud, dock, controls);
+    dock.append(preloadShell, productShell, timeline);
+    this.recordPreview.className = 'record-preview';
+    overlay.append(hud, dock, this.recordPreview, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
 
-    this.hudTitle.textContent = journey.title;
-    this.hudRoute.textContent = `${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
+    this.hudTitle.textContent = 'TRAVEL ATLAS';
+    this.hudRoute.textContent = `${journey.title} | ${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
     this.capability.textContent = this.adapter.getLocationCapability().reason ?? 'Standalone browser replay';
-    this.renderTimeline(journey.events);
+    this.renderRegionFilters();
+    this.renderTimeline();
+    this.renderRecordPreview();
+    this.renderPreloadPanel(segment);
     this.renderProductPanel();
     this.syncPlayButton();
   }
@@ -292,8 +336,8 @@ export class TravelGlobeApp {
     const elapsedRemainder = Math.floor(elapsedSeconds % 60).toString().padStart(2, '0');
     const deviationMeters = calculateRouteDeviationMeters(sample, this.flightOverlay.plannedRoute);
 
-    this.hudTitle.textContent = metrics.flightNumber;
-    this.hudRoute.textContent = metrics.routeLabel;
+    this.hudTitle.textContent = 'TRAVEL ATLAS';
+    this.hudRoute.textContent = `${metrics.flightNumber} | ${metrics.routeLabel}`;
     this.hudStats.replaceChildren(
       metricItem('Altitude', metrics.altitudeFeet),
       metricItem('Speed', metrics.speedKmh),
@@ -331,23 +375,176 @@ export class TravelGlobeApp {
     this.playButton.textContent = this.clock?.isPlaying ? 'Pause' : 'Play';
   }
 
-  private renderTimeline(events: TimelineEvent[]): void {
-    const sourceEvents = this.flightOverlay
-      ? this.flightOverlay.events.map((event) => ({
-          timestamp: event.timestamp,
-          title: event.title
-        }))
-      : getSortedTimelineEvents({ events } as Journey);
-    const items = sourceEvents.map((event) => {
+  private renderPreloadPanel(segment: JourneySegment): void {
+    const form = document.createElement('form');
+    form.className = 'preload-form';
+
+    const airports = document.createElement('datalist');
+    airports.id = 'airport-iata-options';
+    airports.replaceChildren(
+      ...listAirportSuggestions().map((airport) => {
+        const option = document.createElement('option');
+        option.value = airport.iataCode ?? '';
+        option.label = `${airport.iataCode} ${airport.name}`;
+        return option;
+      })
+    );
+
+    this.flightNumberInput.value = stringValue(segment.metadata.flightNumber, 'CI100');
+    this.originInput.value = '';
+    this.destinationInput.value = '';
+    this.departureDateInput.value = toInputDate(segment.startTime);
+    this.departureTimeInput.value = toInputTime(segment.startTime);
+    this.durationInput.value = '';
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'preload-submit';
+    submitButton.textContent = '預載進入';
+
+    this.preloadStatus.className = 'preload-status';
+    this.preloadStatus.textContent = '輸入 CI100 可由離線班表解析 TPE -> NRT；手動機場欄位可留空或覆寫。';
+
+    form.append(
+      field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
+      field('起飛', this.originInput, { placeholder: '自動', list: airports.id, required: false }),
+      field('抵達', this.destinationInput, { placeholder: '自動', list: airports.id, required: false }),
+      field('日期', this.departureDateInput, { type: 'date' }),
+      field('時間', this.departureTimeInput, { type: 'time' }),
+      field('分鐘', this.durationInput, { type: 'number', min: '30', step: '5', required: false }),
+      submitButton
+    );
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void this.preloadFlightFromForm();
+    });
+
+    this.preloadPanel.replaceChildren(airports, form, this.preloadStatus);
+  }
+
+  private async preloadFlightFromForm(): Promise<void> {
+    const request: PreloadFlightRequest = {
+      flightNumber: this.flightNumberInput.value,
+      originIata: this.originInput.value,
+      destinationIata: this.destinationInput.value,
+      departureDate: this.departureDateInput.value,
+      departureTime: this.departureTimeInput.value,
+      durationMinutes: Number(this.durationInput.value) || undefined
+    };
+
+    try {
+      this.preloadStatus.textContent = '正在建立預載航線...';
+      const result = await this.flightPreloadProvider.preloadFlight(request);
+      await this.loadJourney(result.journey);
+      const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
+      this.preloadStatus.textContent = message;
+      this.capability.textContent = message;
+    } catch (error) {
+      this.preloadStatus.textContent = error instanceof Error ? error.message : '航班預載失敗';
+    }
+  }
+
+  private renderTimeline(): void {
+    const visibleRecords = this.travelRecords.filter(
+      (record) => this.activeRegion === 'all' || record.region === this.activeRegion
+    );
+    const items = visibleRecords.map((record) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'timeline-item';
-      button.textContent = `${formatTimestampUtc(event.timestamp)} ${event.title}`;
-      button.addEventListener('click', () => this.seekToTimestamp(event.timestamp));
+      button.className = `timeline-item travel-record-item${record.id === this.activeRecordId ? ' is-active' : ''}`;
+      button.style.setProperty('--record-accent', record.accent);
+
+      const marker = document.createElement('span');
+      marker.className = 'record-marker';
+      marker.textContent = record.markerLabel;
+
+      const body = document.createElement('span');
+      body.className = 'record-body';
+      const title = document.createElement('strong');
+      title.textContent = record.title;
+      const meta = document.createElement('span');
+      meta.textContent = `${record.dateLabel} | ${record.regionLabel}`;
+      const subtitle = document.createElement('span');
+      subtitle.textContent = record.subtitle;
+      body.append(title, meta, subtitle);
+
+      button.append(marker, body);
+      button.addEventListener('click', () => this.activateRecord(record.id, true));
       return button;
     });
 
     this.timelineList.replaceChildren(...items);
+  }
+
+  private renderRegionFilters(): void {
+    const regions = new Set(this.travelRecords.map((record) => record.region));
+    const options: Array<{ id: TravelRegion | 'all'; label: string }> = [
+      { id: 'all', label: 'All' },
+      ...[...regions].map((region) => ({ id: region, label: getRegionLabel(region) }))
+    ];
+
+    const buttons = options.map((option) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `record-filter${option.id === this.activeRegion ? ' is-active' : ''}`;
+      button.textContent = option.label;
+      button.addEventListener('click', () => {
+        this.activeRegion = option.id;
+        if (option.id !== 'all') {
+          this.activeRecordId = this.travelRecords.find((record) => record.region === option.id)?.id ?? this.activeRecordId;
+        }
+        this.renderRegionFilters();
+        this.renderTimeline();
+        this.renderRecordPreview();
+      });
+      return button;
+    });
+
+    this.recordFilterBar.replaceChildren(...buttons);
+  }
+
+  private activateRecord(recordId: string, shouldSeek: boolean): void {
+    const record = this.travelRecords.find((candidate) => candidate.id === recordId);
+    if (!record) {
+      return;
+    }
+    this.activeRecordId = record.id;
+    if (shouldSeek) {
+      this.seekToTimestamp(record.timestamp);
+    }
+    this.renderTimeline();
+    this.renderRecordPreview();
+  }
+
+  private renderRecordPreview(): void {
+    const record =
+      this.travelRecords.find((candidate) => candidate.id === this.activeRecordId) ?? this.travelRecords[0];
+    if (!record) {
+      this.recordPreview.replaceChildren();
+      return;
+    }
+
+    this.recordPreview.style.setProperty('--record-accent', record.accent);
+
+    const image = document.createElement('div');
+    image.className = 'record-photo';
+    image.textContent = record.markerLabel;
+
+    const content = document.createElement('div');
+    content.className = 'record-preview-content';
+    const meta = document.createElement('div');
+    meta.className = 'record-preview-meta';
+    meta.textContent = `${record.coordinateLabel} | ${record.regionLabel}`;
+    const title = document.createElement('h2');
+    title.textContent = record.title;
+    const subtitle = document.createElement('p');
+    subtitle.textContent = record.subtitle;
+    const tags = document.createElement('div');
+    tags.className = 'record-tags';
+    tags.replaceChildren(...record.tags.map((tag) => tagPill(tag)));
+    content.append(meta, title, subtitle, tags);
+
+    this.recordPreview.replaceChildren(image, content);
   }
 
   private seekToTimestamp(timestamp: string): void {
@@ -437,14 +634,17 @@ export class TravelGlobeApp {
     const journal = generateOfflineJournal(this.journey);
     const timeMachine = buildTimeMachineState([this.journey]);
     const notifications = currentPoint ? evaluateNotifications(currentPoint, 2_000_000_000) : [];
+    const atlas = summarizeTravelRecords(this.journey, this.travelRecords);
     const rows = [
+      ['Trips', String(atlas.totalTrips)],
+      ['Countries', String(Math.max(atlas.countries.length, summary.countriesVisited.length))],
+      ['Years', atlas.years.map((year) => year.year).join(', ') || timeMachine.years.join(', ')],
+      ['Distance', formatDistance(summary.totalDistanceMeters)],
       ['Plan', `${plan.completedCount}/${plan.plannedPlaces.length} places completed`],
       ['Journal', `${journal.markdown.split('\n').length} markdown lines ready`],
-      ['Time Machine', `${timeMachine.years.join(', ')} | ${formatDistance(timeMachine.lifetimeDistanceMeters)}`],
-      ['Stats', `${formatDistance(summary.totalDistanceMeters)} | ${summary.countriesVisited.join(' -> ')}`],
-      ['Offline Packs', `${this.packState.packs.length} installed | ${formatBytes(getInstalledSizeBytes(this.packState))}`],
-      ['Auto Recording', this.autoRecordingContext?.state ?? 'Idle'],
-      ['Notifications', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
+      ['Offline', `${this.packState.packs.length} pack | ${formatBytes(getInstalledSizeBytes(this.packState))}`],
+      ['Recording', this.autoRecordingContext?.state ?? 'Idle'],
+      ['Notice', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
     ];
 
     const list = document.createElement('div');
@@ -461,7 +661,25 @@ export class TravelGlobeApp {
       list.append(item);
     }
 
-    this.productPanel.replaceChildren(list);
+    const regionBars = document.createElement('div');
+    regionBars.className = 'region-bars';
+    for (const region of atlas.regions) {
+      const row = document.createElement('div');
+      row.className = 'region-bar-row';
+      const label = document.createElement('span');
+      label.textContent = region.label;
+      const track = document.createElement('span');
+      track.className = 'region-bar-track';
+      const fill = document.createElement('span');
+      fill.style.width = `${Math.max(12, (region.count / Math.max(1, this.travelRecords.length)) * 100)}%`;
+      track.append(fill);
+      const value = document.createElement('strong');
+      value.textContent = String(region.count);
+      row.append(label, track, value);
+      regionBars.append(row);
+    }
+
+    this.productPanel.replaceChildren(list, regionBars);
   }
 }
 
@@ -482,6 +700,47 @@ function textLine(value: string): HTMLElement {
   return line;
 }
 
-function formatTimestampUtc(timestamp: string): string {
-  return formatEventTime({ timestamp } as TimelineEvent);
+function tagPill(value: string): HTMLElement {
+  const tag = document.createElement('span');
+  tag.textContent = value;
+  return tag;
+}
+
+function field(
+  label: string,
+  input: HTMLInputElement,
+  options: { placeholder?: string; type?: string; min?: string; step?: string; list?: string; required?: boolean } = {}
+): HTMLElement {
+  const wrapper = document.createElement('label');
+  wrapper.className = 'preload-field';
+  const text = document.createElement('span');
+  text.textContent = label;
+  input.type = options.type ?? 'text';
+  input.placeholder = options.placeholder ?? '';
+  input.autocomplete = 'off';
+  input.required = options.required ?? true;
+  input.className = 'preload-input';
+  if (options.min) {
+    input.min = options.min;
+  }
+  if (options.step) {
+    input.step = options.step;
+  }
+  if (options.list) {
+    input.setAttribute('list', options.list);
+  }
+  wrapper.append(text, input);
+  return wrapper;
+}
+
+function stringValue(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+}
+
+function toInputDate(timestamp: string): string {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function toInputTime(timestamp: string): string {
+  return new Date(timestamp).toISOString().slice(11, 16);
 }

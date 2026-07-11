@@ -6,7 +6,7 @@ Travel Globe should support every useful geographic layer, but production packs 
 
 - Natural Earth: country borders, coastlines, populated places, and small-scale labels. Public domain; attribution optional but recommended as `Made with Natural Earth`.
 - NASA Blue Marble / NASA Earth imagery: globe texture candidates. NASA media generally may be used for factual, educational, and informational purposes, but the app must not imply NASA endorsement and must avoid NASA marks as branding.
-- OurAirports: airports, runways, navaids, countries, and regions. Public domain with no required credit.
+- OurAirports: airports, runways, frequencies, navaids, countries, and regions. Public domain; credit is not required, but Travel Globe should still show `Airport and runway data provided by OurAirports.` in About / Data Sources.
 
 ## Optional / Isolated Pack
 
@@ -31,9 +31,10 @@ Travel Globe should support every useful geographic layer, but production packs 
 The current repository includes a downloaded source baseline under `shared/source-data/`:
 
 - Natural Earth 110m admin countries, populated places, land, and coastline archives
-- OurAirports airports, runways, navaids, countries, and regions CSV files
+- OurAirports airports, runways, frequencies, navaids, countries, and regions CSV files
 - NASA Visible Earth Blue Marble `land_ocean_ice_2048.jpg`
 
 Run `scripts/download-geo-data.sh` to refresh the baseline and regenerate `shared/source-data/source-manifest.tsv`.
+Run `npm --prefix replay-engine run prepare:airports` after refreshing OurAirports data to regenerate `shared/offline-packs/core-global/airports-index.json`.
 
 OSM is intentionally not downloaded into the baseline yet. It remains an optional isolated pack because ODbL attribution and share-alike requirements must stay separate from the permissive Natural Earth / NASA / OurAirports pack.

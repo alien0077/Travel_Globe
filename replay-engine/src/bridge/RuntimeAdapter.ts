@@ -16,7 +16,8 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
   constructor(private journey: Journey) {}
 
   async loadJourney(): Promise<Journey> {
-    const stored = localStorage.getItem(storageKey(this.journey.id));
+    const currentJourneyId = localStorage.getItem(currentJourneyKey) ?? this.journey.id;
+    const stored = localStorage.getItem(storageKey(currentJourneyId));
     if (!stored) {
       return this.journey;
     }
@@ -30,6 +31,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
     const index = new Set(JSON.parse(localStorage.getItem(indexKey) ?? '[]') as string[]);
     index.add(journey.id);
     localStorage.setItem(indexKey, JSON.stringify([...index]));
+    localStorage.setItem(currentJourneyKey, journey.id);
   }
 
   async exportJourney(): Promise<void> {
@@ -45,6 +47,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
 }
 
 const indexKey = 'travel-globe:journey-index';
+const currentJourneyKey = 'travel-globe:current-journey-id';
 
 function storageKey(journeyId: string): string {
   return `travel-globe:journey:${journeyId}`;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { LocationPoint } from '../data/types';
+import type { GeographicPoint, LocationPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 
 export interface RouteLineOptions {
@@ -24,7 +24,7 @@ export function updateRouteLine(line: THREE.Line, points: LocationPoint[], altit
   line.geometry = createRouteGeometry(points, altitudeScaleMeters);
 }
 
-export function createRouteEventMarkers(points: LocationPoint[], color = 0xffffff): THREE.Group {
+export function createRouteEventMarkers(points: GeographicPoint[], color = 0xffffff): THREE.Group {
   const group = new THREE.Group();
   const material = new THREE.MeshStandardMaterial({
     color,

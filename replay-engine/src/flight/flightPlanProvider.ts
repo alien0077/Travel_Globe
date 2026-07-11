@@ -1,4 +1,9 @@
 import type { JourneySegment } from '../data/types';
+import {
+  buildPreloadedFlightJourney,
+  type PreloadFlightRequest,
+  type PreloadFlightResult
+} from '../flight-preload/buildPreloadedFlightJourney';
 
 export interface FlightPlanLookupResult {
   flightNumber: string;
@@ -9,6 +14,10 @@ export interface FlightPlanLookupResult {
 
 export interface FlightPlanProvider {
   lookupFlightPlan(flightNumber: string): Promise<FlightPlanLookupResult | undefined>;
+}
+
+export interface FlightPreloadProvider {
+  preloadFlight(request: PreloadFlightRequest): Promise<PreloadFlightResult>;
 }
 
 export class OfflineFixtureFlightPlanProvider implements FlightPlanProvider {
@@ -26,5 +35,11 @@ export class OfflineFixtureFlightPlanProvider implements FlightPlanProvider {
       route: this.segment.processedRoute,
       waypoints: this.segment.processedRoute.points.map((point) => point.id)
     };
+  }
+}
+
+export class OfflineAirportFlightPreloadProvider implements FlightPreloadProvider {
+  async preloadFlight(request: PreloadFlightRequest): Promise<PreloadFlightResult> {
+    return buildPreloadedFlightJourney(request);
   }
 }

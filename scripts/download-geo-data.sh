@@ -29,6 +29,8 @@ download "https://davidmegginson.github.io/ourairports-data/airports.csv" \
   "$SOURCE_DIR/ourairports/airports.csv"
 download "https://davidmegginson.github.io/ourairports-data/runways.csv" \
   "$SOURCE_DIR/ourairports/runways.csv"
+download "https://davidmegginson.github.io/ourairports-data/airport-frequencies.csv" \
+  "$SOURCE_DIR/ourairports/frequencies.csv"
 download "https://davidmegginson.github.io/ourairports-data/navaids.csv" \
   "$SOURCE_DIR/ourairports/navaids.csv"
 download "https://davidmegginson.github.io/ourairports-data/countries.csv" \

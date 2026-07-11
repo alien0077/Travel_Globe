@@ -58,11 +58,14 @@ for (const viewport of [
         : [];
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
+    const preloadText = document.querySelector('.preload-panel')?.textContent ?? '';
+    const previewText = document.querySelector('.record-preview')?.textContent ?? '';
+    const filterText = document.querySelector('.record-filters')?.textContent ?? '';
     const centerElement = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
     const centerShowsGlobe = centerElement?.tagName === 'CANVAS' || Boolean(centerElement?.closest('.globe-viewport'));
     const pageHasNoVerticalScroll = document.documentElement.scrollHeight <= window.innerHeight + 2;
     const openDockPanels = document.querySelectorAll('.dock-panel[open]').length;
-    const mobileDockStartsCollapsed = window.innerWidth > 640 || openDockPanels === 0;
+    const atlasLayoutVisible = Boolean(document.querySelector('.record-preview')) && filterText.includes('All');
 
     if (
       !(canvas instanceof HTMLCanvasElement) ||
@@ -81,6 +84,9 @@ for (const viewport of [
         controls,
         timelineItems,
         productText,
+        preloadText,
+        previewText,
+        filterText,
         centerShowsGlobe,
         pageHasNoVerticalScroll,
         openDockPanels
@@ -111,15 +117,15 @@ for (const viewport of [
         canvas.height > 0 &&
         coloredPixels > 100 &&
         hud.includes('Altitude') &&
-        title.includes('CI100') &&
+        title.includes('TRAVEL ATLAS') &&
         controls.includes('Import') &&
         controls.includes('Export') &&
-        controls.includes('Share JSON') &&
+        controls.includes('Share') &&
         controls.includes('使用手冊') &&
         controls.includes('GPX') &&
         controls.includes('KML') &&
         controls.includes('Journal') &&
-        controls.includes('Install Pack') &&
+        controls.includes('Pack') &&
         cameraSelect.value === 'global' &&
         cameraOptions.includes('Global View') &&
         cameraOptions.includes('Orbit cinema') &&
@@ -131,12 +137,16 @@ for (const viewport of [
         timelineItems >= 4 &&
         productText.includes('Plan') &&
         productText.includes('Journal') &&
-        productText.includes('Time Machine') &&
-        productText.includes('Auto Recording') &&
+        productText.includes('Trips') &&
+        productText.includes('Countries') &&
+        preloadText.includes('預載進入') &&
+        preloadText.includes('CI100') &&
+        productText.includes('East Asia') &&
+        previewText.includes('East Asia') &&
+        atlasLayoutVisible &&
         productText.includes('0 B') &&
-        centerShowsGlobe &&
-        pageHasNoVerticalScroll &&
-        mobileDockStartsCollapsed,
+        (window.innerWidth <= 640 || centerShowsGlobe) &&
+        (window.innerWidth <= 640 || pageHasNoVerticalScroll),
       reason: '',
       hud,
       title,
@@ -147,6 +157,9 @@ for (const viewport of [
       controls,
       timelineItems,
       productText,
+      preloadText,
+      previewText,
+      filterText,
       centerShowsGlobe,
       pageHasNoVerticalScroll,
       openDockPanels
@@ -161,8 +174,24 @@ for (const viewport of [
     camera: '',
     coloredPixelsAfterInteraction: 0
   };
+  let afterPreload = {
+    route: '',
+    status: '',
+    timelineItems: 0
+  };
 
   if (check.ok) {
+    await page.fill('.preload-field:nth-child(1) input', 'CI100');
+    await page.fill('.preload-field:nth-child(4) input', '2026-07-11');
+    await page.fill('.preload-field:nth-child(5) input', '09:30');
+    await page.click('.preload-submit');
+    await page.waitForTimeout(500);
+    afterPreload = await page.evaluate(() => ({
+      route: document.querySelector('.hud-route')?.textContent ?? '',
+      status: document.querySelector('.preload-status')?.textContent ?? '',
+      timelineItems: document.querySelectorAll('.timeline-item').length
+    }));
+
     await page.evaluate(() => {
       document.querySelector('.control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
@@ -236,7 +265,7 @@ for (const viewport of [
     }
   }
 
-  results.push({ viewport: viewport.name, errors, blockedExternalRequests, assetRequests, check, paused, afterScrub });
+  results.push({ viewport: viewport.name, errors, blockedExternalRequests, assetRequests, check, paused, afterScrub, afterPreload });
   await page.close();
 }
 
@@ -248,6 +277,9 @@ const failed = results.filter(
     result.errors.length > 0 ||
     result.blockedExternalRequests > 0 ||
     result.assetRequests.length === 0 ||
+    !result.afterPreload.route.includes('CI100 | TPE -> NRT') ||
+    !result.afterPreload.status.includes('CI100 已由離線班表解析為 TPE -> NRT') ||
+    result.afterPreload.timelineItems < 4 ||
     result.afterScrub.coloredPixelsAfterInteraction <= 100
 );
 console.log(JSON.stringify(results, null, 2));

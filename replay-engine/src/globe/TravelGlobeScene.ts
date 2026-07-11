@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
-import type { JourneySegment, LocationPoint } from '../data/types';
+import type { GeographicPoint, JourneySegment, LocationPoint } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
 import { createGlobe, createStarField } from './createGlobe';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
@@ -18,7 +18,12 @@ export class TravelGlobeScene {
   private readonly activePointers = new Map<number, PointerEvent>();
   private previousPinchDistance?: number;
 
-  constructor(private readonly container: HTMLElement, segment: JourneySegment, overlay: FlightOverlay) {
+  constructor(
+    private readonly container: HTMLElement,
+    segment: JourneySegment,
+    overlay: FlightOverlay,
+    travelRecordPoints: GeographicPoint[] = []
+  ) {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     this.camera.position.set(0, 2.45, 5.2);
     this.cameraController = new CameraController(this.camera);
@@ -33,25 +38,27 @@ export class TravelGlobeScene {
     this.container.appendChild(this.renderer.domElement);
     this.bindInteraction();
 
-    this.scene.background = new THREE.Color(0x030914);
-    this.scene.add(createStarField());
+    this.scene.background = new THREE.Color(0xf6fbf7);
+    this.scene.fog = new THREE.Fog(0xf6fbf7, 8, 15);
+    this.scene.add(createStarField(360, 46));
 
     const { globe, clouds } = createGlobe();
     this.clouds = clouds;
     this.scene.add(globe);
-    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xffffff, opacity: 0.72, altitudeScaleMeters: 650000 }));
+    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.82, altitudeScaleMeters: 650000 }));
     this.actualRouteLine = createRouteLine([segment.derivedReplayRoute.points[0]], {
       color: 0x2bdc70,
       opacity: 0.98,
       altitudeScaleMeters: 600000
     });
     this.scene.add(this.actualRouteLine);
-    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0xf6d365));
+    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999));
+    this.scene.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42));
     this.scene.add(this.aircraft);
 
-    const ambient = new THREE.AmbientLight(0x8eb7ff, 1.4);
-    const sun = new THREE.DirectionalLight(0xffffff, 2.8);
-    sun.position.set(-4, 3, 7);
+    const ambient = new THREE.AmbientLight(0xeaf8ff, 2.2);
+    const sun = new THREE.DirectionalLight(0xffffff, 3.4);
+    sun.position.set(-3, 4, 7);
     this.scene.add(ambient, sun);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
