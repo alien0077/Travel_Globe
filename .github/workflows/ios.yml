@@ -28,6 +28,21 @@ jobs:
       - run: brew install xcodegen
       - run: xcodegen generate
       - run: xcodebuild build -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
+      - name: Create iOS simulator if needed
+        run: |
+          set -euo pipefail
+          if xcrun simctl list devices available | grep -q 'Travel Globe CI'; then
+            exit 0
+          fi
+          runtime="$(xcrun simctl list runtimes available | awk -F '[()]' '/iOS/ {print $2}' | tail -n 1)"
+          device_type="$(xcrun simctl list devicetypes | awk -F '[()]' '/iPhone 16 Pro/ {print $2; exit} /iPhone 15/ {candidate=$2} END {if (candidate) print candidate}')"
+          if [ -z "$runtime" ] || [ -z "$device_type" ]; then
+            echo "Unable to resolve an available iOS runtime/device type"
+            xcrun simctl list runtimes available
+            xcrun simctl list devicetypes
+            exit 1
+          fi
+          xcrun simctl create 'Travel Globe CI' "$device_type" "$runtime"
       - name: Resolve iOS simulator destination
         id: ios-destination
         run: |
@@ -41,14 +56,14 @@ jobs:
               text = handle.read()
 
           for line in text.splitlines():
-              if 'platform:iOS Simulator' not in line or 'name:iPhone' not in line:
+              if 'platform:iOS Simulator' not in line or 'name:Travel Globe CI' not in line:
                   continue
               match = re.search(r'id:([^,}]+)', line)
               if match:
                   print(f'id={match.group(1).strip()}')
                   break
           else:
-              raise SystemExit('No available iPhone simulator destination found')
+              raise SystemExit('No available Travel Globe CI simulator destination found')
           PY
           )"
           echo "destination=${destination}" >> "$GITHUB_OUTPUT"

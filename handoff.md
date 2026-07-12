@@ -19,9 +19,9 @@ Use OurAirports as the free airport master-data layer:
 
 - airports.csv: global airport coordinates, IATA/ICAO, airport type, country/region, municipality
 - runways.csv: runway count and longest runway metadata
-- airport-frequencies.csv: downloaded for future airport detail views
+- frequencies.csv: transformed into aviation context records for airport detail/product status
 - countries.csv / regions.csv: readable country and admin-region labels
-- navaids.csv: downloaded for future aviation context, not used by route drawing yet
+- navaids.csv: transformed into aviation context records, not used by route drawing yet
 
 Attribution to show in About / Data Sources:
 
@@ -32,6 +32,8 @@ Implemented files:
 - `scripts/download-geo-data.sh`
 - `scripts/prepare-airport-index.mjs`
 - `shared/offline-packs/core-global/airports-index.json`
+- `shared/offline-packs/core-global/aviation-context-index.json`
+- `shared/offline-packs/core-global/ourairports-manifest.json`
 - `replay-engine/src/flight-preload/airportIndex.ts`
 
 ### Flight Number Source
@@ -84,9 +86,14 @@ npm --prefix replay-engine run build
 - Flight preload panel in Replay Engine.
 - Offline `CI100 -> TPE -> NRT` schedule resolution.
 - OurAirports-generated global airport index.
+- OurAirports-generated frequency and navaid aviation context index.
+- Natural Earth coastline/country boundary extraction and globe rendering.
+- Offline pack manifests wired to generated Natural Earth and OurAirports indexes.
+- Runtime adapter browser export path for `.travelglobe` and share-safe JSON.
 - Great Circle planned route generation with replay, processed, and raw routes.
 - Preview verification for `CI100` preload without manually entering origin/destination.
 - GitHub Actions drift check for OurAirports source/index changes.
+- GitHub Actions iOS workflow now creates a named simulator before resolving the test destination.
 
 ## Still Partial
 
@@ -94,13 +101,14 @@ These are the main half-finished areas to continue next:
 
 - Network flight-plan provider: source type exists, but no API implementation or key-management path is wired.
 - Flight schedule coverage: only a seed schedule index exists; broad flight-number lookup needs an imported or licensed schedule source.
-- Frequencies and navaids: downloaded, but not transformed into searchable app indexes or airport detail UI.
-- Offline packs: pack install state exists, but most transformed data layers are still product scaffolding.
-- Geographic borders: globe still needs real Natural Earth coastline/country geometry rather than placeholder visual layers.
-- Runtime adapter split: browser import/export and native recording are not fully abstracted behind one runtime-capability layer.
+- Frequencies and navaids: transformed into an aviation context index and visible in product stats; a full airport detail/search UI is still not built.
+- Offline packs: core pack state now references real generated layers; install/download remains a browser-local product state, not a real remote package installer.
+- Geographic borders: Natural Earth 110m coastlines/country boundaries now render on the globe; higher-detail packs and label ranking remain future work.
+- Runtime adapter split: browser export is behind the adapter; import and native recording handoff are still not fully abstracted behind one runtime-capability layer.
 - Photo matching and journal media: iOS/photo matcher pieces exist, but Travel Atlas cards still use generated placeholders.
 - Notifications: rules exist, but native notification scheduling is not wired to replay/recording events.
 - Native recording to replay handoff: iOS recording/export and Web replay share concepts, but not a seamless recorded-journey-to-WebView payload flow yet.
+- iOS CI: workflow has been patched to create `Travel Globe CI` simulator before destination resolution; needs confirmation on GitHub Actions after push.
 
 See `docs/unfinished-features-audit.md` for the longer audit.
 

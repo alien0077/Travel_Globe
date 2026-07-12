@@ -11,7 +11,7 @@ export class TravelGlobeScene {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cameraController: CameraController;
-  private readonly aircraft = createAircraftMarker();
+  private readonly aircraft: THREE.Group;
   private readonly clouds: THREE.Mesh;
   private readonly actualRouteLine: THREE.Line;
   private readonly resizeObserver: ResizeObserver;
@@ -27,6 +27,7 @@ export class TravelGlobeScene {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     this.camera.position.set(0, 2.45, 5.2);
     this.cameraController = new CameraController(this.camera);
+    this.aircraft = createAircraftMarker(overlay.aircraftType);
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -159,7 +160,7 @@ export class TravelGlobeScene {
 
   private readonly handleWheel = (event: WheelEvent): void => {
     event.preventDefault();
-    this.cameraController.zoomBy(event.deltaY * 0.0012);
+    this.cameraController.zoomBy(event.deltaY * 0.002);
   };
 
   private currentPinchDistance(): number | undefined {

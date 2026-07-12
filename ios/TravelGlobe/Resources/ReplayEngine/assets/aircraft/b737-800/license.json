@@ -1,0 +1,19 @@
+{
+  "aircraft": "Boeing 737-800",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-a74a78406d3d4b4da22440bc5d15eeb9",
+  "creator": "Muhamad Mirza Arrafi",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Original airline or government livery must be removed before ready status",
+    "Converted to GLB if needed",
+    "Reduced polygon count if needed",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

@@ -15,8 +15,14 @@ This audit tracks features that looked like placeholders, provider shells, or pa
 ### OurAirports airport index
 
 - Previous state: `flight-preload/airportIndex.ts` was a curated in-code list.
-- Current state: `scripts/prepare-airport-index.mjs` generates `shared/offline-packs/core-global/airports-index.json` from OurAirports airports/runways/countries/regions CSVs. The index includes IATA/ICAO, coordinates, country/region, municipality, scheduled service, runway count, and longest runway. `scripts/download-geo-data.sh` now also downloads frequencies.
-- Remaining gap: frequencies and navaids are downloaded but not yet transformed into searchable app indexes.
+- Current state: `scripts/prepare-airport-index.mjs` generates `shared/offline-packs/core-global/airports-index.json` from OurAirports airports/runways/countries/regions CSVs. The index includes IATA/ICAO, coordinates, country/region, municipality, scheduled service, runway count, and longest runway. It also generates `shared/offline-packs/core-global/aviation-context-index.json` from frequencies and navaids, plus `ourairports-manifest.json` with source metadata.
+- Remaining gap: the aviation context is visible in product status, but there is not yet a full searchable airport detail UI.
+
+### Natural Earth boundaries and offline manifests
+
+- Previous state: the globe used placeholder border arcs and the core offline pack manifest was fixture-only.
+- Current state: `scripts/prepare-geo-data.mjs` extracts Natural Earth 110m coastlines and admin country boundaries into `shared/offline-packs/core-global/geo-boundaries.json`; `createGlobe.ts` renders those lines instead of placeholder arcs. The core manifest now lists Natural Earth and fixture source files with size/hash metadata and generated index paths.
+- Remaining gap: higher-detail geometry, label ranking, and spatial indexes are not built yet.
 
 ## Still Partial
 
@@ -28,21 +34,21 @@ This audit tracks features that looked like placeholders, provider shells, or pa
 
 ### Offline packs
 
-- Evidence: `docs/offline-data.md` says pack manifests are `project-fixture-only`; `offlinePacks.ts` tracks installed state but does not install transformed data indexes.
-- Impact: the Pack control is useful as product-state scaffolding, but not yet a real offline data installer.
-- Next step: transform Natural Earth / OurAirports data into app-ready indexes and make pack install state feed the map/search layers.
-
-### Placeholder borders and geographic layers
-
-- Evidence: `docs/replay-engine.md` still lists a placeholder country-border layer.
-- Impact: the globe looks good, but borders are decorative arcs rather than real country/coastline geometry.
-- Next step: render Natural Earth coastline/country boundaries from prepared offline data.
+- Evidence: `offlinePacks.ts` now references generated Natural Earth / OurAirports manifests and the UI reports installed data layers, but Pack still toggles browser-local state rather than downloading/deleting remote package assets.
+- Impact: product state reflects real generated layers, but app storage management is not production-grade yet.
+- Next step: package generated indexes as installable assets and wire download/delete paths through native/web runtime capabilities.
 
 ### Browser/native runtime split
 
-- Evidence: `BrowserRuntimeAdapter.exportJourney()` throws because browser export is handled directly, and browser capability text says native recording is only available in iOS.
-- Impact: workable for Web, but runtime adapters are not yet the single abstraction for import/export/recording.
-- Next step: move export/import operations behind runtime-capability methods and make iOS/web behavior explicit in UI.
+- Evidence: browser `.travelglobe` and share-safe JSON export now go through `BrowserRuntimeAdapter`, but import and native recording payload handoff are still handled outside one complete runtime contract.
+- Impact: Web export is less coupled to UI, but iOS/Web parity is incomplete.
+- Next step: move import and native recorded-journey payload loading behind runtime-capability methods and make iOS/web behavior explicit in UI.
+
+### iOS GitHub Actions simulator destination
+
+- Evidence: the latest failed iOS workflow only exposed placeholder simulator destinations on `macos-latest` / Xcode 26.5, so destination resolution failed before tests.
+- Current state: `.github/workflows/ios.yml` now creates a named `Travel Globe CI` simulator and resolves that exact destination before running tests.
+- Remaining gap: this needs a post-push GitHub Actions confirmation.
 
 ### Photo matching and journal media
 

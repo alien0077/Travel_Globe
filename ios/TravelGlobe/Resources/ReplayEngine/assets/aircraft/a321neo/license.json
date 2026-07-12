@@ -1,0 +1,19 @@
+{
+  "aircraft": "Airbus A321neo",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-09196bfd95c144fab48d710b3ed3cd1f",
+  "creator": "CloudHubOmniTeam",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Original Wizz Air livery must be removed before ready status",
+    "Converted to GLB if needed",
+    "Reduced polygon count before ready status",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

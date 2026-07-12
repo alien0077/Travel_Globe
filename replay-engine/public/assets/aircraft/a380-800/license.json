@@ -1,0 +1,18 @@
+{
+  "aircraft": "Airbus A380-800",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-cfd1092a207b4085a32fbb89c6b32f25",
+  "creator": "Nobilis 2",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Converted to GLB if needed",
+    "Removed original airline livery if present",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

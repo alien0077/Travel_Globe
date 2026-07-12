@@ -19,12 +19,12 @@ export class CameraController {
   }
 
   rotate(deltaX: number, deltaY: number): void {
-    this.orbitYaw += deltaX * 0.006;
-    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch + deltaY * 0.004, -0.75, 0.75);
+    this.orbitYaw -= deltaX * 0.006;
+    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch - deltaY * 0.004, -1.05, 1.05);
   }
 
   zoomBy(delta: number): void {
-    this.zoom = THREE.MathUtils.clamp(this.zoom * (1 + delta), 0.45, 2.2);
+    this.zoom = THREE.MathUtils.clamp(this.zoom * (1 + delta), 0.16, 2.8);
   }
 
   update(point: GeographicPoint, bearingDegrees: number): void {
@@ -34,12 +34,21 @@ export class CameraController {
     const forward = this.forwardVector(normal, bearingDegrees);
 
     if (this.mode === 'global') {
-      const distance = 5.2 * this.zoom;
-      const base = new THREE.Vector3(0, 2.45, distance);
-      base.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.orbitYaw);
-      base.applyAxisAngle(new THREE.Vector3(1, 0, 0), this.orbitPitch);
-      this.camera.position.lerp(base, 0.06);
-      this.camera.lookAt(0, 0, 0);
+      const zoomIn = THREE.MathUtils.clamp((1 - this.zoom) / 0.84, 0, 1);
+      const surfaceTarget = normal.clone().multiplyScalar(2.02);
+      const worldTarget = new THREE.Vector3(0, 0, 0).lerp(surfaceTarget, zoomIn);
+      const globalBase = new THREE.Vector3(0, 2.45, 5.2 * this.zoom);
+      const localRight = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const localUp = normal.clone();
+      const localBase = normal
+        .clone()
+        .multiplyScalar(1.1 + 3.0 * this.zoom)
+        .add(localRight.multiplyScalar(this.orbitYaw * 0.45))
+        .add(localUp.multiplyScalar(this.orbitPitch * 0.42));
+      const base = globalBase.lerp(surfaceTarget.clone().add(localBase), zoomIn);
+      this.camera.position.lerp(base, 0.08);
+      this.camera.up.copy(new THREE.Vector3(0, 1, 0).lerp(normal, zoomIn).normalize());
+      this.camera.lookAt(worldTarget);
       return;
     }
 

@@ -1,9 +1,12 @@
 import type { Journey } from '../data/types';
+import { createJsonBlob, createTravelGlobePackage, downloadBlob } from '../export/travelglobePackage';
+import { createShareSafeJourney } from '../privacy/redactJourney';
 
 export interface RuntimeAdapter {
   loadJourney(): Promise<Journey>;
   saveJourney(journey: Journey): Promise<void>;
-  exportJourney(): Promise<void>;
+  exportJourney(journey: Journey): Promise<void>;
+  exportShareSafeJourney(journey: Journey): Promise<void>;
   getLocationCapability(): LocationCapability;
 }
 
@@ -34,8 +37,12 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
     localStorage.setItem(currentJourneyKey, journey.id);
   }
 
-  async exportJourney(): Promise<void> {
-    throw new Error('Use createTravelGlobePackage for browser export');
+  async exportJourney(journey: Journey): Promise<void> {
+    downloadBlob(createTravelGlobePackage(journey), `${journey.id}.travelglobe`);
+  }
+
+  async exportShareSafeJourney(journey: Journey): Promise<void> {
+    downloadBlob(createJsonBlob(createShareSafeJourney(journey)), `${journey.id}.share-safe.json`);
   }
 
   getLocationCapability(): LocationCapability {

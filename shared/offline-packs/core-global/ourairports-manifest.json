@@ -1,0 +1,61 @@
+{
+  "id": "ourairports-core",
+  "version": "1.0.0",
+  "generatedFrom": "sha256:9ba19aa0e27ebdd730087d728189c1e2f6e9d47c66d076e7cc9ba3169feb8f03",
+  "source": {
+    "name": "OurAirports",
+    "attribution": "Airport and runway data provided by OurAirports.",
+    "urls": {
+      "airports": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+      "runways": "https://davidmegginson.github.io/ourairports-data/runways.csv",
+      "frequencies": "https://davidmegginson.github.io/ourairports-data/airport-frequencies.csv",
+      "navaids": "https://davidmegginson.github.io/ourairports-data/navaids.csv",
+      "countries": "https://davidmegginson.github.io/ourairports-data/countries.csv",
+      "regions": "https://davidmegginson.github.io/ourairports-data/regions.csv"
+    }
+  },
+  "files": [
+    {
+      "path": "shared/source-data/ourairports/airports.csv",
+      "bytes": 12674272,
+      "sha256": "7034202901ff8a2e9a3bde255a2a6d3348ae5dd6e984767fc8d69a4c0d7b4f80"
+    },
+    {
+      "path": "shared/source-data/ourairports/runways.csv",
+      "bytes": 3955883,
+      "sha256": "74af303465d0fa21dd4e3233c2bb18f79f241896fe541a9d510bc7a9906c46b0"
+    },
+    {
+      "path": "shared/source-data/ourairports/frequencies.csv",
+      "bytes": 1298156,
+      "sha256": "404e976b49147e2cdcdd69c289f637b050dcd847a94a2e1c54384b828359697b"
+    },
+    {
+      "path": "shared/source-data/ourairports/navaids.csv",
+      "bytes": 1525092,
+      "sha256": "84739b48fa550803c8a42ce5ce4349a82097644f6ee2ce682cbb94d755a8147a"
+    },
+    {
+      "path": "shared/source-data/ourairports/countries.csv",
+      "bytes": 24583,
+      "sha256": "2a9dbee691125b0cdb8ceb5fe227c48c903f99c488963b8e53e2ab366521c639"
+    },
+    {
+      "path": "shared/source-data/ourairports/regions.csv",
+      "bytes": 484813,
+      "sha256": "18b4c023c3b0e5ad8d10dc88f1213394dd94cdb01acc88284b5bc8c851b825d9"
+    }
+  ],
+  "indexes": {
+    "airports": {
+      "path": "shared/offline-packs/core-global/airports-index.json",
+      "records": 9057
+    },
+    "aviationContext": {
+      "path": "shared/offline-packs/core-global/aviation-context-index.json",
+      "airportContexts": 5801,
+      "frequencies": 18878,
+      "navaids": 11009
+    }
+  }
+}

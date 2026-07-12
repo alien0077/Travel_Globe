@@ -334,16 +334,17 @@
 
           <section id="offline">
             <h2>離線使用</h2>
-            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble 地球貼圖、航線、城市光點和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
+            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble 地球貼圖、Natural Earth 海岸線/國界、OurAirports 機場/頻率/導航台索引、航線、城市光點、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
             <p>「航班預載」目前使用離線機場索引與大圓航線推估 route、事件、ETA 和旅遊紀錄；實際航路、航班狀態與延誤資訊可在後續接第三方航班 API 後覆蓋同一個 provider 流程。</p>
           </section>
 
           <section id="sources">
             <h2>資料來源</h2>
             <ul>
-              <li>Airport and runway data provided by OurAirports.</li>
-              <li>Natural Earth 提供國界、海岸線與地理標籤資料基礎。</li>
+              <li>Airport and runway data provided by OurAirports. 頻率與導航台資料也來自 OurAirports 離線 CSV。</li>
+              <li>Made with Natural Earth. Natural Earth 提供 110m 國界與海岸線資料基礎。</li>
               <li>NASA Visible Earth / Blue Marble 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
+              <li>飛機模型庫只接受 CC0 或 CC BY、可商業使用、可修改、非 Editorial 的 GLB/glTF 模型；若模型來自 Sketchfab，App 會保留作者、授權、模型連結與 Sketchfab 來源標示，並可套用 Travel Globe 中性塗裝。</li>
               <li>目前航班預載第一版使用離線班表種子與 Great Circle 預估航線，尚未接入付費真實航班 API。</li>
             </ul>
           </section>

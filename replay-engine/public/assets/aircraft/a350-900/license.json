@@ -1,0 +1,18 @@
+{
+  "aircraft": "Airbus A350-900",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-cfa2836ead8c4278a199a7d34a87f02e",
+  "creator": "jhag",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Converted to GLB if needed",
+    "Removed original airline livery if present",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

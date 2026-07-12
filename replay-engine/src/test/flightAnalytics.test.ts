@@ -25,6 +25,17 @@ describe('flight overlay analytics', () => {
     );
   });
 
+  it('does not inject a default aircraft type when metadata is missing', () => {
+    const overlay = buildFlightOverlay(sampleJourney, {
+      ...segment,
+      metadata: {
+        flightNumber: 'CI100'
+      }
+    });
+
+    expect(overlay.aircraftType).toBe('');
+  });
+
   it('formats HUD values for in-flight replay', () => {
     const sample = sampleReplayAt(segment, bounds.durationSeconds * 0.55);
     const metrics = buildFlightHudMetrics(sampleJourney, segment, sample, bounds.durationSeconds * 0.55);

@@ -338,6 +338,13 @@ a {
   text-align: right;
 }
 
+.pack-description {
+  margin-top: 10px;
+  color: #526967;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .timeline-panel {
   max-height: min(460px, calc(100svh - 205px));
 }

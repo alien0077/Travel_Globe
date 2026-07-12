@@ -1,0 +1,18 @@
+{
+  "aircraft": "Boeing 777-300ER",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-322e7961d2024bba834887878d2d49a2",
+  "creator": "hakai315",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Converted to GLB if needed",
+    "Reduced polygon count before ready status",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

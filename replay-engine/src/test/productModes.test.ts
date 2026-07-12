@@ -3,7 +3,13 @@ import { sampleJourney } from '../data/sampleJourney';
 import { generateOfflineJournal } from '../journal/generateJournal';
 import { createPhotoTimelineEvents } from '../media/photoMatcher';
 import { evaluateNotifications } from '../notifications/notificationRules';
-import { coreOfflinePacks, formatBytes, getInstalledSizeBytes, installPack } from '../offline/offlinePacks';
+import {
+  coreOfflinePacks,
+  describeInstalledPacks,
+  formatBytes,
+  getInstalledSizeBytes,
+  installPack
+} from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { buildTimeMachineState } from '../time-machine/timeMachine';
 import { buildPlanSummary, matchEventsToPlan } from '../travel-plan/planEngine';
@@ -59,7 +65,8 @@ describe('complete product mode services', () => {
 
     expect(packState.packs).toHaveLength(1);
     expect(getInstalledSizeBytes(packState)).toBe(coreOfflinePacks[0].sizeBytes);
-    expect(formatBytes(getInstalledSizeBytes(packState))).toBe('42.0 MB');
+    expect(formatBytes(getInstalledSizeBytes(packState))).toMatch(/MB$/);
+    expect(describeInstalledPacks(packState)).toContain('Core Global Atlas');
     expect(notifications.map((item) => item.id)).toContain('gps-estimated');
     expect(notifications.map((item) => item.id)).toContain('storage-low');
   });

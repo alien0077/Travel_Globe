@@ -3,7 +3,7 @@ import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import type { Journey, JourneySegment } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
-import { createJsonBlob, createTravelGlobePackage, downloadBlob } from '../export/travelglobePackage';
+import { downloadBlob } from '../export/travelglobePackage';
 import {
   buildFlightHudMetrics,
   buildFlightOverlay,
@@ -14,15 +14,21 @@ import {
 } from '../flight/flightAnalytics';
 import { OfflineAirportFlightPreloadProvider } from '../flight/flightPlanProvider';
 import type { PreloadFlightRequest } from '../flight-preload/buildPreloadedFlightJourney';
-import { listAirportSuggestions } from '../flight-preload/airportIndex';
+import { findAirportContextByIata, getAirportIndexSummary, listAirportSuggestions } from '../flight-preload/airportIndex';
 import { findNearestLandmark } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
 import { generateOfflineJournal } from '../journal/generateJournal';
 import { evaluateNotifications } from '../notifications/notificationRules';
-import { coreOfflinePacks, formatBytes, getInstalledSizeBytes, installPack, type OfflinePackState } from '../offline/offlinePacks';
-import { createShareSafeJourney } from '../privacy/redactJourney';
+import {
+  coreOfflinePacks,
+  describeInstalledPacks,
+  formatBytes,
+  getInstalledSizeBytes,
+  installPack,
+  type OfflinePackState
+} from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { ReplayClock } from '../replay/ReplayClock';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
@@ -571,16 +577,14 @@ export class TravelGlobeApp {
     if (!this.journey) {
       return;
     }
-    const blob = createTravelGlobePackage(this.journey);
-    downloadBlob(blob, `${this.journey.id}.travelglobe`);
+    void this.adapter.exportJourney(this.journey);
   }
 
   private exportShareSafeJson(): void {
     if (!this.journey) {
       return;
     }
-    const shareSafe = createShareSafeJourney(this.journey);
-    downloadBlob(createJsonBlob(shareSafe), `${this.journey.id}.share-safe.json`);
+    void this.adapter.exportShareSafeJourney(this.journey);
   }
 
   private exportJournalMarkdown(): void {
@@ -635,6 +639,15 @@ export class TravelGlobeApp {
     const timeMachine = buildTimeMachineState([this.journey]);
     const notifications = currentPoint ? evaluateNotifications(currentPoint, 2_000_000_000) : [];
     const atlas = summarizeTravelRecords(this.journey, this.travelRecords);
+    const airportIndex = getAirportIndexSummary();
+    const segment = getPrimaryFlightSegment(this.journey);
+    const originContext = segment.origin.iataCode ? findAirportContextByIata(segment.origin.iataCode) : undefined;
+    const destinationContext = segment.destination.iataCode ? findAirportContextByIata(segment.destination.iataCode) : undefined;
+    const flightContextCount =
+      (originContext?.frequencies.length ?? 0) +
+      (originContext?.navaids.length ?? 0) +
+      (destinationContext?.frequencies.length ?? 0) +
+      (destinationContext?.navaids.length ?? 0);
     const rows = [
       ['Trips', String(atlas.totalTrips)],
       ['Countries', String(Math.max(atlas.countries.length, summary.countriesVisited.length))],
@@ -643,6 +656,8 @@ export class TravelGlobeApp {
       ['Plan', `${plan.completedCount}/${plan.plannedPlaces.length} places completed`],
       ['Journal', `${journal.markdown.split('\n').length} markdown lines ready`],
       ['Offline', `${this.packState.packs.length} pack | ${formatBytes(getInstalledSizeBytes(this.packState))}`],
+      ['Data', `${airportIndex.airports} airports | ${airportIndex.navaids} navaids`],
+      ['Flight context', `${flightContextCount} radio/nav records`],
       ['Recording', this.autoRecordingContext?.state ?? 'Idle'],
       ['Notice', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
     ];
@@ -679,7 +694,11 @@ export class TravelGlobeApp {
       regionBars.append(row);
     }
 
-    this.productPanel.replaceChildren(list, regionBars);
+    const packDescription = document.createElement('div');
+    packDescription.className = 'pack-description';
+    packDescription.textContent = describeInstalledPacks(this.packState);
+
+    this.productPanel.replaceChildren(list, regionBars, packDescription);
   }
 }
 

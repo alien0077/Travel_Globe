@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
 import { fixtureLandmarks } from '../geo/landmarks';
 import { geographicToVector3 } from '../geo/geodesy';
 
@@ -44,7 +45,7 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(clouds);
 
   globe.add(createLatLongGrid(radius * 1.014));
-  globe.add(createPlaceholderBorders(radius * 1.018));
+  globe.add(createNaturalEarthBoundaries(radius * 1.018));
   globe.add(createCityLights(radius * 1.024));
   globe.add(createAtmosphere(radius));
   globe.add(createTerminatorShade(radius));
@@ -159,36 +160,27 @@ function createLongitudeLine(longitude: number, radius: number, material: THREE.
   return new THREE.Line(geometry, material);
 }
 
-function createPlaceholderBorders(radius: number): THREE.Group {
+interface BoundaryLine {
+  kind: 'coastline' | 'country-border';
+  coordinates: Array<[number, number]>;
+}
+
+function createNaturalEarthBoundaries(radius: number): THREE.Group {
   const group = new THREE.Group();
-  const material = new THREE.LineDashedMaterial({
+  const coastlineMaterial = new THREE.LineBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.46,
-    dashSize: 0.06,
-    gapSize: 0.035
+    opacity: 0.36
+  });
+  const borderMaterial = new THREE.LineBasicMaterial({
+    color: 0xe7fbff,
+    transparent: true,
+    opacity: 0.2
   });
 
-  const arcs = [
-    [
-      [24.5, 118.2],
-      [26.5, 122.3],
-      [30.2, 128.1],
-      [34.6, 138.2],
-      [36.1, 140.8]
-    ],
-    [
-      [22.5, 120.0],
-      [25.1, 121.8],
-      [28.5, 123.7],
-      [31.2, 130.3],
-      [35.2, 135.5]
-    ]
-  ];
-
-  for (const arc of arcs) {
+  for (const line of boundariesIndex.lines as BoundaryLine[]) {
     const positions: number[] = [];
-    for (const [lat, lon] of arc) {
+    for (const [lat, lon] of line.coordinates) {
       const latRad = THREE.MathUtils.degToRad(lat);
       const lonRad = THREE.MathUtils.degToRad(lon);
       positions.push(
@@ -200,9 +192,7 @@ function createPlaceholderBorders(radius: number): THREE.Group {
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    const line = new THREE.Line(geometry, material);
-    line.computeLineDistances();
-    group.add(line);
+    group.add(new THREE.Line(geometry, line.kind === 'coastline' ? coastlineMaterial : borderMaterial));
   }
 
   return group;

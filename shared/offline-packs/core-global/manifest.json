@@ -1,13 +1,40 @@
 {
-  "id": "core-global-fixture",
+  "id": "core-global",
   "version": "1.0.0",
-  "generatedAt": "2026-07-10T00:00:00.000Z",
-  "source": {
-    "kind": "local-fixture",
-    "path": "shared/fixtures/landmarks.json",
-    "licenseStatus": "project-fixture-only",
-    "productionReplacementRequired": true
-  },
+  "generatedAt": "2026-07-12T00:13:22.008Z",
+  "sources": [
+    {
+      "name": "Natural Earth",
+      "license": "Public domain",
+      "attribution": "Made with Natural Earth.",
+      "sourceUrl": "https://www.naturalearthdata.com/",
+      "files": [
+        {
+          "path": "shared/source-data/natural-earth/ne_110m_admin_0_countries.zip",
+          "bytes": 214976,
+          "sha256": "0f243aeac8ac6cf26f0417285b0bd33ac47f1b5bdb719fd3e0df37d03ea37110"
+        },
+        {
+          "path": "shared/source-data/natural-earth/ne_110m_coastline.zip",
+          "bytes": 85352,
+          "sha256": "664449b39070027e882abb295974d182afec18ca21107273d17e9e8bf6f64817"
+        }
+      ]
+    },
+    {
+      "name": "Project landmark fixtures",
+      "license": "project-fixture-only",
+      "attribution": "Internal Travel Globe fixture data.",
+      "sourceUrl": "shared/fixtures/landmarks.json",
+      "files": [
+        {
+          "path": "shared/fixtures/landmarks.json",
+          "bytes": 753,
+          "sha256": "5791f3264ea6c8d6380417ff60757ffe9bf6d15d29ddb1769147c183da14d526"
+        }
+      ]
+    }
+  ],
   "contents": {
     "landmarks": 3,
     "regionCodes": [
@@ -15,12 +42,19 @@
       "TW"
     ],
     "countryBorders": {
-      "status": "placeholder",
-      "productionReplacementRequired": true
+      "status": "prepared",
+      "lines": 289
+    },
+    "coastlines": {
+      "status": "prepared",
+      "lines": 134
     },
     "rtreeIndex": {
-      "status": "not-required-for-fixture-pack",
+      "status": "not-built",
       "productionReplacementRequired": true
     }
+  },
+  "indexes": {
+    "boundaries": "shared/offline-packs/core-global/geo-boundaries.json"
   }
 }

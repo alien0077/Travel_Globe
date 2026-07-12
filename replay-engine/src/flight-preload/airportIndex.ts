@@ -1,4 +1,5 @@
 import airportsIndex from '../../../shared/offline-packs/core-global/airports-index.json';
+import aviationContextIndex from '../../../shared/offline-packs/core-global/aviation-context-index.json';
 import type { PlaceReference } from '../data/types';
 
 export interface AirportRecord extends PlaceReference {
@@ -8,6 +9,32 @@ export interface AirportRecord extends PlaceReference {
   scheduledService: boolean;
   runwayCount: number;
   longestRunwayFeet?: number;
+}
+
+export interface AirportFrequencyRecord {
+  type: string;
+  description?: string;
+  frequencyMhz?: number;
+}
+
+export interface NavaidRecord {
+  id: string;
+  ident: string;
+  name: string;
+  type: string;
+  countryCode: string;
+  associatedAirportIata?: string;
+  latitude: number;
+  longitude: number;
+  frequencyKhz?: number;
+  usageType?: string;
+  power?: string;
+}
+
+export interface AirportContextRecord {
+  iataCode: string;
+  frequencies: AirportFrequencyRecord[];
+  navaids: NavaidRecord[];
 }
 
 interface AirportIndexRecord {
@@ -27,6 +54,8 @@ interface AirportIndexRecord {
 
 const airports = (airportsIndex.airports as AirportIndexRecord[]).map(toAirportRecord);
 const airportsByIata = new Map(airports.map((airport) => [airport.iataCode, airport]));
+const contexts = aviationContextIndex.contexts as AirportContextRecord[];
+const contextsByIata = new Map(contexts.map((context) => [context.iataCode, context]));
 
 export function findAirportByIata(iataCode: string): AirportRecord | undefined {
   return airportsByIata.get(normalizeIata(iataCode));
@@ -34,6 +63,18 @@ export function findAirportByIata(iataCode: string): AirportRecord | undefined {
 
 export function listAirportSuggestions(): AirportRecord[] {
   return airports.filter((airport) => airport.scheduledService);
+}
+
+export function findAirportContextByIata(iataCode: string): AirportContextRecord | undefined {
+  return contextsByIata.get(normalizeIata(iataCode));
+}
+
+export function getAirportIndexSummary(): { airports: number; airportContexts: number; navaids: number } {
+  return {
+    airports: airports.length,
+    airportContexts: contexts.length,
+    navaids: aviationContextIndex.contents.navaids
+  };
 }
 
 export function normalizeIata(value: string): string {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getPrimaryFlightSegment } from '../data/types';
 import { assertJourney } from '../data/validateJourney';
 import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
+import { findAirportContextByIata, getAirportIndexSummary } from '../flight-preload/airportIndex';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
 
 describe('flight preload', () => {
@@ -63,5 +64,16 @@ describe('flight preload', () => {
         departureTime: '09:30'
       })
     ).toThrow('ZZZ');
+  });
+
+  it('loads aviation context from transformed OurAirports frequency and navaid data', () => {
+    const summary = getAirportIndexSummary();
+    const tpeContext = findAirportContextByIata('TPE');
+
+    expect(summary.airports).toBeGreaterThan(7_000);
+    expect(summary.airportContexts).toBeGreaterThan(1_000);
+    expect(summary.navaids).toBeGreaterThan(5_000);
+    expect(tpeContext?.frequencies.length).toBeGreaterThan(0);
+    expect(tpeContext?.frequencies.some((frequency) => frequency.type.length > 0)).toBe(true);
   });
 });

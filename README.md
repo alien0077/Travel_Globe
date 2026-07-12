@@ -26,6 +26,8 @@ npm --prefix replay-engine run test
 npm --prefix replay-engine run build
 npm --prefix replay-engine run preview
 npm --prefix replay-engine run verify:preview
+npm --prefix replay-engine run prepare:aircraft-models -- --dry-run
+npm --prefix replay-engine run import:aircraft-model -- --aircraft a350-900 --file /path/to/a350-900.glb
 node scripts/prepare-geo-data.mjs
 scripts/copy-replay-to-ios.sh
 scripts/deploy-web-static.sh
@@ -42,10 +44,10 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 ## Deployment
 
 - iOS app: `./deploy.sh` mirrors the TWStockTracker deployment flow with XcodeGen, automatic signing, physical-device build, `xctrace` device detection, and `ios-deploy` launch.
-- Web static hosting: Netlify is deployed at `https://travel-globe-alien0077.netlify.app` and is connected to GitHub CI/CD. `.github/workflows/web-static.yml` remains available for GitHub Pages if needed.
+- Web static hosting: GitHub Pages is the current primary deployment target at `https://alien0077.github.io/Travel_Globe/`, published by `.github/workflows/web-static.yml`.
 - Field testing: use `docs/field-test.md` for the short route, permission, and long background recording checks.
 - App Store: not in scope for this project phase. Use local physical-device deployment and web static hosting.
-- Custom domain: optional. The Netlify subdomain is production-ready; add a custom domain only when a branded URL is needed.
+- Custom domain: optional. Netlify is not the primary verification target while the `alien0077` Netlify team credits are exhausted; use GitHub Pages checks unless Netlify billing is explicitly being handled.
 
 ## Verification Boundary
 

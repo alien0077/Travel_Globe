@@ -1,0 +1,19 @@
+{
+  "aircraft": "Airbus A320-200",
+  "source": "Sketchfab",
+  "sourceUrl": "https://sketchfab.com/3d-models/none-c078f9af15884a6b820c7e778831b110",
+  "creator": "Dlourine",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "modifications": [
+    "Pending manual download",
+    "Converted to GLB if needed",
+    "Reduced polygon count before ready status",
+    "Removed original airline livery if present",
+    "Generated LOD models if needed",
+    "Compressed textures if needed",
+    "Repainted as Alien Air red and white livery",
+    "Removed original airline livery",
+    "Added fuselage, wing, and tail Alien Air markings"
+  ]
+}

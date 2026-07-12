@@ -1,0 +1,406 @@
+{
+  "schemaVersion": "1.1.0",
+  "policy": {
+    "allowedLicenses": [
+      "CC0",
+      "CC BY"
+    ],
+    "disallowedLicenseKeywords": [
+      "NC",
+      "NonCommercial",
+      "ND",
+      "NoDerivatives",
+      "Editorial"
+    ],
+    "requireCommercialUse": true,
+    "requireDerivativesAllowed": true,
+    "requireSourceAttribution": true,
+    "requireOfflineBundle": true,
+    "polygonBudget": {
+      "min": 500,
+      "max": 40000
+    }
+  },
+  "aircraft": [
+    {
+      "id": "B737",
+      "slug": "b737-800",
+      "icaoType": "B738",
+      "label": "Boeing 737-800",
+      "aliases": [
+        "B737",
+        "B738",
+        "B739",
+        "Boeing 737",
+        "Boeing 737-800",
+        "737-800"
+      ],
+      "variants": [
+        "b737-800",
+        "b739"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/b737-800/b737-800-lod0.glb",
+      "licenseFile": "assets/aircraft/b737-800/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 42265
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "Muhamad Mirza Arrafi",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-a74a78406d3d4b4da22440bc5d15eeb9",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "a74a78406d3d4b4da22440bc5d15eeb9",
+        "modelUrl": "https://sketchfab.com/3d-models/none-a74a78406d3d4b4da22440bc5d15eeb9"
+      },
+      "attribution": "Indonesian Government Boeing 737-800 by Muhamad Mirza Arrafi, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 30605,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "B767",
+      "slug": "b767-300",
+      "icaoType": "B763",
+      "label": "Boeing 767-300",
+      "aliases": [
+        "B767",
+        "B763",
+        "Boeing 767",
+        "Boeing 767-300",
+        "767-300"
+      ],
+      "variants": [
+        "b767-300"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/b767-300/b767-300-lod0.glb",
+      "licenseFile": "assets/aircraft/b767-300/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 59322
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "1883",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-353ef83b561b4860820bb8f69b09d1ca",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "353ef83b561b4860820bb8f69b09d1ca",
+        "modelUrl": "https://sketchfab.com/3d-models/none-353ef83b561b4860820bb8f69b09d1ca"
+      },
+      "attribution": "boeing 767(american) by 1883, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 26278,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "B777",
+      "slug": "b777-300er",
+      "icaoType": "B77W",
+      "label": "Boeing 777-300ER",
+      "aliases": [
+        "B777",
+        "B772",
+        "B77W",
+        "Boeing 777",
+        "Boeing 777-300ER",
+        "777-300ER"
+      ],
+      "variants": [
+        "b777-300er",
+        "b772"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/b777-300er/b777-300er-lod0.glb",
+      "licenseFile": "assets/aircraft/b777-300er/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 2159954
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "hakai315",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-322e7961d2024bba834887878d2d49a2",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "322e7961d2024bba834887878d2d49a2",
+        "modelUrl": "https://sketchfab.com/3d-models/none-322e7961d2024bba834887878d2d49a2"
+      },
+      "attribution": "Boeing 777-300ER Model by hakai315, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 33945,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "B787",
+      "slug": "b787-9",
+      "icaoType": "B789",
+      "label": "Boeing 787-9",
+      "aliases": [
+        "B787",
+        "B788",
+        "B789",
+        "Boeing 787",
+        "Boeing 787-9",
+        "787-9",
+        "Dreamliner"
+      ],
+      "variants": [
+        "b787-9",
+        "b788"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/b787-9/b787-9-lod0.glb",
+      "licenseFile": "assets/aircraft/b787-9/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 9472
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "Nobilis 2",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-b6711e2e698e4e469675c1154a50b7a3",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "b6711e2e698e4e469675c1154a50b7a3",
+        "modelUrl": "https://sketchfab.com/3d-models/none-b6711e2e698e4e469675c1154a50b7a3"
+      },
+      "attribution": "Boeing 787-9 by Nobilis 2, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 10428,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "A320",
+      "slug": "a320-200",
+      "icaoType": "A320",
+      "label": "Airbus A320-200",
+      "aliases": [
+        "A319",
+        "A320",
+        "A20N",
+        "Airbus A320",
+        "Airbus A320-200",
+        "A320-200"
+      ],
+      "variants": [
+        "a320-200",
+        "a319",
+        "a20n"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/a320-200/a320-200-lod0.glb",
+      "licenseFile": "assets/aircraft/a320-200/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 474400
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "Dlourine",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-c078f9af15884a6b820c7e778831b110",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "c078f9af15884a6b820c7e778831b110",
+        "modelUrl": "https://sketchfab.com/3d-models/none-c078f9af15884a6b820c7e778831b110"
+      },
+      "attribution": "Airbus A320-200 V2 by Dlourine, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 35184,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "A321",
+      "slug": "a321neo",
+      "icaoType": "A21N",
+      "label": "Airbus A321neo",
+      "aliases": [
+        "A321",
+        "A21N",
+        "Airbus A321",
+        "Airbus A321neo",
+        "A321neo"
+      ],
+      "variants": [
+        "a321neo"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/a321neo/a321neo-lod0.glb",
+      "licenseFile": "assets/aircraft/a321neo/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 93164
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "CloudHubOmniTeam",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-09196bfd95c144fab48d710b3ed3cd1f",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "09196bfd95c144fab48d710b3ed3cd1f",
+        "modelUrl": "https://sketchfab.com/3d-models/none-09196bfd95c144fab48d710b3ed3cd1f"
+      },
+      "attribution": "Airbus +A321Neo Wizzair by CloudHubOmniTeam, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 33909,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "A350",
+      "slug": "a350-900",
+      "icaoType": "A359",
+      "label": "Airbus A350-900",
+      "aliases": [
+        "A350",
+        "A359",
+        "A35K",
+        "Airbus A350",
+        "Airbus A350-900",
+        "A350-900"
+      ],
+      "variants": [
+        "a350-900",
+        "a35k"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/a350-900/a350-900-lod0.glb",
+      "licenseFile": "assets/aircraft/a350-900/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 5257
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "jhag",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-cfa2836ead8c4278a199a7d34a87f02e",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "cfa2836ead8c4278a199a7d34a87f02e",
+        "modelUrl": "https://sketchfab.com/3d-models/none-cfa2836ead8c4278a199a7d34a87f02e"
+      },
+      "attribution": "Airbus A350 by jhag, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 6213,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    },
+    {
+      "id": "A380",
+      "slug": "a380-800",
+      "icaoType": "A388",
+      "label": "Airbus A380-800",
+      "aliases": [
+        "A380",
+        "A388",
+        "Airbus A380",
+        "Airbus A380-800",
+        "A380-800"
+      ],
+      "variants": [
+        "a380-800"
+      ],
+      "status": "ready",
+      "modelUrl": "assets/aircraft/a380-800/a380-800-lod0.glb",
+      "licenseFile": "assets/aircraft/a380-800/license.json",
+      "format": "glb",
+      "polygonBudget": {
+        "min": 500,
+        "max": 40000,
+        "actual": 6778
+      },
+      "license": "CC BY",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "author": "Nobilis 2",
+      "sourceName": "Sketchfab",
+      "sourceUrl": "https://sketchfab.com/3d-models/none-cfd1092a207b4085a32fbb89c6b32f25",
+      "source": {
+        "platform": "Sketchfab",
+        "modelUid": "cfd1092a207b4085a32fbb89c6b32f25",
+        "modelUrl": "https://sketchfab.com/3d-models/none-cfd1092a207b4085a32fbb89c6b32f25"
+      },
+      "attribution": "Airbus A380 - 800 by Nobilis 2, licensed under Creative Commons Attribution via Sketchfab.",
+      "commercialUse": true,
+      "derivativesAllowed": true,
+      "editorialOnly": false,
+      "neutralizeLivery": false,
+      "actualTriangles": 7734,
+      "modifications": [
+        "Repainted as Alien Air red and white livery",
+        "Removed original airline livery",
+        "Added fuselage, wing, and tail Alien Air markings"
+      ]
+    }
+  ]
+}

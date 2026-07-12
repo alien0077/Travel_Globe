@@ -1,81 +1,158 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
+import {
+  selectAircraftModel,
+  type AircraftModelLibrary
+} from './aircraftModelLibrary';
 
-export function createAircraftMarker(): THREE.Group {
+export function createAircraftMarker(aircraftType?: string): THREE.Group {
   const aircraft = new THREE.Group();
+  aircraft.name = aircraftType ? `Aircraft ${aircraftType}` : 'Aircraft library marker';
+  void loadExternalAircraftModel(aircraft, aircraftType);
+  return aircraft;
+}
 
-  const fuselageMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf8fbff,
-    emissive: 0x2b6fff,
-    emissiveIntensity: 0.18,
-    roughness: 0.34,
-    metalness: 0.12
-  });
-  const wingMaterial = new THREE.MeshStandardMaterial({
-    color: 0xb9e7ff,
-    emissive: 0x1a5fbb,
-    emissiveIntensity: 0.2,
-    roughness: 0.42,
-    metalness: 0.08
-  });
-  const engineMaterial = new THREE.MeshStandardMaterial({
-    color: 0xd9f3ff,
-    emissive: 0x184f9f,
-    emissiveIntensity: 0.18,
-    roughness: 0.36
-  });
-
-  const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 0.32, 18), fuselageMaterial);
-  fuselage.rotation.x = Math.PI / 2;
-  aircraft.add(fuselage);
-
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.07, 18), fuselageMaterial);
-  nose.rotation.x = -Math.PI / 2;
-  nose.position.z = -0.195;
-  aircraft.add(nose);
-
-  const mainWing = new THREE.Mesh(
-    new THREE.BoxGeometry(0.34, 0.012, 0.052),
-    wingMaterial
-  );
-  mainWing.position.z = -0.02;
-  aircraft.add(mainWing);
-
-  const wingSweepLeft = new THREE.Mesh(
-    new THREE.BoxGeometry(0.17, 0.01, 0.036),
-    wingMaterial
-  );
-  wingSweepLeft.position.set(-0.08, 0, 0.005);
-  wingSweepLeft.rotation.y = -0.22;
-  aircraft.add(wingSweepLeft);
-
-  const wingSweepRight = wingSweepLeft.clone();
-  wingSweepRight.position.x = 0.08;
-  wingSweepRight.rotation.y = 0.22;
-  aircraft.add(wingSweepRight);
-
-  const tailPlane = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.01, 0.032), wingMaterial);
-  tailPlane.position.z = 0.135;
-  aircraft.add(tailPlane);
-
-  const verticalTail = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.075, 0.04), wingMaterial);
-  verticalTail.position.set(0, 0.042, 0.145);
-  verticalTail.rotation.x = -0.18;
-  aircraft.add(verticalTail);
-
-  for (const x of [-0.135, -0.068, 0.068, 0.135]) {
-    const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.034, 14), engineMaterial);
-    engine.rotation.x = Math.PI / 2;
-    engine.position.set(x, -0.026, -0.035);
-    aircraft.add(engine);
+async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: string | undefined): Promise<void> {
+  const library = await readAircraftModelLibrary();
+  const selected = library ? selectAircraftModel(library, aircraftType) : undefined;
+  if (!selected) {
+    return;
   }
 
-  const beacon = new THREE.PointLight(0x8fd8ff, 0.65, 0.55);
-  beacon.position.set(0, 0.04, -0.08);
-  aircraft.add(beacon);
+  const modelUrl = resolveBundledAsset(selected.modelUrl);
+  const loader = new GLTFLoader();
+  loader.load(
+    modelUrl,
+    (gltf) => {
+      const model = gltf.scene;
+      model.name = `${selected.id} external aircraft model`;
+      if (selected.neutralizeLivery) {
+        neutralizeAircraftLivery(model);
+      }
+      normalizeExternalModel(model);
+      aircraft.clear();
+      aircraft.add(model);
 
-  return aircraft;
+      const beacon = new THREE.PointLight(0x9addff, 0.85, 0.7);
+      beacon.position.set(0, 0.072, -0.08);
+      aircraft.add(beacon);
+    },
+    undefined,
+    () => {
+      aircraft.clear();
+    }
+  );
+}
+
+async function readAircraftModelLibrary(): Promise<AircraftModelLibrary | undefined> {
+  try {
+    const response = await fetch(resolveBundledAsset('models/aircraft/library.json'));
+    if (!response.ok) {
+      return undefined;
+    }
+    return (await response.json()) as AircraftModelLibrary;
+  } catch {
+    return undefined;
+  }
+}
+
+function neutralizeAircraftLivery(root: THREE.Object3D): void {
+  const materials = createNeutralLiveryMaterials();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
+
+    const name = `${object.name} ${object.material instanceof THREE.Material ? object.material.name : ''}`.toLowerCase();
+    object.material = chooseNeutralMaterial(name, materials);
+    object.castShadow = false;
+    object.receiveShadow = false;
+  });
+}
+
+function createNeutralLiveryMaterials(): Record<'body' | 'wing' | 'engine' | 'dark' | 'accent', THREE.Material> {
+  return {
+    body: new THREE.MeshStandardMaterial({
+      name: 'Travel Globe clean white fuselage',
+      color: 0xf8fbff,
+      roughness: 0.3,
+      metalness: 0.16
+    }),
+    wing: new THREE.MeshStandardMaterial({
+      name: 'Travel Globe pale blue wing',
+      color: 0xd7f2ff,
+      emissive: 0x235f99,
+      emissiveIntensity: 0.08,
+      roughness: 0.34,
+      metalness: 0.1,
+      side: THREE.DoubleSide
+    }),
+    engine: new THREE.MeshStandardMaterial({
+      name: 'Travel Globe neutral engine nacelle',
+      color: 0xe8f7ff,
+      roughness: 0.28,
+      metalness: 0.18
+    }),
+    dark: new THREE.MeshStandardMaterial({
+      name: 'Travel Globe cockpit and window dark',
+      color: 0x142c44,
+      emissive: 0x07131f,
+      emissiveIntensity: 0.14,
+      roughness: 0.44
+    }),
+    accent: new THREE.MeshStandardMaterial({
+      name: 'Travel Globe teal accent',
+      color: 0x2a817b,
+      emissive: 0x145d58,
+      emissiveIntensity: 0.18,
+      roughness: 0.32
+    })
+  };
+}
+
+function chooseNeutralMaterial(
+  name: string,
+  materials: Record<'body' | 'wing' | 'engine' | 'dark' | 'accent', THREE.Material>
+): THREE.Material {
+  if (/window|glass|cockpit|tire|wheel|fan|inlet|black/.test(name)) {
+    return materials.dark;
+  }
+  if (/engine|nacelle|turbine|pylon/.test(name)) {
+    return materials.engine;
+  }
+  if (/wing|flap|slat|aileron|stabilizer|tail|rudder|elevator/.test(name)) {
+    return materials.wing;
+  }
+  if (/stripe|logo|livery|paint|decal/.test(name)) {
+    return materials.accent;
+  }
+  return materials.body;
+}
+
+function normalizeExternalModel(model: THREE.Object3D): void {
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const longest = Math.max(size.x, size.y, size.z);
+  if (longest <= 0) {
+    return;
+  }
+
+  model.position.sub(center);
+  model.scale.setScalar(0.9 / longest);
+  model.rotation.set(0, 0, 0);
+}
+
+function resolveBundledAsset(filename: string): string {
+  const currentScript = document.currentScript as HTMLScriptElement | null;
+  const bundledScript =
+    currentScript?.src ||
+    [...document.scripts].find((script) => script.src.endsWith('/index.js') || script.src.endsWith('index.js'))?.src ||
+    window.location.href;
+
+  return new URL(filename, bundledScript).href;
 }
 
 export function placeAircraftMarker(

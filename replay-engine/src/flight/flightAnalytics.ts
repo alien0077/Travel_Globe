@@ -66,7 +66,7 @@ export function buildFlightOverlay(journey: Journey, segment: JourneySegment): F
 
   return {
     flightNumber: readString(segment.metadata.flightNumber, 'CI100'),
-    aircraftType: readString(segment.metadata.aircraftType, 'Airbus A380-800'),
+    aircraftType: readString(segment.metadata.aircraftType, ''),
     plannedRoute,
     actualRoute,
     events: detectFlightEvents(journey, segment),
