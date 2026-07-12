@@ -14,10 +14,11 @@ targets:
     sources:
       - path: ios/TravelGlobe
         excludes:
+          - Resources
           - Tests
-    resources:
       - path: ios/TravelGlobe/Resources/ReplayEngine
         type: folder
+        buildPhase: resources
         optional: true
     settings:
       base:
