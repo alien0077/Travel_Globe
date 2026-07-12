@@ -33,15 +33,15 @@ function reportRenderSnapshot(root: HTMLElement): void {
     reportReplayStatus(
       [
         'ready',
-        `dom=${root.children.length}`,
-        `txt=${root.innerText.trim().length}`,
-        `class=${root.className.replaceAll(' ', '.')}`,
-        `mq=${window.matchMedia('(max-width: 720px)').matches ? 'compact' : 'wide'}`,
-        `root=${Math.round(root.clientWidth)}x${Math.round(root.clientHeight)}`,
-        `shell=${Math.round(shellRect?.width ?? 0)}x${Math.round(shellRect?.height ?? 0)}`,
+        window.matchMedia('(max-width: 720px)').matches ? 'compact' : 'wide',
+        root.classList.contains('is-compact') ? 'class=compact' : 'class=wide',
         `view=${Math.round(viewportRect?.width ?? 0)}x${Math.round(viewportRect?.height ?? 0)}`,
         `canvas=${Math.round(canvasRect?.width ?? 0)}x${Math.round(canvasRect?.height ?? 0)}/${canvas?.width ?? 0}x${canvas?.height ?? 0}`,
         `overlay=${Math.round(overlayRect?.width ?? 0)}x${Math.round(overlayRect?.height ?? 0)}`,
+        `root=${Math.round(root.clientWidth)}x${Math.round(root.clientHeight)}`,
+        `dom=${root.children.length}`,
+        `txt=${root.innerText.trim().length}`,
+        `shell=${Math.round(shellRect?.width ?? 0)}x${Math.round(shellRect?.height ?? 0)}`,
         `display=${rootStyle.display}/${viewportStyle?.display ?? 'none'}`,
       ].join(' ')
     );

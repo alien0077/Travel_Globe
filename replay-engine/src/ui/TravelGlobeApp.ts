@@ -298,6 +298,9 @@ export class TravelGlobeApp {
     this.recordPreview.className = 'record-preview';
     overlay.append(hud, dock, this.recordPreview, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
+    if (isCompactViewport) {
+      this.applyCompactRuntimeLayout({ overlay, hud, dock, controls });
+    }
 
     this.hudTitle.textContent = 'TRAVEL ATLAS';
     this.hudRoute.textContent = `${journey.title} | ${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
@@ -308,6 +311,97 @@ export class TravelGlobeApp {
     this.renderPreloadPanel(segment);
     this.renderProductPanel();
     this.syncPlayButton();
+  }
+
+  private applyCompactRuntimeLayout(elements: {
+    overlay: HTMLElement;
+    hud: HTMLElement;
+    dock: HTMLElement;
+    controls: HTMLElement;
+  }): void {
+    Object.assign(document.documentElement.style, {
+      height: '100%',
+      minHeight: '100%',
+      overflow: 'hidden'
+    });
+    Object.assign(document.body.style, {
+      height: '100%',
+      minHeight: '100%',
+      margin: '0',
+      overflow: 'hidden',
+      background: '#07141a'
+    });
+    Object.assign(this.root.style, {
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      minHeight: '100vh',
+      overflow: 'hidden',
+      background: '#07141a'
+    });
+    Object.assign(this.viewport.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '0',
+      width: '100%',
+      height: '100%',
+      minHeight: '0',
+      background:
+        'radial-gradient(circle at 50% 36%, rgba(255,255,255,.78) 0 24%, rgba(255,255,255,0) 48%), linear-gradient(180deg, #e8f3f0 0%, #cfdfdc 48%, #08151b 100%)'
+    });
+    Object.assign(elements.overlay.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '2',
+      display: 'grid',
+      alignContent: 'start',
+      gap: '10px',
+      overflowY: 'auto',
+      padding: '10px',
+      pointerEvents: 'auto',
+      background: 'linear-gradient(180deg, rgba(8,17,23,.56) 0%, rgba(8,17,23,.2) 44%, rgba(8,17,23,.68) 100%)',
+      WebkitOverflowScrolling: 'touch'
+    });
+
+    for (const panel of [elements.hud, elements.dock, this.recordPreview, elements.controls]) {
+      Object.assign(panel.style, {
+        position: 'static',
+        width: '100%',
+        transform: 'none'
+      });
+    }
+
+    Object.assign(elements.hud.style, {
+      order: '1',
+      padding: '13px'
+    });
+    Object.assign(this.recordPreview.style, {
+      order: '2',
+      display: 'grid',
+      gridTemplateColumns: '100px minmax(0, 1fr)',
+      minHeight: '128px'
+    });
+    Object.assign(elements.dock.style, {
+      order: '3',
+      display: 'grid',
+      gap: '10px'
+    });
+    Object.assign(elements.controls.style, {
+      order: '4',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+      margin: '0'
+    });
+
+    for (const panel of this.root.querySelectorAll<HTMLElement>('.hud, .dock-panel, .record-preview, .controls')) {
+      Object.assign(panel.style, {
+        border: '1px solid rgba(40,78,77,.13)',
+        borderRadius: '8px',
+        background: 'rgba(255,255,255,.82)',
+        boxShadow: '0 18px 52px rgba(36,61,58,.18)',
+        color: '#1f3332'
+      });
+    }
   }
 
   private frame(timeMs: number): void {
