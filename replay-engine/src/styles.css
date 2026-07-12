@@ -695,3 +695,102 @@ a {
     min-width: 0;
   }
 }
+
+.app-shell.is-compact {
+  height: 100%;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #07141a;
+}
+
+.app-shell.is-compact .globe-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  height: auto;
+  min-height: 0;
+  background:
+    radial-gradient(circle at 50% 36%, rgb(255 255 255 / 78%) 0 24%, rgb(255 255 255 / 0%) 48%),
+    linear-gradient(180deg, #e8f3f0 0%, #cfdfdc 48%, #08151b 100%);
+}
+
+.app-shell.is-compact .globe-viewport::after {
+  inset: 8% 10%;
+}
+
+.app-shell.is-compact .overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
+    calc(10px + env(safe-area-inset-left));
+  background: linear-gradient(180deg, rgb(8 17 23 / 56%) 0%, rgb(8 17 23 / 20%) 44%, rgb(8 17 23 / 68%) 100%);
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell.is-compact .hud,
+.app-shell.is-compact .info-dock,
+.app-shell.is-compact .record-preview,
+.app-shell.is-compact .controls {
+  position: static;
+  width: 100%;
+  transform: none;
+}
+
+.app-shell.is-compact .hud {
+  order: 1;
+  padding: 13px;
+}
+
+.app-shell.is-compact .record-preview {
+  order: 2;
+  grid-template-columns: 100px minmax(0, 1fr);
+  min-height: 128px;
+}
+
+.app-shell.is-compact .info-dock {
+  order: 3;
+  display: grid;
+}
+
+.app-shell.is-compact .controls {
+  order: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.app-shell.is-compact .product-list,
+.app-shell.is-compact .preload-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-shell.is-compact .timeline-panel,
+.app-shell.is-compact .product-panel,
+.app-shell.is-compact .timeline-list {
+  max-height: none;
+}
+
+.app-shell.is-compact .control-button,
+.app-shell.is-compact .control-select {
+  min-width: 0;
+  width: 100%;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.app-shell.is-compact .camera-select {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.app-shell.is-compact .timeline-scrubber {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}

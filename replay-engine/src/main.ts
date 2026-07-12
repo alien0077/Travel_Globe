@@ -35,6 +35,8 @@ function reportRenderSnapshot(root: HTMLElement): void {
         'ready',
         `dom=${root.children.length}`,
         `txt=${root.innerText.trim().length}`,
+        `class=${root.className.replaceAll(' ', '.')}`,
+        `mq=${window.matchMedia('(max-width: 720px)').matches ? 'compact' : 'wide'}`,
         `root=${Math.round(root.clientWidth)}x${Math.round(root.clientHeight)}`,
         `shell=${Math.round(shellRect?.width ?? 0)}x${Math.round(shellRect?.height ?? 0)}`,
         `view=${Math.round(viewportRect?.width ?? 0)}x${Math.round(viewportRect?.height ?? 0)}`,

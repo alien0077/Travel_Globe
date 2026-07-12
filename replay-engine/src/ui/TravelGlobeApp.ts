@@ -118,7 +118,8 @@ export class TravelGlobeApp {
   }
 
   private renderShell(journey: Journey, segment: JourneySegment): void {
-    this.root.className = 'app-shell';
+    const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
+    this.root.className = isCompactViewport ? 'app-shell is-compact' : 'app-shell';
     this.viewport.className = 'globe-viewport';
 
     const overlay = document.createElement('section');
@@ -134,7 +135,6 @@ export class TravelGlobeApp {
     this.capability.className = 'capability';
     hud.append(this.hudTitle, this.hudRoute, this.hudStats, this.hudPoint, this.belowMe, this.capability);
 
-    const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
     const dock = document.createElement('section');
     dock.className = 'info-dock';
 
