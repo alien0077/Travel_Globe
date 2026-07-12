@@ -181,6 +181,12 @@ for (const viewport of [
   };
 
   if (check.ok) {
+    await page.evaluate(() => {
+      const preloadShell = document.querySelector('.preload-panel-shell');
+      if (preloadShell instanceof HTMLDetailsElement) {
+        preloadShell.open = true;
+      }
+    });
     await page.fill('.preload-field:nth-child(1) input', 'CI100');
     await page.fill('.preload-field:nth-child(4) input', '2026-07-11');
     await page.fill('.preload-field:nth-child(5) input', '09:30');

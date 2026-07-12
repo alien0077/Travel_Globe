@@ -151,7 +151,7 @@ export class TravelGlobeApp {
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
     productShell.className = 'dock-panel product-panel-shell';
-    productShell.open = true;
+    productShell.open = !isCompactViewport;
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
@@ -160,7 +160,7 @@ export class TravelGlobeApp {
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
     preloadShell.className = 'dock-panel preload-panel-shell';
-    preloadShell.open = true;
+    preloadShell.open = !isCompactViewport;
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載';

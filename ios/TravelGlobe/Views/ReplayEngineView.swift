@@ -50,7 +50,11 @@ struct ReplayEngineView: UIViewRepresentable {
             } catch (_) {}
           }
           window.addEventListener('error', function (event) {
-            send('JS error: ' + event.message);
+            var detail = event.error && event.error.stack ? event.error.stack : event.message;
+            if (event.filename || event.lineno || event.colno) {
+              detail += ' @ ' + (event.filename || 'inline') + ':' + (event.lineno || 0) + ':' + (event.colno || 0);
+            }
+            send('JS error: ' + detail);
           });
           window.addEventListener('unhandledrejection', function (event) {
             send('Promise rejection: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
@@ -63,15 +67,15 @@ struct ReplayEngineView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         private let appModel: TravelGlobeAppModel
+        private var hasRuntimeDiagnostic = false
+        private var didInjectReplayBundle = false
 
         init(appModel: TravelGlobeAppModel) {
             self.appModel = appModel
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            Task { @MainActor in
-                appModel.updateReplayEngineStatus("loaded")
-            }
+            injectReplayBundle(into: webView)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -84,6 +88,10 @@ struct ReplayEngineView: UIViewRepresentable {
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard let body = message.body as? String else { return }
+            if hasRuntimeDiagnostic && body == "JS error: Script error." {
+                return
+            }
+            hasRuntimeDiagnostic = true
             Task { @MainActor in
                 appModel.updateReplayEngineStatus(body)
             }
@@ -92,6 +100,45 @@ struct ReplayEngineView: UIViewRepresentable {
         private func report(_ error: Error) {
             Task { @MainActor in
                 appModel.updateReplayEngineStatus("load error \(error.localizedDescription)")
+            }
+        }
+
+        private func injectReplayBundle(into webView: WKWebView) {
+            guard !didInjectReplayBundle else { return }
+            didInjectReplayBundle = true
+
+            guard let scriptURL = Bundle.main.url(
+                forResource: "index",
+                withExtension: "js",
+                subdirectory: "ReplayEngine"
+            ) else {
+                Task { @MainActor in
+                    appModel.updateReplayEngineStatus("missing index.js")
+                }
+                return
+            }
+
+            do {
+                let source = try String(contentsOf: scriptURL, encoding: .utf8)
+                Task { @MainActor in
+                    appModel.updateReplayEngineStatus("injecting")
+                }
+                webView.evaluateJavaScript(source) { [weak self] _, error in
+                    guard let self else { return }
+                    if let error {
+                        Task { @MainActor in
+                            self.appModel.updateReplayEngineStatus("inject error \(error.localizedDescription)")
+                        }
+                    } else if !self.hasRuntimeDiagnostic {
+                        Task { @MainActor in
+                            self.appModel.updateReplayEngineStatus("injected")
+                        }
+                    }
+                }
+            } catch {
+                Task { @MainActor in
+                    appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
+                }
             }
         }
     }
