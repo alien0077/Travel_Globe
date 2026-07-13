@@ -63,5 +63,6 @@ describe('flight overlay analytics', () => {
 
     expect(summary.belowLabel.length).toBeGreaterThan(0);
     expect(summary.nearby.length).toBeGreaterThanOrEqual(3);
+    expect(summary.windowHint).toMatch(/在你的/);
   });
 });

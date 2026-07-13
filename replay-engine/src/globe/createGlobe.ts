@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
 import { resolveBundledAsset } from '../assets/resolveBundledAsset';
-import { fixtureLandmarks } from '../geo/landmarks';
+import { fixtureLandmarks, landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
 import { geographicToVector3 } from '../geo/geodesy';
 
 export interface GlobeObjects {
@@ -63,6 +63,7 @@ export function createGlobe(radius = 2): GlobeObjects {
 
   globe.add(createNaturalEarthBoundaries(radius * 1.0004));
   globe.add(createCityLights(radius * 1.004));
+  globe.add(createLandmarkLabels(radius * 1.018));
   globe.add(createAtmosphere(radius));
 
   return { globe, earth, clouds };
@@ -243,6 +244,85 @@ function createCityLights(radius: number): THREE.Points {
       depthWrite: false
     })
   );
+}
+
+function createLandmarkLabels(radius: number): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'geographic landmark labels';
+
+  for (const feature of fixtureLandmarks) {
+    if (!shouldLabelFeature(feature)) {
+      continue;
+    }
+    const anchorVector = geographicToVector3(feature, radius, 900000);
+    const anchor = new THREE.Vector3(anchorVector.x, anchorVector.y, anchorVector.z);
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(feature.type === 'majorCity' ? 0.008 : 0.007, 12, 8),
+      new THREE.MeshBasicMaterial({
+        color: feature.type === 'majorCity' ? 0xffd16a : 0x8cffc4,
+        transparent: true,
+        opacity: 0.94,
+        depthWrite: false
+      })
+    );
+    marker.position.copy(anchor);
+    group.add(marker);
+
+    const label = createLabelSprite(feature);
+    label.position.copy(anchor.clone().multiplyScalar(1.006));
+    group.add(label);
+  }
+
+  return group;
+}
+
+function createLabelSprite(feature: GeographicFeature): THREE.Sprite {
+  const texture = createLabelTexture(landmarkDisplayName(feature), feature.type === 'majorCity');
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      opacity: feature.minZoomRank <= 1 ? 0.96 : 0.86,
+      depthWrite: false,
+      depthTest: true
+    })
+  );
+  const scale = feature.type === 'majorCity' ? 0.2 : 0.18;
+  sprite.scale.set(scale, scale * 0.3, 1);
+  sprite.center.set(0.5, -0.35);
+  return sprite;
+}
+
+function shouldLabelFeature(feature: GeographicFeature): boolean {
+  if (feature.type === 'majorCity') {
+    return feature.importance >= 0.76 && feature.minZoomRank <= 2;
+  }
+  return feature.importance >= 0.9 && feature.minZoomRank <= 1;
+}
+
+function createLabelTexture(label: string, isMajorCity: boolean): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 72;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.font = '700 24px sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineWidth = 7;
+  context.strokeStyle = 'rgba(0, 0, 0, 0.62)';
+  context.fillStyle = isMajorCity ? '#ffffff' : '#d7ffe8';
+  context.strokeText(label, canvas.width / 2, canvas.height / 2);
+  context.fillText(label, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
 }
 
 function createAtmosphere(radius: number): THREE.Mesh {

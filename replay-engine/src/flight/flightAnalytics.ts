@@ -1,5 +1,10 @@
 import type { GeographicPoint, Journey, JourneySegment, LocationPoint, TimelineEvent } from '../data/types';
-import { findNearestLandmark, fixtureLandmarks, type LandmarkProximity } from '../geo/landmarks';
+import {
+  findNearestLandmark,
+  fixtureLandmarks,
+  landmarkWindowHint,
+  type LandmarkProximity
+} from '../geo/landmarks';
 import { haversineDistanceMeters, initialBearingDegrees } from '../geo/geodesy';
 import { calculateRouteDistance, getRouteTimeBounds, sampleReplayAt, type ReplaySample } from '../replay/buildReplayFrames';
 
@@ -53,6 +58,7 @@ export interface BelowMeSummary {
   crossingLabel: string;
   nearby: LandmarkProximity[];
   nextMajorCity?: LandmarkProximity;
+  windowHint?: string;
 }
 
 export function buildFlightOverlay(journey: Journey, segment: JourneySegment): FlightOverlay {
@@ -165,7 +171,8 @@ export function summarizeBelowMe(point: GeographicPoint, headingDegrees: number)
     belowLabel: inferBelowLabel(point, nearest?.feature.admin1),
     crossingLabel: inferCrossingLabel(point),
     nearby,
-    nextMajorCity
+    nextMajorCity,
+    windowHint: nearest ? landmarkWindowHint(nearest) : undefined
   };
 }
 

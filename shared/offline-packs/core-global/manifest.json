@@ -29,17 +29,27 @@
       "files": [
         {
           "path": "shared/fixtures/landmarks.json",
-          "bytes": 753,
-          "sha256": "5791f3264ea6c8d6380417ff60757ffe9bf6d15d29ddb1769147c183da14d526"
+          "bytes": 13847,
+          "sha256": "b9d63572202a36f3ff05b5557d84372d0602e348269c8c76e97299cefaec1335"
         }
       ]
     }
   ],
   "contents": {
-    "landmarks": 3,
+    "landmarks": 46,
     "regionCodes": [
+      "CN",
+      "HK",
+      "ID",
       "JP",
-      "TW"
+      "KR",
+      "MO",
+      "MY",
+      "PH",
+      "SG",
+      "TH",
+      "TW",
+      "VN"
     ],
     "countryBorders": {
       "status": "prepared",

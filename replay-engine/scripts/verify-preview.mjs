@@ -48,6 +48,7 @@ for (const viewport of [
   const check = await page.evaluate(() => {
     const canvas = document.querySelector('canvas');
     const hud = document.querySelector('.hud-stats')?.textContent ?? '';
+    const geoNotice = document.querySelector('.geo-notice')?.textContent ?? '';
     const title = document.querySelector('.hud-title')?.textContent ?? '';
     const scrubber = document.querySelector('.timeline-scrubber');
     const viewButtons = [...document.querySelectorAll('.view-mode-button')];
@@ -77,6 +78,7 @@ for (const viewport of [
         ok: false,
         reason: 'missing canvas, scrubber, or view rail',
         hud,
+        geoNotice,
         title,
         coloredPixels: 0,
         scrubberValue: '',
@@ -121,6 +123,8 @@ for (const viewport of [
         hud.includes('預計抵達') &&
         hud.includes('飛行高度') &&
         hud.includes('對氣速度') &&
+        geoNotice.includes('附近景點') &&
+        geoNotice.includes('在你的') &&
         title.includes('CI100') &&
         controls.includes('Import') &&
         controls.includes('Export') &&
@@ -153,6 +157,7 @@ for (const viewport of [
         (window.innerWidth <= 640 || pageHasNoVerticalScroll),
       reason: '',
       hud,
+      geoNotice,
       title,
       coloredPixels,
       scrubberValue: scrubber.value,

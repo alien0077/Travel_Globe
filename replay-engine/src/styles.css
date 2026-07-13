@@ -115,6 +115,17 @@ a {
   color: #84e29f;
 }
 
+.geo-notice {
+  min-width: 0;
+  overflow: hidden;
+  color: #d9ffe3;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .view-rail {
   position: absolute;
   top: calc(18px + env(safe-area-inset-top));
@@ -746,8 +757,17 @@ a {
   }
 
   .hud-route,
-  .hud-point {
+  .hud-point,
+  .geo-notice {
     font-size: 11px;
+  }
+
+  .geo-notice {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .view-rail {

@@ -20,7 +20,7 @@ import {
   listAirportSuggestions,
   type AirportRecord
 } from '../flight-preload/airportIndex';
-import { findNearestLandmark } from '../geo/landmarks';
+import { findNearestLandmark, landmarkDisplayName, windowDirectionLabel } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
@@ -73,6 +73,7 @@ export class TravelGlobeApp {
   private readonly hudRoute = document.createElement('div');
   private readonly hudStats = document.createElement('div');
   private readonly hudPoint = document.createElement('div');
+  private readonly geoNotice = document.createElement('div');
   private readonly belowMe = document.createElement('div');
   private readonly capability = document.createElement('div');
   private readonly timelineList = document.createElement('div');
@@ -138,9 +139,10 @@ export class TravelGlobeApp {
     this.hudRoute.className = 'hud-route';
     this.hudStats.className = 'hud-stats';
     this.hudPoint.className = 'hud-point';
+    this.geoNotice.className = 'geo-notice';
     this.belowMe.className = 'below-me';
     this.capability.className = 'capability';
-    hud.append(this.hudTitle, this.hudRoute, this.hudPoint);
+    hud.append(this.hudTitle, this.hudRoute, this.hudPoint, this.geoNotice);
 
     this.viewRail.className = 'view-rail';
     this.viewRail.setAttribute('aria-label', '飛行視角');
@@ -689,17 +691,24 @@ export class TravelGlobeApp {
     const summary = summarizeBelowMe(sample.point, sample.bearingDegrees);
     const nearby = summary.nearby
       .slice(0, 3)
-      .map((item) => `${item.feature.name} ${formatDistance(item.distanceMeters)}`)
+      .map((item) => `${landmarkDisplayName(item.feature)} ${formatDistance(item.distanceMeters)}`)
       .join(' | ');
     const nextCity = summary.nextMajorCity
-      ? `Next major city: ${summary.nextMajorCity.feature.name} ${formatDistance(summary.nextMajorCity.distanceMeters)}`
+      ? `下一座主要城市：${landmarkDisplayName(summary.nextMajorCity.feature)} ${formatDistance(summary.nextMajorCity.distanceMeters)}`
       : '';
+    const nearestLine = nearest
+      ? `窗外提醒：${landmarkDisplayName(nearest.feature)}在你的${windowDirectionLabel(nearest.relativeWindow)}，距離 ${formatDistance(nearest.distanceMeters)}`
+      : '窗外提醒：附近沒有可用景點資料';
+
+    this.geoNotice.textContent = summary.windowHint
+      ? `附近景點：${summary.windowHint}（${formatDistance(summary.nearby[0]?.distanceMeters ?? 0)}）`
+      : '附近景點：等待航線附近資料';
 
     this.belowMe.replaceChildren(
-      textLine(`Below: ${summary.belowLabel}`),
-      textLine(`Crossing: ${summary.crossingLabel}`),
-      textLine(`Nearby: ${nearby}`),
-      textLine(nextCity || (nearest ? `Window: ${nearest.feature.name}, ${nearest.relativeWindow}` : 'Window: no nearby landmark fixture'))
+      textLine(`下方：${summary.belowLabel}`),
+      textLine(`穿越：${summary.crossingLabel}`),
+      textLine(`附近：${nearby}`),
+      textLine(nextCity || nearestLine)
     );
   }
 
