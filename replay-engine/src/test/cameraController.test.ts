@@ -46,7 +46,7 @@ describe('camera controller interaction', () => {
 
   it('keeps the flight-system presets in usable viewing ranges', () => {
     const point = { latitude: 35.7, longitude: 140.0, altitudeMeters: 10_000 };
-    const modes: CameraMode[] = ['flightPreview', 'totalRoute', 'midFlight', 'overhead', 'commandCenter'];
+    const modes: CameraMode[] = ['flightPreview', 'totalRoute', 'midFlight', 'overhead', 'commandCenter', 'pilotView'];
     const distances = new Map<CameraMode, number>();
 
     for (const mode of modes) {

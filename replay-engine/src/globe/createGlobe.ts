@@ -15,7 +15,20 @@ const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
 export function createGlobe(radius = 2): GlobeObjects {
   const globe = new THREE.Group();
 
-  const earthTexture = new THREE.TextureLoader().load(resolveBundledAsset(BLUE_MARBLE_FILENAME));
+  const earthTexture = createFallbackEarthTexture();
+  new THREE.TextureLoader().load(
+    resolveBundledAsset(BLUE_MARBLE_FILENAME),
+    (loadedTexture) => {
+      loadedTexture.colorSpace = THREE.SRGBColorSpace;
+      loadedTexture.anisotropy = 8;
+      loadedTexture.wrapS = THREE.RepeatWrapping;
+      loadedTexture.offset.x = 0.25;
+      earthMaterial.map = loadedTexture;
+      earthMaterial.bumpMap = loadedTexture;
+      earthMaterial.emissiveMap = loadedTexture;
+      earthMaterial.needsUpdate = true;
+    }
+  );
   earthTexture.colorSpace = THREE.SRGBColorSpace;
   earthTexture.anisotropy = 8;
   earthTexture.wrapS = THREE.RepeatWrapping;
@@ -53,6 +66,71 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(createAtmosphere(radius));
 
   return { globe, earth, clouds };
+}
+
+function createFallbackEarthTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  const ocean = context.createLinearGradient(0, 0, 0, canvas.height);
+  ocean.addColorStop(0, '#0d2f54');
+  ocean.addColorStop(0.48, '#123f67');
+  ocean.addColorStop(1, '#06172d');
+  context.fillStyle = ocean;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.globalAlpha = 0.86;
+  context.fillStyle = '#2e6f3e';
+  drawLand(context, [
+    [70, 180], [135, 112], [220, 126], [292, 186], [270, 278], [188, 330], [96, 292]
+  ]);
+  drawLand(context, [
+    [380, 118], [482, 92], [578, 132], [612, 224], [554, 302], [448, 288], [362, 214]
+  ]);
+  drawLand(context, [
+    [620, 92], [722, 86], [820, 122], [864, 196], [812, 254], [684, 238], [604, 166]
+  ]);
+  drawLand(context, [
+    [700, 292], [812, 278], [936, 324], [978, 410], [884, 466], [746, 430], [650, 360]
+  ]);
+  drawLand(context, [
+    [246, 346], [344, 324], [426, 362], [454, 448], [358, 486], [260, 448]
+  ]);
+
+  context.globalAlpha = 0.22;
+  context.fillStyle = '#a7d484';
+  for (let index = 0; index < 42; index += 1) {
+    const x = (index * 151) % canvas.width;
+    const y = 70 + ((index * 83) % 350);
+    context.beginPath();
+    context.ellipse(x, y, 46, 15, index * 0.47, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.globalAlpha = 1;
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.offset.x = 0.25;
+  return texture;
+}
+
+function drawLand(context: CanvasRenderingContext2D, points: Array<[number, number]>): void {
+  context.beginPath();
+  points.forEach(([x, y], index) => {
+    if (index === 0) {
+      context.moveTo(x, y);
+      return;
+    }
+    context.lineTo(x, y);
+  });
+  context.closePath();
+  context.fill();
 }
 
 export function createStarField(count = 900, radius = 52): THREE.Points {

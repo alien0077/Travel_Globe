@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GeographicPoint, LocationPoint } from '../data/types';
-import { geographicToVector3 } from '../geo/geodesy';
+import { geographicToVector3, haversineDistanceMeters, interpolateGreatCircle } from '../geo/geodesy';
 
 export interface RouteLineOptions {
   color?: number;
@@ -96,7 +96,11 @@ export function splitRouteByAltitudePhase(points: LocationPoint[]): { climb: Loc
   };
 }
 
-export function createRouteEventMarkers(points: GeographicPoint[], color = 0xffffff): THREE.Group {
+export function createRouteEventMarkers(
+  points: GeographicPoint[],
+  color = 0xffffff,
+  altitudeScaleMeters = 620000
+): THREE.Group {
   const group = new THREE.Group();
   const material = new THREE.MeshStandardMaterial({
     color,
@@ -107,7 +111,7 @@ export function createRouteEventMarkers(points: GeographicPoint[], color = 0xfff
 
   for (const point of points) {
     const marker = new THREE.Mesh(new THREE.SphereGeometry(0.0035, 12, 8), material);
-    const vector = geographicToVector3(point, 2, 620000);
+    const vector = geographicToVector3(point, 2, altitudeScaleMeters);
     marker.position.set(vector.x, vector.y, vector.z);
     group.add(marker);
   }
@@ -118,7 +122,7 @@ export function createRouteEventMarkers(points: GeographicPoint[], color = 0xfff
 function createRouteGeometry(points: LocationPoint[], altitudeScaleMeters = 700000): THREE.BufferGeometry {
   const positions: number[] = [];
 
-  for (const point of points) {
+  for (const point of createSmoothedRoutePoints(points)) {
     const vector = geographicToVector3(point, 2, altitudeScaleMeters);
     positions.push(vector.x, vector.y, vector.z);
   }
@@ -126,6 +130,74 @@ function createRouteGeometry(points: LocationPoint[], altitudeScaleMeters = 7000
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   return geometry;
+}
+
+function createSmoothedRoutePoints(points: LocationPoint[]): GeographicPoint[] {
+  if (points.length < 2) {
+    return points;
+  }
+
+  const maxAltitudeMeters = Math.max(...points.map((point) => point.altitudeMeters ?? 0));
+  const totalDistance = Math.max(
+    1,
+    points.reduce((total, point, index) => index === 0 ? total : total + haversineDistanceMeters(points[index - 1], point), 0)
+  );
+  let distanceSoFar = 0;
+  const smoothed: GeographicPoint[] = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
+    const segmentDistance = haversineDistanceMeters(current, next);
+    const subdivisions = Math.max(4, Math.min(24, Math.ceil(segmentDistance / 120000)));
+
+    for (let step = 0; step < subdivisions; step += 1) {
+      const localT = step / subdivisions;
+      const globalT = (distanceSoFar + segmentDistance * localT) / totalDistance;
+      smoothed.push(interpolateVisualRoutePoint(current, next, localT, globalT, maxAltitudeMeters));
+    }
+    distanceSoFar += segmentDistance;
+  }
+
+  smoothed.push(points[points.length - 1]);
+  return smoothed;
+}
+
+function interpolateVisualRoutePoint(
+  current: LocationPoint,
+  next: LocationPoint,
+  localT: number,
+  globalT: number,
+  maxAltitudeMeters: number
+): GeographicPoint {
+  const point = interpolateGreatCircle(current, next, localT);
+  const currentAltitude = current.altitudeMeters ?? 0;
+  const nextAltitude = next.altitudeMeters ?? 0;
+  const phase = phaseWeight(globalT);
+  const altitudeT = smootherStep(localT);
+  const baseAltitude = currentAltitude + (nextAltitude - currentAltitude) * altitudeT;
+  const climbDescentLift = Math.sin(Math.PI * phase) * Math.min(4200, maxAltitudeMeters * 0.28);
+
+  return {
+    latitude: point.latitude,
+    longitude: point.longitude,
+    altitudeMeters: Math.max(0, baseAltitude + climbDescentLift)
+  };
+}
+
+function phaseWeight(globalT: number): number {
+  if (globalT < 0.26) {
+    return globalT / 0.26;
+  }
+  if (globalT > 0.74) {
+    return (1 - globalT) / 0.26;
+  }
+  return 0;
+}
+
+function smootherStep(value: number): number {
+  const t = Math.min(1, Math.max(0, value));
+  return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 function remainingRouteFrom(fullRoute: LocationPoint[], flownRoute: LocationPoint[]): LocationPoint[] {

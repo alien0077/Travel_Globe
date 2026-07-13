@@ -132,11 +132,12 @@ for (const viewport of [
         controls.includes('Pack') &&
         activeViewButton instanceof HTMLButtonElement &&
         activeViewButton.dataset.mode === 'flightPreview' &&
-        cameraOptions.includes('飛行預覽') &&
+        cameraOptions.includes('追機視角') &&
         cameraOptions.includes('完整航線') &&
         cameraOptions.includes('中段飛行') &&
         cameraOptions.includes('俯視航線') &&
-        cameraOptions.includes('指揮中心') &&
+        cameraOptions.includes('塔台視角') &&
+        cameraOptions.includes('飛行員視角') &&
         timelineItems >= 4 &&
         productText.includes('Plan') &&
         productText.includes('Journal') &&
@@ -175,6 +176,8 @@ for (const viewport of [
     point: '',
     stats: '',
     camera: '',
+    pilotHudVisible: false,
+    pilotHudText: '',
     coloredPixelsAfterInteraction: 0
   };
   let afterPreload = {
@@ -222,16 +225,27 @@ for (const viewport of [
     await clickViewMode(page, 'midFlight');
     await clickViewMode(page, 'overhead');
     await clickViewMode(page, 'totalRoute');
+    await clickViewMode(page, 'pilotView');
+    await page.waitForTimeout(100);
+    const pilotHudCheck = await page.evaluate(() => {
+      const pilotHud = document.querySelector('.pilot-hud');
+      return {
+        visible: pilotHud instanceof HTMLElement && window.getComputedStyle(pilotHud).display !== 'none',
+        text: pilotHud?.textContent ?? ''
+      };
+    });
     await clickViewMode(page, 'flightPreview');
     await page.waitForTimeout(250);
 
-    afterScrub = await page.evaluate(() => ({
+    afterScrub = await page.evaluate((pilotHudCheck) => ({
       scrubber: document.querySelector('.timeline-scrubber')?.value ?? '',
       point: document.querySelector('.hud-point')?.textContent ?? '',
       stats: document.querySelector('.hud-stats')?.textContent ?? '',
       camera: document.querySelector('.view-mode-button.is-active') instanceof HTMLButtonElement
         ? document.querySelector('.view-mode-button.is-active')?.getAttribute('data-mode') ?? ''
         : '',
+      pilotHudVisible: pilotHudCheck.visible,
+      pilotHudText: pilotHudCheck.text,
       coloredPixelsAfterInteraction: (() => {
         const canvas = document.querySelector('canvas');
         if (!(canvas instanceof HTMLCanvasElement)) {
@@ -253,7 +267,7 @@ for (const viewport of [
         }
         return coloredPixels;
       })()
-    }));
+    }), pilotHudCheck);
 
     await page.goto(new URL('./readme.html', url).href, { waitUntil: 'networkidle' });
     const manualCheck = await page.evaluate(() => ({
@@ -287,6 +301,9 @@ const failed = results.filter(
     !result.afterPreload.route.includes('CI100 | TPE -> NRT') ||
     !result.afterPreload.status.includes('CI100 已由離線班表解析為 TPE -> NRT') ||
     result.afterPreload.timelineItems < 4 ||
+    !result.afterScrub.pilotHudVisible ||
+    !result.afterScrub.pilotHudText.includes('Airspeed') ||
+    !result.afterScrub.pilotHudText.includes('Altitude') ||
     result.afterScrub.coloredPixelsAfterInteraction <= 100
 );
 console.log(JSON.stringify(results, null, 2));

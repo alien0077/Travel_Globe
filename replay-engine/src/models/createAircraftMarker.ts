@@ -8,12 +8,13 @@ import {
   type AircraftModelLibrary
 } from './aircraftModelLibrary';
 
-export const AIRCRAFT_MODEL_TARGET_SIZE = 0.115;
-export const AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS = 18000;
+export const AIRCRAFT_MODEL_TARGET_SIZE = 0.16;
+export const AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS = 3500;
 
 export function createAircraftMarker(aircraftType?: string): THREE.Group {
   const aircraft = new THREE.Group();
   aircraft.name = aircraftType ? `Aircraft ${aircraftType}` : 'Aircraft library marker';
+  aircraft.add(createFallbackAircraftModel());
   void loadExternalAircraftModel(aircraft, aircraftType);
   return aircraft;
 }
@@ -32,7 +33,7 @@ async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: st
     (gltf) => {
       const model = gltf.scene;
       model.name = `${selected.id} external aircraft model`;
-      if (selected.neutralizeLivery && !/Alien Air/i.test(selected.attribution)) {
+      if (selected.neutralizeLivery) {
         neutralizeAircraftLivery(model);
       }
       normalizeExternalModel(model);
@@ -44,9 +45,7 @@ async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: st
       aircraft.add(beacon);
     },
     undefined,
-    () => {
-      aircraft.clear();
-    }
+    () => undefined
   );
 }
 
@@ -81,6 +80,8 @@ function createNeutralLiveryMaterials(): Record<'body' | 'wing' | 'engine' | 'da
     body: new THREE.MeshStandardMaterial({
       name: 'Travel Globe clean white fuselage',
       color: 0xf8fbff,
+      emissive: 0x355a70,
+      emissiveIntensity: 0.18,
       roughness: 0.3,
       metalness: 0.16
     }),
@@ -101,9 +102,9 @@ function createNeutralLiveryMaterials(): Record<'body' | 'wing' | 'engine' | 'da
     }),
     dark: new THREE.MeshStandardMaterial({
       name: 'Travel Globe cockpit and window dark',
-      color: 0x142c44,
-      emissive: 0x07131f,
-      emissiveIntensity: 0.14,
+      color: 0x23475f,
+      emissive: 0x103048,
+      emissiveIntensity: 0.2,
       roughness: 0.44
     }),
     accent: new THREE.MeshStandardMaterial({
@@ -149,6 +150,50 @@ function normalizeExternalModel(model: THREE.Object3D): void {
   model.rotation.set(0, 0, 0);
 }
 
+function createFallbackAircraftModel(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'fallback visible aircraft model';
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf8fbff,
+    emissive: 0x5f8fb3,
+    emissiveIntensity: 0.22,
+    roughness: 0.32,
+    metalness: 0.12
+  });
+  const wingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd7f2ff,
+    emissive: 0x2a6f9d,
+    emissiveIntensity: 0.2,
+    roughness: 0.36,
+    metalness: 0.08,
+    side: THREE.DoubleSide
+  });
+  const accentMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2a817b,
+    emissive: 0x1f7779,
+    emissiveIntensity: 0.24,
+    roughness: 0.34
+  });
+
+  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.13, 8, 16), bodyMaterial);
+  fuselage.rotation.x = Math.PI / 2;
+  group.add(fuselage);
+
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.004, 0.024), wingMaterial);
+  wing.position.z = -0.01;
+  group.add(wing);
+
+  const tailWing = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.004, 0.016), wingMaterial);
+  tailWing.position.z = -0.07;
+  group.add(tailWing);
+
+  const verticalTail = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.044, 0.022), accentMaterial);
+  verticalTail.position.set(0, 0.022, -0.077);
+  group.add(verticalTail);
+
+  return group;
+}
+
 export function placeAircraftMarker(
   marker: THREE.Group,
   point: GeographicPoint,
@@ -158,7 +203,7 @@ export function placeAircraftMarker(
     ...point,
     altitudeMeters: Math.max(point.altitudeMeters ?? 0, AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS)
   };
-  const vector = geographicToVector3(visualPoint, 2, 700000);
+  const vector = geographicToVector3(visualPoint, 2, 180000);
   marker.position.set(vector.x, vector.y, vector.z);
 
   const normal = marker.position.clone().normalize();

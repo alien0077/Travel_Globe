@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 
-export type FlightSystemCameraMode = 'flightPreview' | 'totalRoute' | 'midFlight' | 'overhead' | 'commandCenter';
+export type FlightSystemCameraMode = 'flightPreview' | 'totalRoute' | 'midFlight' | 'overhead' | 'commandCenter' | 'pilotView';
 export type LegacyCameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
 export type CameraMode = FlightSystemCameraMode | LegacyCameraMode;
+
+const CAMERA_ALTITUDE_SCALE_METERS = 180000;
 
 export class CameraController {
   mode: CameraMode = 'global';
@@ -30,16 +32,58 @@ export class CameraController {
   }
 
   update(point: GeographicPoint, bearingDegrees: number): void {
-    const aircraftPosition = geographicToVector3(point, 2, 700000);
+    const aircraftPosition = geographicToVector3(point, 2, CAMERA_ALTITUDE_SCALE_METERS);
     this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z);
     const normal = this.target.clone().normalize();
     const forward = this.forwardVector(normal, bearingDegrees);
 
-    if (this.mode === 'global' || this.mode === 'totalRoute') {
-      const baseDistance = this.mode === 'totalRoute' ? 4.65 : 5.2;
-      const distance = THREE.MathUtils.clamp(baseDistance * this.zoom, 1.65, 8.8);
+    if (this.mode === 'totalRoute') {
+      const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const distance = THREE.MathUtils.clamp(2.45 * this.zoom, 1.85, 4.8);
+      this.desired
+        .copy(this.target)
+        .add(forward.clone().multiplyScalar(-distance))
+        .add(right.multiplyScalar(0.45 * distance))
+        .add(normal.clone().multiplyScalar(1.18 * this.zoom));
+      this.camera.position.lerp(this.desired, 0.1);
+      this.camera.up.copy(normal);
+      this.camera.lookAt(this.target.clone().add(forward.clone().multiplyScalar(0.12)));
+      return;
+    }
+
+    if (this.mode === 'overhead') {
+      const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      this.desired
+        .copy(this.target)
+        .add(normal.clone().multiplyScalar(1.18 * this.zoom))
+        .add(right.multiplyScalar(0.09))
+        .add(forward.clone().multiplyScalar(-0.08));
+      this.camera.position.lerp(this.desired, 0.12);
+      this.camera.up.copy(forward);
+      this.camera.lookAt(this.target);
+      return;
+    }
+
+    if (this.mode === 'pilotView') {
+      this.desired
+        .copy(this.target)
+        .add(forward.clone().multiplyScalar(0.075))
+        .add(normal.clone().multiplyScalar(0.035));
+      this.camera.position.lerp(this.desired, 0.18);
+      this.camera.up.copy(normal);
+      this.camera.lookAt(
+        this.target
+          .clone()
+          .add(forward.clone().multiplyScalar(1.35))
+          .add(normal.clone().multiplyScalar(-0.015))
+      );
+      return;
+    }
+
+    if (this.mode === 'global') {
+      const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
       const yaw = this.orbitYaw;
-      const pitch = (this.mode === 'totalRoute' ? 0.62 : 0.45) + this.orbitPitch;
+      const pitch = 0.45 + this.orbitPitch;
       const orbitDirection = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
         Math.sin(pitch),
@@ -103,7 +147,7 @@ export class CameraController {
 }
 
 const cameraProfiles: Record<
-  Exclude<CameraMode, 'global' | 'orbit' | 'totalRoute'>,
+  Exclude<CameraMode, 'global' | 'orbit' | 'totalRoute' | 'overhead' | 'pilotView'>,
   {
     forward: number;
     right: number;
@@ -113,9 +157,8 @@ const cameraProfiles: Record<
     lookUp: number;
   }
 > = {
-  flightPreview: { forward: -0.45, right: 0, up: 0.08, distance: 0.82, lookAhead: 0.08, lookUp: 0 },
-  midFlight: { forward: -0.9, right: -0.52, up: 0.42, distance: 1.28, lookAhead: 0.46, lookUp: 0.06 },
-  overhead: { forward: -0.08, right: 0, up: 1.55, distance: 1.15, lookAhead: 0.16, lookUp: 0 },
+  flightPreview: { forward: -0.82, right: 0, up: 0.32, distance: 1.02, lookAhead: 0.2, lookUp: 0.03 },
+  midFlight: { forward: -0.82, right: -0.48, up: 0.34, distance: 1.18, lookAhead: 0.28, lookUp: 0.04 },
   commandCenter: { forward: -1.05, right: 0.76, up: 0.68, distance: 1.42, lookAhead: 0.52, lookUp: 0.04 },
   follow: { forward: -0.9, right: 0, up: 0.48, distance: 1.15, lookAhead: 0.35, lookUp: 0.1 },
   cockpit: { forward: 0.18, right: 0, up: 0.16, distance: 0.56, lookAhead: 1.2, lookUp: 0.05 },

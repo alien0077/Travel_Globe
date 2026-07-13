@@ -79,6 +79,7 @@ export class TravelGlobeApp {
   private readonly recordFilterBar = document.createElement('div');
   private readonly recordPreview = document.createElement('article');
   private readonly viewRail = document.createElement('nav');
+  private readonly pilotHud = document.createElement('div');
   private readonly productPanel = document.createElement('section');
   private readonly preloadPanel = document.createElement('section');
   private readonly flightNumberInput = document.createElement('input');
@@ -144,11 +145,12 @@ export class TravelGlobeApp {
     this.viewRail.className = 'view-rail';
     this.viewRail.setAttribute('aria-label', '飛行視角');
     const cameraOptions: Array<{ mode: CameraMode; icon: string; label: string }> = [
-      { mode: 'flightPreview', icon: '航', label: '飛行預覽' },
-      { mode: 'totalRoute', icon: '線', label: '完整航線' },
+      { mode: 'flightPreview', icon: '追', label: '追機視角' },
+      { mode: 'totalRoute', icon: '全', label: '完整航線' },
       { mode: 'midFlight', icon: '中', label: '中段飛行' },
-      { mode: 'overhead', icon: '頂', label: '俯視航線' },
-      { mode: 'commandCenter', icon: '塔', label: '指揮中心' }
+      { mode: 'overhead', icon: '俯', label: '俯視航線' },
+      { mode: 'commandCenter', icon: '塔', label: '塔台視角' },
+      { mode: 'pilotView', icon: '駕', label: '飛行員視角' }
     ];
     this.viewRail.replaceChildren(
       ...cameraOptions.map(({ mode, icon, label }) => {
@@ -169,6 +171,8 @@ export class TravelGlobeApp {
 
     const dock = document.createElement('section');
     dock.className = 'info-dock';
+    this.pilotHud.className = 'pilot-hud';
+    this.pilotHud.setAttribute('aria-hidden', 'true');
 
     const timeline = document.createElement('details');
     timeline.className = 'dock-panel timeline-panel';
@@ -311,7 +315,7 @@ export class TravelGlobeApp {
     controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
     dock.append(systemDrawer);
     this.recordPreview.className = 'record-preview';
-    overlay.append(hud, this.viewRail, dock, controls);
+    overlay.append(hud, this.viewRail, dock, this.pilotHud, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
 
     this.hudTitle.textContent = 'FLIGHT REPLAY';
@@ -374,6 +378,7 @@ export class TravelGlobeApp {
       `T+${elapsedMinutes}:${elapsedRemainder}`,
       `偏離 ${formatDistance(deviationMeters)}`
     ].join(' | ');
+    this.renderPilotHud(metrics);
 
     this.renderBelowMe(sample);
 
@@ -396,11 +401,25 @@ export class TravelGlobeApp {
   }
 
   private syncViewRail(): void {
+    this.root.classList.toggle('is-pilot-view', this.cameraMode === 'pilotView');
+    this.pilotHud.setAttribute('aria-hidden', String(this.cameraMode !== 'pilotView'));
     for (const button of this.viewRail.querySelectorAll<HTMLButtonElement>('.view-mode-button')) {
       const isActive = button.dataset.mode === this.cameraMode;
       button.classList.toggle('is-active', isActive);
       button.setAttribute('aria-pressed', String(isActive));
     }
+  }
+
+  private renderPilotHud(metrics: ReturnType<typeof buildFlightHudMetrics>): void {
+    this.pilotHud.replaceChildren(
+      pilotScale('Airspeed', metrics.speedKmh, 'left'),
+      pilotScale('Altitude', metrics.altitudeFeet, 'right'),
+      pilotReadout('GSPD', metrics.groundSpeedKmh),
+      pilotReadout('HDG', metrics.headingDegrees),
+      pilotReadout('VS', metrics.verticalSpeedLabel),
+      pilotReadout('ALT', metrics.altitudeFeet),
+      pilotHorizon()
+    );
   }
 
   private renderPreloadPanel(segment: JourneySegment): void {
@@ -767,6 +786,40 @@ function metricItem(label: string, value: string): HTMLElement {
   detail.textContent = value;
   item.append(key, detail);
   return item;
+}
+
+function pilotScale(label: string, value: string, side: 'left' | 'right'): HTMLElement {
+  const item = document.createElement('div');
+  item.className = `pilot-scale pilot-scale-${side}`;
+  const title = document.createElement('span');
+  title.textContent = label;
+  const readout = document.createElement('strong');
+  readout.textContent = value.replace(' km/h', '').replace(' ft', '');
+  const ladder = document.createElement('i');
+  item.append(title, ladder, readout);
+  return item;
+}
+
+function pilotReadout(label: string, value: string): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'pilot-readout';
+  const title = document.createElement('span');
+  title.textContent = label;
+  const readout = document.createElement('strong');
+  readout.textContent = value;
+  item.append(title, readout);
+  return item;
+}
+
+function pilotHorizon(): HTMLElement {
+  const horizon = document.createElement('div');
+  horizon.className = 'pilot-horizon';
+  horizon.replaceChildren(
+    Object.assign(document.createElement('span'), { className: 'pilot-horizon-line' }),
+    Object.assign(document.createElement('span'), { className: 'pilot-reticle' }),
+    Object.assign(document.createElement('span'), { className: 'pilot-bank' })
+  );
+  return horizon;
 }
 
 function textLine(value: string): HTMLElement {

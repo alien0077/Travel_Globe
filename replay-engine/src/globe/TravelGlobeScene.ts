@@ -39,22 +39,22 @@ export class TravelGlobeScene {
     this.container.appendChild(this.renderer.domElement);
     this.bindInteraction();
 
-    this.scene.background = new THREE.Color(0xf6fbf7);
-    this.scene.fog = new THREE.Fog(0xf6fbf7, 8, 15);
+    this.scene.background = new THREE.Color(0xd7e5e1);
+    this.scene.fog = new THREE.Fog(0xd7e5e1, 9, 18);
     this.scene.add(createStarField(360, 46));
 
     const { globe, clouds } = createGlobe();
     this.clouds = clouds;
     this.scene.add(globe);
-    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.28, altitudeScaleMeters: 610000 }));
-    this.routeTrack = createRouteTrack(segment.derivedReplayRoute.points, [segment.derivedReplayRoute.points[0]], 610000);
+    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.28, altitudeScaleMeters: 180000 }));
+    this.routeTrack = createRouteTrack(segment.derivedReplayRoute.points, [segment.derivedReplayRoute.points[0]], 180000);
     this.scene.add(this.routeTrack);
-    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999));
-    this.scene.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42));
+    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999, 180000));
+    this.scene.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42, 180000));
     this.scene.add(this.aircraft);
 
-    const ambient = new THREE.AmbientLight(0xeaf8ff, 2.2);
-    const sun = new THREE.DirectionalLight(0xffffff, 3.4);
+    const ambient = new THREE.AmbientLight(0xf5fbff, 3.2);
+    const sun = new THREE.DirectionalLight(0xffffff, 4.2);
     sun.position.set(-3, 4, 7);
     this.scene.add(ambient, sun);
 
@@ -65,7 +65,8 @@ export class TravelGlobeScene {
 
   update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode, actualRoutePoints: LocationPoint[]): void {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
-    updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 610000);
+    this.aircraft.visible = cameraMode !== 'pilotView';
+    updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
     this.cameraController.setMode(cameraMode);
     this.cameraController.update(point, bearingDegrees);
   }
