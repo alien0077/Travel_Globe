@@ -159,7 +159,21 @@ export function placeAircraftMarker(
   marker.position.set(vector.x, vector.y, vector.z);
 
   const normal = marker.position.clone().normalize();
-  const tangent = new THREE.Vector3(1, 0, 0).applyAxisAngle(normal, THREE.MathUtils.degToRad(bearingDegrees));
-  marker.lookAt(marker.position.clone().add(tangent));
+  const forward = forwardVector(normal, bearingDegrees);
   marker.up.copy(normal);
+  marker.lookAt(marker.position.clone().add(forward));
+  marker.rotateY(Math.PI);
+}
+
+function forwardVector(normal: THREE.Vector3, bearingDegrees: number): THREE.Vector3 {
+  const northPole = new THREE.Vector3(0, 1, 0);
+  const east = new THREE.Vector3().crossVectors(northPole, normal);
+  if (east.lengthSq() < 0.000001) {
+    east.set(1, 0, 0).cross(normal);
+  }
+  east.normalize();
+
+  const north = new THREE.Vector3().crossVectors(normal, east).normalize();
+  const bearing = THREE.MathUtils.degToRad(bearingDegrees);
+  return north.multiplyScalar(Math.cos(bearing)).add(east.multiplyScalar(Math.sin(bearing))).normalize();
 }

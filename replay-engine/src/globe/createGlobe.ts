@@ -48,9 +48,9 @@ export function createGlobe(radius = 2): GlobeObjects {
   );
   globe.add(clouds);
 
-  globe.add(createLatLongGrid(radius * 1.014));
-  globe.add(createNaturalEarthBoundaries(radius * 1.018));
-  globe.add(createCityLights(radius * 1.024));
+  globe.add(createLatLongGrid(radius * 1.002));
+  globe.add(createNaturalEarthBoundaries(radius * 1.003));
+  globe.add(createCityLights(radius * 1.008));
   globe.add(createAtmosphere(radius));
 
   return { globe, earth, clouds };
