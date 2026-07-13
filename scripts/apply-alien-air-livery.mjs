@@ -88,16 +88,6 @@ const targets = args.has('--all')
   ? defaultSources
   : defaultSources.filter((target) => args.has(`--${target.slug}`) || args.has(target.slug));
 
-const letterPatterns = {
-  A: ['111', '101', '111', '101', '101'],
-  E: ['111', '100', '111', '100', '111'],
-  I: ['111', '010', '010', '010', '111'],
-  L: ['100', '100', '100', '100', '111'],
-  N: ['101', '111', '111', '111', '101'],
-  R: ['110', '101', '110', '101', '101'],
-  ' ': ['000', '000', '000', '000', '000']
-};
-
 if (targets.length === 0) {
   console.error('Usage: node scripts/apply-alien-air-livery.mjs --all');
   process.exit(1);
@@ -365,56 +355,113 @@ function addAlienAirFuselageMarks(scene) {
   const box = new THREE.Box3().setFromObject(scene);
   const size = box.getSize(new THREE.Vector3());
   const side = Math.max(Math.min(size.x * 0.065, size.y * 0.16), 0.08);
-  const y = THREE.MathUtils.clamp(size.y * 0.02, 0.035, Math.max(0.05, size.y * 0.12));
+  const sideY = THREE.MathUtils.clamp(size.y * 0.03, 0.045, Math.max(0.06, size.y * 0.12));
+  const topY = Math.max(sideY, Math.min(size.y * 0.11, 0.62));
   const z = size.z * 0.02;
-  const scale = Math.max(0.12, Math.min(size.z * 0.06, size.x * 0.09, size.y * 0.16));
+  const scale = Math.max(0.22, Math.min(size.z * 0.075, size.x * 0.12, size.y * 0.23));
   const white = new THREE.MeshStandardMaterial({
-    name: 'Alien Air raised white fuselage lettering',
+    name: 'Alien Air cursive white fuselage script',
     color: 0xffffff,
     emissive: 0xffffff,
-    emissiveIntensity: 0.05,
-    roughness: 0.36,
+    emissiveIntensity: 0.08,
+    roughness: 0.28,
     metalness: 0.02
   });
 
-  scene.add(createWordMark('ALIEN AIR', side, y, z, scale, 1, white));
-  scene.add(createWordMark('ALIEN AIR', -side, y, z, scale, -1, white));
+  scene.add(createCursiveWordMark({ plane: 'side', side: 1, sideX: side, centerY: sideY, centerZ: z, scale, material: white }));
+  scene.add(createCursiveWordMark({ plane: 'side', side: -1, sideX: -side, centerY: sideY, centerZ: z, scale, material: white }));
+  scene.add(createCursiveWordMark({ plane: 'top', side: 1, sideX: 0, centerY: topY, centerZ: z, scale: scale * 0.92, material: white }));
 }
 
-function createWordMark(text, sideX, centerY, centerZ, scale, sideSign, material) {
+function createCursiveWordMark({ plane, side, sideX, centerY, centerZ, scale, material }) {
   const group = new THREE.Group();
-  group.name = `Alien Air fuselage wordmark ${sideSign > 0 ? 'right' : 'left'}`;
-  const columns = [...text].reduce((sum, letter) => sum + (letter === ' ' ? 2 : 4), -1);
-  const cell = scale * 0.18;
-  const depth = Math.max(scale * 0.018, 0.003);
-  const totalWidth = columns * cell;
-  let cursor = -totalWidth * 0.5;
-
-  for (const letter of text) {
-    if (letter === ' ') {
-      cursor += cell * 2;
-      continue;
-    }
-    const pattern = letterPatterns[letter] ?? letterPatterns[' '];
-    for (let row = 0; row < pattern.length; row += 1) {
-      for (let column = 0; column < pattern[row].length; column += 1) {
-        if (pattern[row][column] !== '1') {
-          continue;
-        }
-        const block = new THREE.Mesh(new THREE.BoxGeometry(depth, cell * 0.82, cell * 0.82), material);
-        block.name = `Alien Air letter ${letter}`;
-        block.position.set(
-          sideX,
-          centerY + (2 - row) * cell,
-          centerZ + cursor + column * cell
-        );
-        group.add(block);
-      }
-    }
-    cursor += cell * 4;
+  group.name = `Alien Air cursive ${plane} wordmark`;
+  const width = scale * 5.7;
+  const height = scale * 0.72;
+  const radius = Math.max(scale * 0.022, 0.008);
+  const strokes = buildAlienAirScriptStrokes();
+  for (const stroke of strokes) {
+    const points = stroke.map(([x, y]) => mapScriptPoint({ x, y, width, height, plane, side, sideX, centerY, centerZ }));
+    const curve = new THREE.CatmullRomCurve3(points);
+    const geometry = new THREE.TubeGeometry(curve, Math.max(6, points.length * 4), radius, 7, false);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'Alien Air cursive stroke';
+    group.add(mesh);
   }
-
   return group;
+}
+
+function mapScriptPoint({ x, y, width, height, plane, side, sideX, centerY, centerZ }) {
+  const horizontal = (x - 0.5) * width;
+  const vertical = (y - 0.5) * height;
+  if (plane === 'top') {
+    return new THREE.Vector3(vertical * 0.62, centerY, centerZ + horizontal);
+  }
+  return new THREE.Vector3(sideX, centerY + vertical, centerZ + horizontal * side);
+}
+
+function buildAlienAirScriptStrokes() {
+  return [
+    [
+      [0.02, 0.12],
+      [0.05, 0.38],
+      [0.08, 0.72],
+      [0.12, 0.92],
+      [0.16, 0.48],
+      [0.2, 0.16],
+      [0.23, 0.48],
+      [0.17, 0.5]
+    ],
+    [
+      [0.22, 0.22],
+      [0.25, 0.52],
+      [0.27, 0.76],
+      [0.29, 0.2],
+      [0.32, 0.2],
+      [0.34, 0.55],
+      [0.36, 0.22],
+      [0.39, 0.22],
+      [0.42, 0.56],
+      [0.46, 0.5],
+      [0.43, 0.32],
+      [0.4, 0.2],
+      [0.47, 0.2],
+      [0.5, 0.56],
+      [0.55, 0.2],
+      [0.58, 0.2],
+      [0.6, 0.48],
+      [0.63, 0.5],
+      [0.64, 0.22]
+    ],
+    [
+      [0.69, 0.12],
+      [0.72, 0.38],
+      [0.75, 0.72],
+      [0.79, 0.92],
+      [0.83, 0.48],
+      [0.87, 0.16],
+      [0.9, 0.48],
+      [0.84, 0.5]
+    ],
+    [
+      [0.89, 0.22],
+      [0.91, 0.58],
+      [0.93, 0.22],
+      [0.96, 0.22],
+      [0.98, 0.54],
+      [1.0, 0.46]
+    ],
+    [
+      [0.31, 0.83],
+      [0.32, 0.86],
+      [0.33, 0.83]
+    ],
+    [
+      [0.91, 0.83],
+      [0.92, 0.86],
+      [0.93, 0.83]
+    ]
+  ];
 }
 
 function countTriangles(scene) {
@@ -449,7 +496,7 @@ function updateManifestEntry(slug, modelUrl, triangles) {
     'Removed original airline livery',
     'Replaced floating decal panels with integrated material livery',
     'Preserved complete mesh geometry to avoid fragmented fuselages',
-    'Added raised white fuselage lettering without rectangular backing panels'
+    'Added cursive Alien Air fuselage script without rectangular backing panels'
   ]);
 }
 
@@ -465,7 +512,7 @@ function updateLicenseFile(slug) {
     'Removed original airline livery',
     'Replaced floating decal panels with integrated material livery',
     'Preserved complete mesh geometry to avoid fragmented fuselages',
-    'Added raised white fuselage lettering without rectangular backing panels'
+    'Added cursive Alien Air fuselage script without rectangular backing panels'
   ]);
   fs.writeFileSync(licensePath, `${JSON.stringify(license, null, 2)}\n`);
 }

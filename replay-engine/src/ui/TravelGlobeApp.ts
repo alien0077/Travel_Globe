@@ -87,6 +87,7 @@ export class TravelGlobeApp {
   private readonly departureDateInput = document.createElement('input');
   private readonly departureTimeInput = document.createElement('input');
   private readonly durationInput = document.createElement('input');
+  private readonly aircraftTypeSelect = document.createElement('select');
   private readonly preloadStatus = document.createElement('div');
   private readonly fileInput = document.createElement('input');
 
@@ -540,6 +541,15 @@ export class TravelGlobeApp {
     this.departureDateInput.value = toInputDate(segment.startTime);
     this.departureTimeInput.value = toInputTime(segment.startTime);
     this.durationInput.value = '';
+    this.aircraftTypeSelect.replaceChildren(
+      ...aircraftTypeOptions.map((aircraft) => {
+        const option = document.createElement('option');
+        option.value = aircraft.value;
+        option.textContent = aircraft.label;
+        return option;
+      })
+    );
+    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(stringValue(segment.metadata.aircraftType, 'B737'));
 
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
@@ -558,7 +568,8 @@ export class TravelGlobeApp {
       this.destinationInput,
       this.departureDateInput,
       this.departureTimeInput,
-      this.durationInput
+      this.durationInput,
+      this.aircraftTypeSelect
     ]) {
       input.addEventListener('input', markPending);
       input.addEventListener('change', markPending);
@@ -577,6 +588,7 @@ export class TravelGlobeApp {
       field('日期', this.departureDateInput, { type: 'date' }),
       field('時間', this.departureTimeInput, { type: 'time' }),
       field('分鐘', this.durationInput, { type: 'number', min: '30', step: '5', required: false }),
+      selectField('機型', this.aircraftTypeSelect),
       submitButton
     );
     form.addEventListener('submit', (event) => {
@@ -594,7 +606,8 @@ export class TravelGlobeApp {
       destinationIata: this.destinationInput.value,
       departureDate: this.departureDateInput.value,
       departureTime: this.departureTimeInput.value,
-      durationMinutes: Number(this.durationInput.value) || undefined
+      durationMinutes: Number(this.durationInput.value) || undefined,
+      aircraftType: this.aircraftTypeSelect.value
     };
 
     try {
@@ -909,6 +922,33 @@ function field(
   }
   wrapper.append(text, input);
   return wrapper;
+}
+
+function selectField(label: string, select: HTMLSelectElement): HTMLElement {
+  const wrapper = document.createElement('label');
+  wrapper.className = 'preload-field';
+  const text = document.createElement('span');
+  text.textContent = label;
+  select.className = 'preload-input';
+  wrapper.append(text, select);
+  return wrapper;
+}
+
+const aircraftTypeOptions = [
+  { value: 'A320', label: 'A320' },
+  { value: 'A321', label: 'A321' },
+  { value: 'B737', label: 'B737' },
+  { value: 'B767', label: 'B767' },
+  { value: 'B777', label: 'B777' },
+  { value: 'B787', label: 'B787' },
+  { value: 'A350', label: 'A350' },
+  { value: 'A380', label: 'A380' }
+];
+
+function normalizeAircraftSelectValue(value: string): string {
+  const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const match = aircraftTypeOptions.find((option) => normalized.includes(option.value));
+  return match?.value ?? 'B737';
 }
 
 function airportField(

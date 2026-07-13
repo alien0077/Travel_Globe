@@ -17,6 +17,7 @@
     "Added fuselage, wing, and tail Alien Air markings",
     "Replaced floating decal panels with integrated material livery",
     "Preserved complete mesh geometry to avoid fragmented fuselages",
-    "Added raised white fuselage lettering without rectangular backing panels"
+    "Added raised white fuselage lettering without rectangular backing panels",
+    "Added cursive Alien Air fuselage script without rectangular backing panels"
   ]
 }
