@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 
-export type CameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
+export type FlightSystemCameraMode = 'flightPreview' | 'totalRoute' | 'midFlight' | 'overhead' | 'commandCenter';
+export type LegacyCameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
+export type CameraMode = FlightSystemCameraMode | LegacyCameraMode;
 
 export class CameraController {
   mode: CameraMode = 'global';
@@ -33,10 +35,11 @@ export class CameraController {
     const normal = this.target.clone().normalize();
     const forward = this.forwardVector(normal, bearingDegrees);
 
-    if (this.mode === 'global') {
-      const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
+    if (this.mode === 'global' || this.mode === 'totalRoute') {
+      const baseDistance = this.mode === 'totalRoute' ? 4.65 : 5.2;
+      const distance = THREE.MathUtils.clamp(baseDistance * this.zoom, 1.65, 8.8);
       const yaw = this.orbitYaw;
-      const pitch = 0.45 + this.orbitPitch;
+      const pitch = (this.mode === 'totalRoute' ? 0.62 : 0.45) + this.orbitPitch;
       const orbitDirection = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
         Math.sin(pitch),
@@ -100,7 +103,7 @@ export class CameraController {
 }
 
 const cameraProfiles: Record<
-  Exclude<CameraMode, 'global' | 'orbit'>,
+  Exclude<CameraMode, 'global' | 'orbit' | 'totalRoute'>,
   {
     forward: number;
     right: number;
@@ -110,6 +113,10 @@ const cameraProfiles: Record<
     lookUp: number;
   }
 > = {
+  flightPreview: { forward: -0.45, right: 0, up: 0.08, distance: 0.82, lookAhead: 0.08, lookUp: 0 },
+  midFlight: { forward: -0.9, right: -0.52, up: 0.42, distance: 1.28, lookAhead: 0.46, lookUp: 0.06 },
+  overhead: { forward: -0.08, right: 0, up: 1.55, distance: 1.15, lookAhead: 0.16, lookUp: 0 },
+  commandCenter: { forward: -1.05, right: 0.76, up: 0.68, distance: 1.42, lookAhead: 0.52, lookUp: 0.04 },
   follow: { forward: -0.9, right: 0, up: 0.48, distance: 1.15, lookAhead: 0.35, lookUp: 0.1 },
   cockpit: { forward: 0.18, right: 0, up: 0.16, distance: 0.56, lookAhead: 1.2, lookUp: 0.05 },
   leftWindow: { forward: -0.08, right: -0.7, up: 0.2, distance: 0.9, lookAhead: 0.28, lookUp: 0.04 },

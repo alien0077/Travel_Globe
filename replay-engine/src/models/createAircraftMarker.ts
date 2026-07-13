@@ -8,6 +8,9 @@ import {
   type AircraftModelLibrary
 } from './aircraftModelLibrary';
 
+export const AIRCRAFT_MODEL_TARGET_SIZE = 0.115;
+export const AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS = 18000;
+
 export function createAircraftMarker(aircraftType?: string): THREE.Group {
   const aircraft = new THREE.Group();
   aircraft.name = aircraftType ? `Aircraft ${aircraftType}` : 'Aircraft library marker';
@@ -142,7 +145,7 @@ function normalizeExternalModel(model: THREE.Object3D): void {
   }
 
   model.position.sub(center);
-  model.scale.setScalar(0.18 / longest);
+  model.scale.setScalar(AIRCRAFT_MODEL_TARGET_SIZE / longest);
   model.rotation.set(0, 0, 0);
 }
 
@@ -153,7 +156,7 @@ export function placeAircraftMarker(
 ): void {
   const visualPoint = {
     ...point,
-    altitudeMeters: Math.max(point.altitudeMeters ?? 0, 120000)
+    altitudeMeters: Math.max(point.altitudeMeters ?? 0, AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS)
   };
   const vector = geographicToVector3(visualPoint, 2, 700000);
   marker.position.set(vector.x, vector.y, vector.z);

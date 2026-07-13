@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { CameraController } from '../camera/CameraController';
+import { CameraController, type CameraMode } from '../camera/CameraController';
 
 describe('camera controller interaction', () => {
   it('zooms global view toward the globe while keeping free orbit control', () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const controller = new CameraController(camera);
     const point = { latitude: 35.7, longitude: 140.0, altitudeMeters: 10_000 };
+    controller.setMode('global');
 
     for (let index = 0; index < 24; index += 1) {
       controller.update(point, 60);
@@ -41,5 +42,28 @@ describe('camera controller interaction', () => {
 
     expect(camera.position.x).toBeGreaterThan(before.x);
     expect(camera.position.y).toBeGreaterThan(before.y);
+  });
+
+  it('keeps the flight-system presets in usable viewing ranges', () => {
+    const point = { latitude: 35.7, longitude: 140.0, altitudeMeters: 10_000 };
+    const modes: CameraMode[] = ['flightPreview', 'totalRoute', 'midFlight', 'overhead', 'commandCenter'];
+    const distances = new Map<CameraMode, number>();
+
+    for (const mode of modes) {
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      const controller = new CameraController(camera);
+      controller.setMode(mode);
+      for (let index = 0; index < 36; index += 1) {
+        controller.update(point, 60);
+      }
+      expect(Number.isFinite(camera.position.x)).toBe(true);
+      expect(Number.isFinite(camera.position.y)).toBe(true);
+      expect(Number.isFinite(camera.position.z)).toBe(true);
+      expect(camera.position.length()).toBeGreaterThan(1.6);
+      expect(camera.position.length()).toBeLessThan(8.9);
+      distances.set(mode, camera.position.length());
+    }
+
+    expect(distances.get('totalRoute')).toBeGreaterThan(distances.get('flightPreview') ?? 0);
   });
 });

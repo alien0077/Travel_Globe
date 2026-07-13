@@ -46,6 +46,8 @@ describe('flight overlay analytics', () => {
     expect(metrics.speedKmh).toContain('km/h');
     expect(metrics.headingDegrees).toContain('deg');
     expect(metrics.distanceLabel).toContain('/');
+    expect(metrics.remainingDistanceLabel).toContain('km');
+    expect(metrics.verticalSpeedLabel).toMatch(/上升|巡航|下降/);
   });
 
   it('builds a continuous actual route through the current replay time', () => {

@@ -57,7 +57,7 @@ export class TravelGlobeApp {
   private clock?: ReplayClock;
   private segment?: JourneySegment;
   private flightOverlay?: FlightOverlay;
-  private cameraMode: CameraMode = 'global';
+  private cameraMode: CameraMode = 'flightPreview';
   private lastFrameMs?: number;
   private packState: OfflinePackState = { packs: [] };
   private autoRecordingContext?: AutoRecordingContext;
@@ -68,7 +68,6 @@ export class TravelGlobeApp {
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
   private readonly speedSelect = document.createElement('select');
-  private readonly cameraSelect = document.createElement('select');
   private readonly scrubber = document.createElement('input');
   private readonly hudTitle = document.createElement('div');
   private readonly hudRoute = document.createElement('div');
@@ -79,6 +78,7 @@ export class TravelGlobeApp {
   private readonly timelineList = document.createElement('div');
   private readonly recordFilterBar = document.createElement('div');
   private readonly recordPreview = document.createElement('article');
+  private readonly viewRail = document.createElement('nav');
   private readonly productPanel = document.createElement('section');
   private readonly preloadPanel = document.createElement('section');
   private readonly flightNumberInput = document.createElement('input');
@@ -125,7 +125,7 @@ export class TravelGlobeApp {
 
   private renderShell(journey: Journey, segment: JourneySegment): void {
     const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
-    this.root.className = isCompactViewport ? 'app-shell is-compact' : 'app-shell';
+    this.root.className = isCompactViewport ? 'app-shell flight-system-shell is-compact' : 'app-shell flight-system-shell';
     this.viewport.className = 'globe-viewport';
 
     const overlay = document.createElement('section');
@@ -139,14 +139,40 @@ export class TravelGlobeApp {
     this.hudPoint.className = 'hud-point';
     this.belowMe.className = 'below-me';
     this.capability.className = 'capability';
-    hud.append(this.hudTitle, this.hudRoute, this.hudStats, this.hudPoint, this.belowMe, this.capability);
+    hud.append(this.hudTitle, this.hudRoute, this.hudPoint);
+
+    this.viewRail.className = 'view-rail';
+    this.viewRail.setAttribute('aria-label', '飛行視角');
+    const cameraOptions: Array<{ mode: CameraMode; icon: string; label: string }> = [
+      { mode: 'flightPreview', icon: '航', label: '飛行預覽' },
+      { mode: 'totalRoute', icon: '線', label: '完整航線' },
+      { mode: 'midFlight', icon: '中', label: '中段飛行' },
+      { mode: 'overhead', icon: '頂', label: '俯視航線' },
+      { mode: 'commandCenter', icon: '塔', label: '指揮中心' }
+    ];
+    this.viewRail.replaceChildren(
+      ...cameraOptions.map(({ mode, icon, label }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `view-mode-button${mode === this.cameraMode ? ' is-active' : ''}`;
+        button.dataset.mode = mode;
+        button.title = label;
+        button.setAttribute('aria-label', label);
+        button.textContent = icon;
+        button.addEventListener('click', () => {
+          this.cameraMode = mode;
+          this.syncViewRail();
+        });
+        return button;
+      })
+    );
 
     const dock = document.createElement('section');
     dock.className = 'info-dock';
 
     const timeline = document.createElement('details');
     timeline.className = 'dock-panel timeline-panel';
-    timeline.open = !isCompactViewport;
+    timeline.open = false;
     const timelineTitle = document.createElement('summary');
     timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = '旅遊紀錄';
@@ -157,7 +183,7 @@ export class TravelGlobeApp {
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
     productShell.className = 'dock-panel product-panel-shell';
-    productShell.open = !isCompactViewport;
+    productShell.open = false;
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
@@ -166,7 +192,7 @@ export class TravelGlobeApp {
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
     preloadShell.className = 'dock-panel preload-panel-shell';
-    preloadShell.open = !isCompactViewport;
+    preloadShell.open = false;
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載';
@@ -195,28 +221,6 @@ export class TravelGlobeApp {
     this.speedSelect.value = '5';
     this.speedSelect.addEventListener('change', () => {
       this.clock?.setSpeed(Number(this.speedSelect.value));
-    });
-
-    this.cameraSelect.className = 'control-select camera-select';
-    const cameraOptions: Array<{ mode: CameraMode; label: string }> = [
-      { mode: 'global', label: 'Global View' },
-      { mode: 'follow', label: 'Follow camera' },
-      { mode: 'orbit', label: 'Orbit cinema' },
-      { mode: 'cockpit', label: 'Cockpit view' },
-      { mode: 'leftWindow', label: 'Left window' },
-      { mode: 'rightWindow', label: 'Right window' },
-      { mode: 'tail', label: 'Tail chase' },
-      { mode: 'topDown', label: 'Top down' }
-    ];
-    for (const { mode, label } of cameraOptions) {
-      const option = document.createElement('option');
-      option.value = mode;
-      option.textContent = label;
-      this.cameraSelect.appendChild(option);
-    }
-    this.cameraSelect.value = this.cameraMode;
-    this.cameraSelect.addEventListener('change', () => {
-      this.cameraMode = this.cameraSelect.value as CameraMode;
     });
 
     this.scrubber.className = 'timeline-scrubber';
@@ -289,29 +293,28 @@ export class TravelGlobeApp {
       void this.importJourney(file);
     });
 
-    controls.append(
-      this.playButton,
-      this.speedSelect,
-      this.cameraSelect,
-      importButton,
-      exportButton,
-      shareButton,
-      manualLink,
-      gpxButton,
-      kmlButton,
-      journalButton,
-      packButton,
-      this.scrubber
-    );
-    dock.append(preloadShell, productShell, timeline);
-    this.recordPreview.className = 'record-preview';
-    overlay.append(hud, dock, this.recordPreview, controls);
-    this.root.replaceChildren(this.viewport, overlay, this.fileInput);
-    if (isCompactViewport) {
-      this.applyCompactRuntimeLayout({ overlay, hud, dock, controls });
-    }
+    const actionGrid = document.createElement('div');
+    actionGrid.className = 'action-grid';
+    actionGrid.append(importButton, exportButton, shareButton, manualLink, gpxButton, kmlButton, journalButton, packButton);
 
-    this.hudTitle.textContent = 'TRAVEL ATLAS';
+    const systemDrawer = document.createElement('details');
+    systemDrawer.className = 'dock-panel system-drawer';
+    systemDrawer.open = false;
+    const systemSummary = document.createElement('summary');
+    systemSummary.className = 'panel-summary panel-title';
+    systemSummary.textContent = '更多';
+    const drawerBody = document.createElement('div');
+    drawerBody.className = 'drawer-body';
+    drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
+    systemDrawer.append(systemSummary, drawerBody);
+
+    controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
+    dock.append(systemDrawer);
+    this.recordPreview.className = 'record-preview';
+    overlay.append(hud, this.viewRail, dock, controls);
+    this.root.replaceChildren(this.viewport, overlay, this.fileInput);
+
+    this.hudTitle.textContent = 'FLIGHT REPLAY';
     this.hudRoute.textContent = `${journey.title} | ${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
     this.capability.textContent = this.adapter.getLocationCapability().reason ?? 'Standalone browser replay';
     this.renderRegionFilters();
@@ -319,133 +322,8 @@ export class TravelGlobeApp {
     this.renderRecordPreview();
     this.renderPreloadPanel(segment);
     this.renderProductPanel();
+    this.syncViewRail();
     this.syncPlayButton();
-  }
-
-  private applyCompactRuntimeLayout(elements: {
-    overlay: HTMLElement;
-    hud: HTMLElement;
-    dock: HTMLElement;
-    controls: HTMLElement;
-  }): void {
-    Object.assign(document.documentElement.style, {
-      height: '100%',
-      minHeight: '100%',
-      overflow: 'hidden'
-    });
-    Object.assign(document.body.style, {
-      height: '100%',
-      minHeight: '100%',
-      margin: '0',
-      overflow: 'hidden',
-      background: '#07141a'
-    });
-    Object.assign(this.root.style, {
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-      minHeight: '100vh',
-      overflow: 'hidden',
-      background: '#07141a'
-    });
-    Object.assign(this.viewport.style, {
-      position: 'absolute',
-      inset: '0',
-      zIndex: '0',
-      width: '100%',
-      height: '100%',
-      minHeight: '0',
-      background:
-        'radial-gradient(circle at 50% 36%, rgba(255,255,255,.78) 0 24%, rgba(255,255,255,0) 48%), linear-gradient(180deg, #e8f3f0 0%, #cfdfdc 48%, #08151b 100%)'
-    });
-    Object.assign(elements.overlay.style, {
-      position: 'absolute',
-      inset: '0',
-      zIndex: '2',
-      display: 'block',
-      overflow: 'hidden',
-      padding: '0',
-      pointerEvents: 'none',
-      background: 'linear-gradient(180deg, rgba(8,17,23,.56) 0%, rgba(8,17,23,.2) 44%, rgba(8,17,23,.68) 100%)',
-      WebkitOverflowScrolling: 'touch'
-    });
-
-    for (const panel of [elements.hud, elements.dock, this.recordPreview, elements.controls]) {
-      Object.assign(panel.style, {
-        position: 'static',
-        width: '100%',
-        transform: 'none'
-      });
-    }
-
-    Object.assign(elements.hud.style, {
-      position: 'absolute',
-      top: '10px',
-      left: '10px',
-      right: '10px',
-      width: 'auto',
-      padding: '12px',
-      maxHeight: '25vh',
-      overflow: 'hidden',
-      pointerEvents: 'auto'
-    });
-    for (const extra of [this.belowMe, this.capability]) {
-      extra.style.display = 'none';
-    }
-    Object.assign(this.hudPoint.style, {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis'
-    });
-    Object.assign(this.recordPreview.style, {
-      display: 'none'
-    });
-    Object.assign(elements.dock.style, {
-      position: 'absolute',
-      top: 'calc(20px + 25vh)',
-      right: '10px',
-      left: 'auto',
-      width: 'min(184px, calc(100vw - 20px))',
-      display: 'grid',
-      gap: '8px',
-      marginTop: '0',
-      pointerEvents: 'auto'
-    });
-    Object.assign(elements.controls.style, {
-      position: 'absolute',
-      left: '10px',
-      right: '10px',
-      bottom: '10px',
-      width: 'auto',
-      display: 'grid',
-      gridTemplateColumns: '82px 82px minmax(0, 1fr)',
-      gap: '8px',
-      margin: '0',
-      padding: '8px',
-      pointerEvents: 'auto'
-    });
-    for (const secondaryAction of elements.controls.querySelectorAll<HTMLElement>('.secondary-action')) {
-      secondaryAction.style.display = 'none';
-    }
-    Object.assign(this.cameraSelect.style, {
-      gridColumn: 'auto',
-      minWidth: '0'
-    });
-    Object.assign(this.scrubber.style, {
-      gridColumn: '1 / -1',
-      width: '100%',
-      minWidth: '0'
-    });
-
-    for (const panel of this.root.querySelectorAll<HTMLElement>('.hud, .dock-panel, .record-preview, .controls')) {
-      Object.assign(panel.style, {
-        border: '1px solid rgba(40,78,77,.13)',
-        borderRadius: '8px',
-        background: 'rgba(255,255,255,.82)',
-        boxShadow: '0 18px 52px rgba(36,61,58,.18)',
-        color: '#1f3332'
-      });
-    }
   }
 
   private frame(timeMs: number): void {
@@ -480,23 +358,21 @@ export class TravelGlobeApp {
     const elapsedRemainder = Math.floor(elapsedSeconds % 60).toString().padStart(2, '0');
     const deviationMeters = calculateRouteDeviationMeters(sample, this.flightOverlay.plannedRoute);
 
-    this.hudTitle.textContent = 'TRAVEL ATLAS';
+    this.hudTitle.textContent = metrics.flightNumber;
     this.hudRoute.textContent = `${metrics.flightNumber} | ${metrics.routeLabel}`;
     this.hudStats.replaceChildren(
-      metricItem('Altitude', metrics.altitudeFeet),
-      metricItem('Speed', metrics.speedKmh),
-      metricItem('Ground Speed', metrics.groundSpeedKmh),
-      metricItem('Heading', metrics.headingDegrees),
-      metricItem('Distance', metrics.distanceLabel),
-      metricItem('ETA', metrics.etaLabel)
+      metricItem('剩餘距離', metrics.remainingDistanceLabel),
+      metricItem('預計抵達', metrics.etaLabel),
+      metricItem('飛行高度', metrics.altitudeFeet),
+      metricItem('對氣速度', metrics.speedKmh)
     );
 
     this.hudPoint.textContent = [
-      metrics.phaseLabel,
-      `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`,
-      point.source,
+      localizePhase(metrics.phaseLabel),
+      metrics.verticalSpeedLabel,
+      `航向 ${metrics.headingDegrees}`,
       `T+${elapsedMinutes}:${elapsedRemainder}`,
-      `Deviation ${formatDistance(deviationMeters)}`
+      `偏離 ${formatDistance(deviationMeters)}`
     ].join(' | ');
 
     this.renderBelowMe(sample);
@@ -516,7 +392,15 @@ export class TravelGlobeApp {
   }
 
   private syncPlayButton(): void {
-    this.playButton.textContent = this.clock?.isPlaying ? 'Pause' : 'Play';
+    this.playButton.textContent = this.clock?.isPlaying ? '暫停' : '播放';
+  }
+
+  private syncViewRail(): void {
+    for (const button of this.viewRail.querySelectorAll<HTMLButtonElement>('.view-mode-button')) {
+      const isActive = button.dataset.mode === this.cameraMode;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    }
   }
 
   private renderPreloadPanel(segment: JourneySegment): void {
@@ -895,6 +779,27 @@ function tagPill(value: string): HTMLElement {
   const tag = document.createElement('span');
   tag.textContent = value;
   return tag;
+}
+
+function localizePhase(value: string): string {
+  switch (value) {
+    case 'Takeoff':
+      return '起飛';
+    case 'Top of Climb':
+    case 'Climb':
+      return '上升';
+    case 'Cruise':
+      return '巡航';
+    case 'Top of Descent':
+    case 'Descent':
+      return '下降';
+    case 'Approach':
+      return '進場';
+    case 'Landing':
+      return '降落';
+    default:
+      return value;
+  }
 }
 
 function field(

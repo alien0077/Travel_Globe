@@ -42,8 +42,10 @@ export interface FlightHudMetrics {
   groundSpeedKmh: string;
   headingDegrees: string;
   distanceLabel: string;
+  remainingDistanceLabel: string;
   etaLabel: string;
   phaseLabel: string;
+  verticalSpeedLabel: string;
 }
 
 export interface BelowMeSummary {
@@ -138,8 +140,10 @@ export function buildFlightHudMetrics(
     groundSpeedKmh: `${Math.round(speedMetersPerSecond * 3.6).toLocaleString('en-US')} km/h`,
     headingDegrees: `${Math.round(sample.bearingDegrees).toString().padStart(3, '0')} deg`,
     distanceLabel: `${Math.round(sample.distanceFlownMeters / 1000).toLocaleString('en-US')} / ${Math.round(bounds.totalDistanceMeters / 1000).toLocaleString('en-US')} km`,
+    remainingDistanceLabel: `${Math.round(sample.remainingDistanceMeters / 1000).toLocaleString('en-US')} km`,
     etaLabel: formatDuration(remainingSeconds),
-    phaseLabel: phaseForSample(journey, segment, sample, elapsedSeconds)
+    phaseLabel: phaseForSample(journey, segment, sample, elapsedSeconds),
+    verticalSpeedLabel: verticalSpeedForSample(segment, sample)
   };
 }
 
@@ -244,6 +248,24 @@ function phaseForSample(journey: Journey, segment: JourneySegment, sample: Repla
     return 'Approach';
   }
   return previous?.title ?? 'Climb';
+}
+
+function verticalSpeedForSample(segment: JourneySegment, sample: ReplaySample): string {
+  const route = segment.derivedReplayRoute.points;
+  const sampleMs = Date.parse(sample.point.timestamp);
+  const nextIndex = route.findIndex((point) => Date.parse(point.timestamp) >= sampleMs);
+  const previous = route[Math.max(0, nextIndex - 1)] ?? route[0];
+  const next = route[Math.min(route.length - 1, Math.max(1, nextIndex))] ?? route[route.length - 1];
+  const minutes = Math.max(1 / 60, (Date.parse(next.timestamp) - Date.parse(previous.timestamp)) / 60000);
+  const metersPerMinute = ((next.altitudeMeters ?? 0) - (previous.altitudeMeters ?? 0)) / minutes;
+  const rounded = Math.round(metersPerMinute / 10) * 10;
+  if (rounded > 30) {
+    return `上升 +${rounded.toLocaleString('en-US')} m/min`;
+  }
+  if (rounded < -30) {
+    return `下降 ${rounded.toLocaleString('en-US')} m/min`;
+  }
+  return '巡航 0 m/min';
 }
 
 function normalizeEventKind(type: string): FlightEventKind {

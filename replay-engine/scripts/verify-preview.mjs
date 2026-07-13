@@ -50,12 +50,10 @@ for (const viewport of [
     const hud = document.querySelector('.hud-stats')?.textContent ?? '';
     const title = document.querySelector('.hud-title')?.textContent ?? '';
     const scrubber = document.querySelector('.timeline-scrubber');
-    const cameraSelect = document.querySelector('.camera-select');
+    const viewButtons = [...document.querySelectorAll('.view-mode-button')];
+    const activeViewButton = document.querySelector('.view-mode-button.is-active');
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
-    const cameraOptions =
-      cameraSelect instanceof HTMLSelectElement
-        ? [...cameraSelect.options].map((option) => option.textContent)
-        : [];
+    const cameraOptions = viewButtons.map((button) => button.getAttribute('aria-label') ?? '');
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
     const preloadText = document.querySelector('.preload-panel')?.textContent ?? '';
@@ -73,11 +71,11 @@ for (const viewport of [
     if (
       !(canvas instanceof HTMLCanvasElement) ||
       !(scrubber instanceof HTMLInputElement) ||
-      !(cameraSelect instanceof HTMLSelectElement)
+      viewButtons.length === 0
     ) {
       return {
         ok: false,
-        reason: 'missing canvas, scrubber, or camera select',
+        reason: 'missing canvas, scrubber, or view rail',
         hud,
         title,
         coloredPixels: 0,
@@ -119,8 +117,11 @@ for (const viewport of [
         canvas.width > 0 &&
         canvas.height > 0 &&
         coloredPixels > 100 &&
-        hud.includes('Altitude') &&
-        title.includes('TRAVEL ATLAS') &&
+        hud.includes('剩餘距離') &&
+        hud.includes('預計抵達') &&
+        hud.includes('飛行高度') &&
+        hud.includes('對氣速度') &&
+        title.includes('CI100') &&
         controls.includes('Import') &&
         controls.includes('Export') &&
         controls.includes('Share') &&
@@ -129,14 +130,13 @@ for (const viewport of [
         controls.includes('KML') &&
         controls.includes('Journal') &&
         controls.includes('Pack') &&
-        cameraSelect.value === 'global' &&
-        cameraOptions.includes('Global View') &&
-        cameraOptions.includes('Orbit cinema') &&
-        cameraOptions.includes('Cockpit view') &&
-        cameraOptions.includes('Left window') &&
-        cameraOptions.includes('Right window') &&
-        cameraOptions.includes('Tail chase') &&
-        cameraOptions.includes('Top down') &&
+        activeViewButton instanceof HTMLButtonElement &&
+        activeViewButton.dataset.mode === 'flightPreview' &&
+        cameraOptions.includes('飛行預覽') &&
+        cameraOptions.includes('完整航線') &&
+        cameraOptions.includes('中段飛行') &&
+        cameraOptions.includes('俯視航線') &&
+        cameraOptions.includes('指揮中心') &&
         timelineItems >= 4 &&
         productText.includes('Plan') &&
         productText.includes('Journal') &&
@@ -145,8 +145,8 @@ for (const viewport of [
         (preloadText.includes('預載進入') || preloadText.includes('套用航線')) &&
         (preloadText.includes('CI100') || preloadFlightNumber === 'CI100') &&
         productText.includes('East Asia') &&
-        previewText.includes('East Asia') &&
-        atlasLayoutVisible &&
+        filterText.includes('All') &&
+        !atlasLayoutVisible &&
         productText.includes('0 B') &&
         (window.innerWidth <= 640 || centerShowsGlobe) &&
         (window.innerWidth <= 640 || pageHasNoVerticalScroll),
@@ -155,7 +155,7 @@ for (const viewport of [
       title,
       coloredPixels,
       scrubberValue: scrubber.value,
-      cameraValue: cameraSelect.value,
+      cameraValue: activeViewButton instanceof HTMLButtonElement ? activeViewButton.dataset.mode ?? '' : '',
       cameraOptions,
       controls,
       timelineItems,
@@ -185,6 +185,10 @@ for (const viewport of [
 
   if (check.ok) {
     await page.evaluate(() => {
+      const systemDrawer = document.querySelector('.system-drawer');
+      if (systemDrawer instanceof HTMLDetailsElement) {
+        systemDrawer.open = true;
+      }
       const preloadShell = document.querySelector('.preload-panel-shell');
       if (preloadShell instanceof HTMLDetailsElement) {
         preloadShell.open = true;
@@ -202,9 +206,9 @@ for (const viewport of [
     }));
 
     await page.evaluate(() => {
-      document.querySelector('.control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      document.querySelector('.controls .control-button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
-    paused = (await page.textContent('.control-button')) ?? '';
+    paused = (await page.textContent('.controls .control-button')) ?? '';
     await page.evaluate(() => {
       const scrubber = document.querySelector('.timeline-scrubber');
       if (scrubber instanceof HTMLInputElement) {
@@ -213,26 +217,20 @@ for (const viewport of [
       }
     });
     await page.waitForTimeout(150);
-    await page.selectOption('.camera-select', 'cockpit');
+    await clickViewMode(page, 'commandCenter');
     await page.waitForTimeout(100);
-    await page.mouse.move(viewport.width / 2, viewport.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(viewport.width / 2 + 70, viewport.height / 2 - 30, { steps: 8 });
-    await page.mouse.up();
-    await page.mouse.wheel(0, -280);
-    await page.selectOption('.camera-select', 'leftWindow');
-    await page.selectOption('.camera-select', 'rightWindow');
-    await page.selectOption('.camera-select', 'tail');
-    await page.selectOption('.camera-select', 'topDown');
-    await page.selectOption('.camera-select', 'global');
+    await clickViewMode(page, 'midFlight');
+    await clickViewMode(page, 'overhead');
+    await clickViewMode(page, 'totalRoute');
+    await clickViewMode(page, 'flightPreview');
     await page.waitForTimeout(250);
 
     afterScrub = await page.evaluate(() => ({
       scrubber: document.querySelector('.timeline-scrubber')?.value ?? '',
       point: document.querySelector('.hud-point')?.textContent ?? '',
-        stats: document.querySelector('.hud-stats')?.textContent ?? '',
-      camera: document.querySelector('.camera-select') instanceof HTMLSelectElement
-        ? document.querySelector('.camera-select')?.value ?? ''
+      stats: document.querySelector('.hud-stats')?.textContent ?? '',
+      camera: document.querySelector('.view-mode-button.is-active') instanceof HTMLButtonElement
+        ? document.querySelector('.view-mode-button.is-active')?.getAttribute('data-mode') ?? ''
         : '',
       coloredPixelsAfterInteraction: (() => {
         const canvas = document.querySelector('canvas');
@@ -295,4 +293,11 @@ console.log(JSON.stringify(results, null, 2));
 
 if (failed.length > 0) {
   process.exitCode = 1;
+}
+
+async function clickViewMode(page, mode) {
+  await page.evaluate((nextMode) => {
+    const button = document.querySelector(`.view-mode-button[data-mode="${nextMode}"]`);
+    button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }, mode);
 }
