@@ -16,6 +16,6 @@
     "Removed original airline livery",
     "Preserved complete mesh geometry to avoid fragmented fuselages",
     "Added raised white fuselage lettering without rectangular backing panels",
-    "Added thick cursive Alien Air script constrained to both fuselage sides"
+    "Embedded flat white Alien Air lettering into both fuselage sides"
   ]
 }
