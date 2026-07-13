@@ -29,7 +29,7 @@ export function createGlobe(radius = 2): GlobeObjects {
     color: 0xffffff,
     emissive: 0x446676,
     emissiveMap: earthTexture,
-    emissiveIntensity: 0.18,
+    emissiveIntensity: 0.38,
     roughness: 0.92,
     metalness: 0.0
   });
@@ -52,7 +52,6 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(createNaturalEarthBoundaries(radius * 1.018));
   globe.add(createCityLights(radius * 1.024));
   globe.add(createAtmosphere(radius));
-  globe.add(createTerminatorShade(radius));
 
   return { globe, earth, clouds };
 }
@@ -252,36 +251,6 @@ function createAtmosphere(radius: number): THREE.Mesh {
       depthWrite: false
     })
   );
-}
-
-function createTerminatorShade(radius: number): THREE.Mesh {
-  const shade = new THREE.Mesh(
-    new THREE.SphereGeometry(radius * 1.006, 96, 64),
-    new THREE.ShaderMaterial({
-      uniforms: {
-        lightDirection: { value: new THREE.Vector3(-0.45, 0.32, 0.83).normalize() }
-      },
-      vertexShader: `
-        varying vec3 vWorldNormal;
-        void main() {
-          vWorldNormal = normalize(mat3(modelMatrix) * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 lightDirection;
-        varying vec3 vWorldNormal;
-        void main() {
-          float night = smoothstep(0.18, -0.42, dot(normalize(vWorldNormal), lightDirection));
-          gl_FragColor = vec4(0.01, 0.025, 0.055, night * 0.24);
-        }
-      `,
-      transparent: true,
-      depthWrite: false
-    })
-  );
-  shade.renderOrder = 2;
-  return shade;
 }
 
 function createCloudTexture(): THREE.CanvasTexture {
