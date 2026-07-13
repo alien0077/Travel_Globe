@@ -354,10 +354,10 @@ function addAlienAirFuselageWordMarks(scene) {
   scene.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(scene);
   const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const fuselage = estimateFuselageBand(scene, box, size);
+  const axes = detectFuselageAxes(size);
+  const fuselage = estimateFuselageBand(scene, box, size, axes);
   const side = fuselage.halfWidth * 0.98;
-  const scale = fuselage.wordLength / 5.7;
+  const scale = fuselage.scale;
   const white = new THREE.MeshStandardMaterial({
     name: 'Alien Air embedded white fuselage lettering',
     color: 0xffffff,
@@ -370,11 +370,12 @@ function addAlienAirFuselageWordMarks(scene) {
   scene.add(
     createEmbeddedWordMark({
       side: 1,
-      sideX: center.x + side,
-      centerY: fuselage.centerY,
+      sidePosition: fuselage.sideCenter + side,
+      centerUp: fuselage.centerUp,
       centerZ: fuselage.centerZ,
       scale,
       strokeWidth: fuselage.strokeWidth,
+      axes,
       root: scene,
       material: white
     })
@@ -382,35 +383,127 @@ function addAlienAirFuselageWordMarks(scene) {
   scene.add(
     createEmbeddedWordMark({
       side: -1,
-      sideX: center.x - side,
-      centerY: fuselage.centerY,
+      sidePosition: fuselage.sideCenter - side,
+      centerUp: fuselage.centerUp,
       centerZ: fuselage.centerZ,
       scale,
       strokeWidth: fuselage.strokeWidth,
+      axes,
       root: scene,
       material: white
     })
   );
 }
 
-function estimateFuselageBand(scene, box, size) {
-  const halfWidth = Math.max(0.08, Math.min(size.y * 0.07, size.z * 0.018));
-  const centerY = box.min.y + size.y * 0.5;
-  const centerZ = box.min.z + size.z * 0.55;
-  const wordLength = THREE.MathUtils.clamp(size.z * 0.24, size.z * 0.15, size.z * 0.3);
-  const strokeWidth = Math.max(wordLength * 0.055, Math.min(size.x, size.y) * 0.035, 0.05);
-  return { centerY, centerZ, halfWidth, strokeWidth, wordLength };
+function detectFuselageAxes(size) {
+  const sideAxis = size.x >= size.y ? 'x' : 'y';
+  const upAxis = sideAxis === 'x' ? 'y' : 'x';
+  return { sideAxis, upAxis };
 }
 
-function createEmbeddedWordMark({ side, sideX, centerY, centerZ, scale, strokeWidth, root, material }) {
+function estimateFuselageBand(scene, box, size, axes) {
+  const bodyPoints = collectFuselageBodyPoints(scene, box, size, axes);
+  const sideValues = bodyPoints.map((point) => point[axes.sideAxis]).sort((left, right) => left - right);
+  const upValues = bodyPoints.map((point) => point[axes.upAxis]).sort((left, right) => left - right);
+  const zValues = bodyPoints.map((point) => point.z).sort((left, right) => left - right);
+  const sideMin = percentile(sideValues, 0.12);
+  const sideMax = percentile(sideValues, 0.88);
+  const upMin = percentile(upValues, 0.12);
+  const upMax = percentile(upValues, 0.88);
+  const zMin = percentile(zValues, 0.1);
+  const zMax = percentile(zValues, 0.9);
+  const modelCenter = box.getCenter(new THREE.Vector3());
+  const sideCenter = modelCenter[axes.sideAxis];
+  const halfWidth = THREE.MathUtils.clamp((sideMax - sideMin) * 0.5, size[axes.upAxis] * 0.035, size[axes.upAxis] * 0.18);
+  const bodyHeight = Math.max(0.001, upMax - upMin);
+  const bodyLength = Math.max(0.001, zMax - zMin);
+  const centerUp = percentile(upValues, 0.58);
+  const centerZ = percentile(zValues, 0.54);
+  const wordLength = THREE.MathUtils.clamp(bodyLength * 0.32, size.z * 0.12, size.z * 0.22);
+  const scale = Math.min(wordLength / 5.7, (bodyHeight * 0.54) / 0.6);
+  const strokeWidth = Math.max(scale * 0.28, bodyHeight * 0.055, 0.035);
+  return { centerUp, centerZ, halfWidth, sideCenter, strokeWidth, scale };
+}
+
+function collectFuselageBodyPoints(scene, box, size, axes) {
+  const bodyPoints = [];
+  const fallbackPoints = [];
+  const scratch = new THREE.Vector3();
+  const zMin = box.min.z + size.z * 0.24;
+  const zMax = box.max.z - size.z * 0.24;
+  scene.updateMatrixWorld(true);
+  scene.traverse((object) => {
+    if (!object.isMesh || !object.geometry?.attributes?.position) {
+      return;
+    }
+    const materialName = Array.isArray(object.material)
+      ? object.material.map((material) => material?.name ?? '').join(' ')
+      : object.material?.name ?? '';
+    const objectName = `${object.name} ${materialName}`.toLowerCase();
+    if (
+      /alien air embedded|wing|flap|slat|aileron|stabilizer|rudder|elevator|tail|fin|engine|nacelle|pylon|gear|strut|wheel|tire|fan|cockpit|window|glass/.test(
+        objectName
+      )
+    ) {
+      return;
+    }
+    const isBodyMaterial = /alien air gloss red/.test(materialName.toLowerCase());
+    const position = object.geometry.attributes.position;
+    const stride = Math.max(1, Math.ceil(position.count / 1800));
+    for (let index = 0; index < position.count; index += stride) {
+      scratch.fromBufferAttribute(position, index).applyMatrix4(object.matrixWorld);
+      if (scratch.z < zMin || scratch.z > zMax) {
+        continue;
+      }
+      fallbackPoints.push(scratch.clone());
+      if (isBodyMaterial) {
+        bodyPoints.push(scratch.clone());
+      }
+    }
+  });
+
+  if (bodyPoints.length >= 16) {
+    return bodyPoints;
+  }
+  if (fallbackPoints.length >= 16) {
+    return fallbackPoints;
+  }
+
+  const center = box.getCenter(new THREE.Vector3());
+  const sideRadius = Math.max(0.08, Math.min(size[axes.upAxis] * 0.07, size.z * 0.018));
+  const upRadius = Math.max(0.08, size[axes.upAxis] * 0.18);
+  const bodyLength = size.z * 0.5;
+  return [
+    makePoint(axes, center[axes.sideAxis] - sideRadius, center[axes.upAxis] - upRadius, center.z - bodyLength * 0.5),
+    makePoint(axes, center[axes.sideAxis] + sideRadius, center[axes.upAxis] + upRadius, center.z + bodyLength * 0.5),
+    makePoint(axes, center[axes.sideAxis], center[axes.upAxis], center.z)
+  ];
+}
+
+function makePoint(axes, side, up, z) {
+  const point = new THREE.Vector3(0, 0, z);
+  point[axes.sideAxis] = side;
+  point[axes.upAxis] = up;
+  return point;
+}
+
+function percentile(sortedValues, ratio) {
+  if (sortedValues.length === 0) {
+    return 0;
+  }
+  const index = THREE.MathUtils.clamp(Math.round((sortedValues.length - 1) * ratio), 0, sortedValues.length - 1);
+  return sortedValues[index];
+}
+
+function createEmbeddedWordMark({ side, sidePosition, centerUp, centerZ, scale, strokeWidth, axes, root, material }) {
   const group = new THREE.Group();
   group.name = `Alien Air embedded ${side > 0 ? 'right' : 'left'} fuselage wordmark`;
   const width = scale * 5.7;
   const height = scale * 0.6;
   const strokes = buildAlienAirScriptStrokes();
   for (const stroke of strokes) {
-    const worldPoints = stroke.map(([x, y]) => mapScriptPoint({ x, y, width, height, side, sideX, centerY, centerZ }));
-    const geometry = createRibbonStrokeGeometry(worldPoints, strokeWidth, root);
+    const worldPoints = stroke.map(([x, y]) => mapScriptPoint({ x, y, width, height, side, sidePosition, centerUp, centerZ, axes }));
+    const geometry = createRibbonStrokeGeometry(worldPoints, strokeWidth, axes, root);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Alien Air embedded fuselage lettering';
     mesh.renderOrder = 2;
@@ -419,18 +512,22 @@ function createEmbeddedWordMark({ side, sideX, centerY, centerZ, scale, strokeWi
   return group;
 }
 
-function mapScriptPoint({ x, y, width, height, side, sideX, centerY, centerZ }) {
+function mapScriptPoint({ x, y, width, height, side, sidePosition, centerUp, centerZ, axes }) {
   const horizontal = (x - 0.5) * width;
   const vertical = (y - 0.5) * height;
-  return new THREE.Vector3(sideX, centerY + vertical, centerZ + horizontal * side);
+  const point = new THREE.Vector3(0, 0, centerZ + horizontal * side);
+  point[axes.sideAxis] = sidePosition;
+  point[axes.upAxis] = centerUp + vertical;
+  return point;
 }
 
-function createRibbonStrokeGeometry(worldPoints, strokeWidth, root) {
+function createRibbonStrokeGeometry(worldPoints, strokeWidth, axes, root) {
   const vertices = [];
   const indices = [];
   const half = strokeWidth * 0.5;
   const rootInverse = root.matrixWorld.clone().invert();
   const localPoint = new THREE.Vector3();
+  const planeNormal = axisVector(axes.sideAxis);
 
   for (let index = 0; index < worldPoints.length; index += 1) {
     const previous = worldPoints[Math.max(0, index - 1)];
@@ -440,7 +537,10 @@ function createRibbonStrokeGeometry(worldPoints, strokeWidth, root) {
     if (tangent.lengthSq() < 0.000001) {
       tangent.set(0, 0, 1);
     }
-    const perpendicular = new THREE.Vector3(0, -tangent.z, tangent.y).normalize();
+    const perpendicular = new THREE.Vector3().crossVectors(planeNormal, tangent).normalize();
+    if (perpendicular.lengthSq() < 0.000001) {
+      perpendicular.copy(axisVector(axes.upAxis));
+    }
     const left = current.clone().add(perpendicular.clone().multiplyScalar(half));
     const right = current.clone().add(perpendicular.clone().multiplyScalar(-half));
     for (const point of [left, right]) {
