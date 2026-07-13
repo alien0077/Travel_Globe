@@ -11,10 +11,12 @@
     "Removed original airline livery if present",
     "Generated LOD models if needed",
     "Compressed textures if needed",
-    "Repainted as Alien Air red and white livery",
     "Removed original airline livery",
     "Preserved complete mesh geometry to avoid fragmented fuselages",
     "Added raised white fuselage lettering without rectangular backing panels",
+    "Repainted as Alien Air black and white livery",
+    "Retracted landing gear for in-flight display",
+    "Preserved original window, cockpit, and door meshes where available",
     "Embedded flat white Alien Air lettering into both fuselage sides"
   ]
 }

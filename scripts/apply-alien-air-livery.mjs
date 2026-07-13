@@ -105,14 +105,17 @@ for (const target of targets) {
   const gltf = await parseGlb(fs.readFileSync(sourceFile));
   const scene = gltf.scene;
   scene.name = `${target.slug} Alien Air livery`;
+  scene.userData.aircraftSlug = target.slug;
 
   stripAnimationsAndCameras(gltf);
   orientNoseToPositiveZ(scene);
   applyAlienAirBaseMaterials(scene);
+  retractLandingGear(scene);
   if (!skipSimplify) {
     simplifyIfNeeded(scene, 120000);
   }
   centerScene(scene);
+  applyGeometricWhiteSurfaces(scene);
   applyAlienAirAccentMaterials(scene);
   addAlienAirFuselageWordMarks(scene);
 
@@ -165,29 +168,20 @@ function stripAnimationsAndCameras(gltf) {
 }
 
 function applyAlienAirBaseMaterials(scene) {
-  const red = new THREE.MeshStandardMaterial({
-    name: 'Alien Air gloss red',
-    color: 0xd71920,
-    emissive: 0x2a0204,
+  const black = new THREE.MeshStandardMaterial({
+    name: 'Alien Air satin black fuselage',
+    color: 0x070b10,
+    emissive: 0x020406,
     emissiveIntensity: 0.08,
-    roughness: 0.27,
-    metalness: 0.12
+    roughness: 0.24,
+    metalness: 0.18
   });
   const white = new THREE.MeshStandardMaterial({
-    name: 'Alien Air warm white',
-    color: 0xffffff,
-    roughness: 0.34,
+    name: 'Alien Air aircraft white',
+    color: 0xf6f8f8,
+    roughness: 0.31,
     metalness: 0.08
   });
-  const dark = new THREE.MeshStandardMaterial({
-    name: 'Alien Air cockpit dark',
-    color: 0x101820,
-    emissive: 0x05080b,
-    emissiveIntensity: 0.1,
-    roughness: 0.45,
-    metalness: 0.06
-  });
-
   scene.traverse((object) => {
     if (!object.isMesh) {
       return;
@@ -195,24 +189,27 @@ function applyAlienAirBaseMaterials(scene) {
     object.castShadow = false;
     object.receiveShadow = false;
     const name = `${object.name} ${object.material?.name ?? ''}`.toLowerCase();
-    if (/window|glass|cockpit|tire|wheel|fan|black/.test(name)) {
-      object.material = dark;
+    if (/window|glass|cockpit|windshield|door|exit/.test(name)) {
+      return;
+    }
+    if (/tire|wheel|fan|black/.test(name)) {
+      return;
     } else if (/wing|flap|slat|aileron|stabilizer|rudder|elevator|engine|nacelle|pylon|gear|strut/.test(name)) {
       object.material = white;
     } else {
-      object.material = red;
+      object.material = black;
     }
   });
 }
 
 function applyAlienAirAccentMaterials(scene) {
-  const redAccent = new THREE.MeshStandardMaterial({
-    name: 'Alien Air integrated red accent',
-    color: 0xd71920,
-    emissive: 0x2a0204,
-    emissiveIntensity: 0.1,
-    roughness: 0.28,
-    metalness: 0.1
+  const blackAccent = new THREE.MeshStandardMaterial({
+    name: 'Alien Air satin black tail',
+    color: 0x05080d,
+    emissive: 0x020406,
+    emissiveIntensity: 0.08,
+    roughness: 0.24,
+    metalness: 0.16
   });
 
   scene.traverse((object) => {
@@ -220,10 +217,196 @@ function applyAlienAirAccentMaterials(scene) {
       return;
     }
     const name = `${object.name} ${object.material?.name ?? ''}`.toLowerCase();
-    if (/tail|fin|rudder|winglet|tip/.test(name)) {
-      object.material = redAccent;
+    if (/tail|fin|rudder/.test(name)) {
+      object.material = blackAccent;
     }
   });
+}
+
+function applyGeometricWhiteSurfaces(scene) {
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const axes = detectFuselageAxes(size);
+  const fuselage = estimateFuselageBand(scene, box, size, axes);
+  const white = new THREE.MeshStandardMaterial({
+    name: 'Alien Air aircraft white',
+    color: 0xf6f8f8,
+    roughness: 0.31,
+    metalness: 0.08
+  });
+  const candidates = [];
+  scene.traverse((object) => {
+    if (!object.visible || !object.isMesh || !object.geometry?.attributes?.position || Array.isArray(object.material)) {
+      return;
+    }
+    const name = `${object.name} ${object.parent?.name ?? ''} ${object.material?.name ?? ''}`.toLowerCase();
+    if (!/alien air satin black fuselage/.test(name) || /alien air embedded/.test(name)) {
+      return;
+    }
+    candidates.push(object);
+  });
+
+  for (const object of candidates) {
+    splitWhiteSurfaceTriangles(object, white, fuselage, axes);
+  }
+}
+
+function splitWhiteSurfaceTriangles(object, whiteMaterial, fuselage, axes) {
+  const geometry = object.geometry;
+  const position = geometry.attributes.position;
+  const normal = geometry.attributes.normal;
+  const uv = geometry.attributes.uv;
+  const index = geometry.index;
+  const blackPositions = [];
+  const blackNormals = [];
+  const blackUvs = [];
+  const whitePositions = [];
+  const whiteNormals = [];
+  const whiteUvs = [];
+  const local = new THREE.Vector3();
+  const world = new THREE.Vector3();
+  const worldTriangle = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const localTriangle = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const normalTriangle = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const uvTriangle = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()];
+  const triangleCount = index ? index.count / 3 : position.count / 3;
+  let whiteTriangles = 0;
+  let blackTriangles = 0;
+
+  for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+    const vertexIndices = index
+      ? [index.getX(triangle * 3), index.getX(triangle * 3 + 1), index.getX(triangle * 3 + 2)]
+      : [triangle * 3, triangle * 3 + 1, triangle * 3 + 2];
+    const centroid = new THREE.Vector3();
+    for (let corner = 0; corner < 3; corner += 1) {
+      const vertexIndex = vertexIndices[corner];
+      local.fromBufferAttribute(position, vertexIndex);
+      localTriangle[corner].copy(local);
+      world.copy(local).applyMatrix4(object.matrixWorld);
+      worldTriangle[corner].copy(world);
+      centroid.add(world);
+      if (normal) {
+        normalTriangle[corner].fromBufferAttribute(normal, vertexIndex);
+      }
+      if (uv) {
+        uvTriangle[corner].fromBufferAttribute(uv, vertexIndex);
+      }
+    }
+    centroid.multiplyScalar(1 / 3);
+    const targetPositions = isWhiteAircraftSurface(centroid, worldTriangle, fuselage, axes) ? whitePositions : blackPositions;
+    const targetNormals = targetPositions === whitePositions ? whiteNormals : blackNormals;
+    const targetUvs = targetPositions === whitePositions ? whiteUvs : blackUvs;
+    if (targetPositions === whitePositions) {
+      whiteTriangles += 1;
+    } else {
+      blackTriangles += 1;
+    }
+    for (let corner = 0; corner < 3; corner += 1) {
+      targetPositions.push(localTriangle[corner].x, localTriangle[corner].y, localTriangle[corner].z);
+      if (normal) {
+        targetNormals.push(normalTriangle[corner].x, normalTriangle[corner].y, normalTriangle[corner].z);
+      }
+      if (uv) {
+        targetUvs.push(uvTriangle[corner].x, uvTriangle[corner].y);
+      }
+    }
+  }
+
+  if (whiteTriangles < 8 || blackTriangles < 8) {
+    return;
+  }
+
+  object.geometry = buildSplitGeometry(blackPositions, blackNormals, blackUvs);
+  const whiteMesh = new THREE.Mesh(buildSplitGeometry(whitePositions, whiteNormals, whiteUvs), whiteMaterial);
+  whiteMesh.name = `${object.name || 'aircraft'} white wing and stabilizer surfaces`;
+  whiteMesh.position.copy(object.position);
+  whiteMesh.quaternion.copy(object.quaternion);
+  whiteMesh.scale.copy(object.scale);
+  whiteMesh.castShadow = false;
+  whiteMesh.receiveShadow = false;
+  object.parent?.add(whiteMesh);
+}
+
+function isWhiteAircraftSurface(centroid, triangle, fuselage, axes) {
+  const sideDistance = Math.abs(centroid[axes.sideAxis] - fuselage.sideCenter);
+  const wingSide = sideDistance > fuselage.halfWidth * 1.35;
+  if (!wingSide) {
+    return false;
+  }
+  const upValues = triangle.map((point) => point[axes.upAxis]);
+  const upSpan = Math.max(...upValues) - Math.min(...upValues);
+  const nearTailOrWing = centroid.z > fuselage.zMin - fuselage.bodyLength * 0.12 && centroid.z < fuselage.zMax + fuselage.bodyLength * 0.18;
+  return nearTailOrWing && upSpan < fuselage.bodyHeight * 0.7;
+}
+
+function buildSplitGeometry(positions, normals, uvs) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if (normals.length === positions.length) {
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  } else {
+    geometry.computeVertexNormals();
+  }
+  if (uvs.length * 3 === positions.length * 2) {
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  }
+  return geometry;
+}
+
+function retractLandingGear(scene) {
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const axes = detectFuselageAxes(size);
+  const fuselage = estimateFuselageBand(scene, box, size, axes);
+  const candidates = [];
+  const slug = scene.userData.aircraftSlug;
+
+  scene.traverse((object) => {
+    if (!object.isMesh) {
+      return;
+    }
+    const materialName = Array.isArray(object.material)
+      ? object.material.map((material) => material?.name ?? '').join(' ')
+      : object.material?.name ?? '';
+    const name = `${object.name} ${object.parent?.name ?? ''} ${materialName}`.toLowerCase();
+    const knownB777Gear =
+      slug === 'b777-300er' &&
+      /(cylinder0(63|66|67|68|69|70|73|82|86|87)|cube0(28|32|34|36)|nurbspath0(06|07|08|15|16|18|26|27))/.test(name);
+    const knownA321Gear = slug === 'a321neo' && /(mesh(7|8|35|36|51|52)|bmwx_tyre)/.test(name);
+    if (/landing.?gear|gear|undercarriage|strut|wheel|tire|tyre|bogie|brake/.test(name) || knownB777Gear || knownA321Gear) {
+      object.visible = false;
+      return;
+    }
+    if (/engine|nacelle|fan|window|glass|cockpit|windshield|door|exit|alien air embedded/.test(name)) {
+      return;
+    }
+    candidates.push(object);
+  });
+
+  for (const object of candidates) {
+    const objectBox = new THREE.Box3().setFromObject(object);
+    const objectSize = objectBox.getSize(new THREE.Vector3());
+    const objectCenter = objectBox.getCenter(new THREE.Vector3());
+    const low = objectCenter[axes.upAxis] < fuselage.upMin - fuselage.bodyHeight * 0.05;
+    const compact =
+      objectSize[axes.sideAxis] < fuselage.bodyHeight * 0.95 &&
+      objectSize[axes.upAxis] < fuselage.bodyHeight * 0.75 &&
+      objectSize.z < fuselage.bodyLength * 0.16;
+    const inGearBayZone =
+      objectCenter.z > fuselage.zMin - fuselage.bodyLength * 0.08 &&
+      objectCenter.z < fuselage.zMax + fuselage.bodyLength * 0.08;
+    const sceneLow = (objectCenter[axes.upAxis] - box.min[axes.upAxis]) / Math.max(size[axes.upAxis], 0.0001) < 0.24;
+    const sceneCompact =
+      objectSize[axes.sideAxis] < size[axes.sideAxis] * 0.16 &&
+      objectSize[axes.upAxis] < size[axes.upAxis] * 0.16 &&
+      objectSize.z < size.z * 0.14;
+    const slugNeedsGeometricGearRetraction = slug === 'b777-300er' || slug === 'a321neo';
+    if ((low && compact && inGearBayZone) || (slugNeedsGeometricGearRetraction && sceneLow && sceneCompact)) {
+      object.visible = false;
+    }
+  }
 }
 
 function simplifyIfNeeded(scene, targetTriangles) {
@@ -417,12 +600,25 @@ function estimateFuselageBand(scene, box, size, axes) {
   const halfWidth = THREE.MathUtils.clamp((sideMax - sideMin) * 0.5, size[axes.upAxis] * 0.035, size[axes.upAxis] * 0.18);
   const bodyHeight = Math.max(0.001, upMax - upMin);
   const bodyLength = Math.max(0.001, zMax - zMin);
-  const centerUp = percentile(upValues, 0.58);
-  const centerZ = percentile(zValues, 0.54);
-  const wordLength = THREE.MathUtils.clamp(bodyLength * 0.32, size.z * 0.12, size.z * 0.22);
-  const scale = Math.min(wordLength / 5.7, (bodyHeight * 0.54) / 0.6);
-  const strokeWidth = Math.max(scale * 0.28, bodyHeight * 0.055, 0.035);
-  return { centerUp, centerZ, halfWidth, sideCenter, strokeWidth, scale };
+  const centerUp = percentile(upValues, 0.72);
+  const centerZ = percentile(zValues, 0.62);
+  const wordLength = THREE.MathUtils.clamp(bodyLength * 0.36, size.z * 0.14, size.z * 0.25);
+  const scale = Math.min(wordLength / 5.7, (bodyHeight * 0.46) / 0.6);
+  const strokeWidth = Math.max(scale * 0.3, bodyHeight * 0.05, 0.035);
+  return {
+    centerUp,
+    centerZ,
+    halfWidth,
+    sideCenter,
+    strokeWidth,
+    scale,
+    bodyHeight,
+    bodyLength,
+    upMin,
+    upMax,
+    zMin,
+    zMax
+  };
 }
 
 function collectFuselageBodyPoints(scene, box, size, axes) {
@@ -447,7 +643,7 @@ function collectFuselageBodyPoints(scene, box, size, axes) {
     ) {
       return;
     }
-    const isBodyMaterial = /alien air gloss red/.test(materialName.toLowerCase());
+    const isBodyMaterial = isAlienAirBodyMaterial(materialName);
     const position = object.geometry.attributes.position;
     const stride = Math.max(1, Math.ceil(position.count / 1800));
     for (let index = 0; index < position.count; index += stride) {
@@ -480,6 +676,10 @@ function collectFuselageBodyPoints(scene, box, size, axes) {
   ];
 }
 
+function isAlienAirBodyMaterial(materialName) {
+  return /alien air (gloss red|satin black fuselage|satin black tail)/i.test(materialName);
+}
+
 function makePoint(axes, side, up, z) {
   const point = new THREE.Vector3(0, 0, z);
   point[axes.sideAxis] = side;
@@ -506,7 +706,7 @@ function createEmbeddedWordMark({ side, sidePosition, centerUp, centerZ, scale, 
     const geometry = createRibbonStrokeGeometry(worldPoints, strokeWidth, axes, root);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Alien Air embedded fuselage lettering';
-    mesh.renderOrder = 2;
+    mesh.renderOrder = 5;
     group.add(mesh);
   }
   return group;
@@ -653,8 +853,10 @@ function updateManifestEntry(slug, modelUrl, triangles) {
   entry.neutralizeLivery = false;
   entry.modifications = unique([
     ...removeObsoleteLiveryNotes(entry.modifications ?? []),
-    'Repainted as Alien Air red and white livery',
+    'Repainted as Alien Air black and white livery',
     'Removed original airline livery',
+    'Retracted landing gear for in-flight display',
+    'Preserved original window, cockpit, and door meshes where available',
     'Preserved complete mesh geometry to avoid fragmented fuselages',
     'Embedded flat white Alien Air lettering into both fuselage sides'
   ]);
@@ -668,8 +870,10 @@ function updateLicenseFile(slug) {
   const license = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
   license.modifications = unique([
     ...removeObsoleteLiveryNotes(license.modifications ?? []),
-    'Repainted as Alien Air red and white livery',
+    'Repainted as Alien Air black and white livery',
     'Removed original airline livery',
+    'Retracted landing gear for in-flight display',
+    'Preserved original window, cockpit, and door meshes where available',
     'Preserved complete mesh geometry to avoid fragmented fuselages',
     'Embedded flat white Alien Air lettering into both fuselage sides'
   ]);
@@ -679,7 +883,7 @@ function updateLicenseFile(slug) {
 function removeObsoleteLiveryNotes(values) {
   return values.filter(
     (value) =>
-      !/floating decal|fuselage, wing, and tail Alien Air markings|cursive Alien Air fuselage script|thick cursive Alien Air script|embedded flat white Alien Air lettering/i.test(
+      !/floating decal|fuselage, wing, and tail Alien Air markings|cursive Alien Air fuselage script|thick cursive Alien Air script|embedded flat white Alien Air lettering|repainted as Alien Air red and white livery|retracted landing gear|embedded passenger and cockpit window geometry|embedded white passenger door outlines|preserved original window, cockpit, and door meshes/i.test(
         value
       )
   );

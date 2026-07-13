@@ -65,9 +65,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 42429,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -112,9 +114,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 59486,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -161,9 +165,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 2160118,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -211,9 +217,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 9636,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -261,9 +269,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 474564,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -308,9 +318,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 93127,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -357,9 +369,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 5421,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     },
@@ -404,9 +418,11 @@
       "neutralizeLivery": false,
       "actualTriangles": 6942,
       "modifications": [
-        "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Repainted as Alien Air black and white livery",
+        "Retracted landing gear for in-flight display",
+        "Preserved original window, cockpit, and door meshes where available",
         "Embedded flat white Alien Air lettering into both fuselage sides"
       ]
     }
