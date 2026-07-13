@@ -237,6 +237,72 @@ a {
   text-transform: uppercase;
 }
 
+.airport-picker {
+  position: relative;
+}
+
+.airport-picker-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid rgb(31 63 61 / 18%);
+  border-radius: 8px;
+  background: rgb(251 253 251 / 96%);
+  box-shadow: 0 16px 38px rgb(27 50 48 / 18%);
+}
+
+.airport-option {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 2px 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid rgb(31 63 61 / 10%);
+  background: transparent;
+  color: #203d3b;
+  text-align: left;
+}
+
+.airport-option:last-child {
+  border-bottom: 0;
+}
+
+.airport-option strong {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 13px;
+}
+
+.airport-option span,
+.airport-option small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.airport-option span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.airport-option small {
+  color: #6d7e7c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.airport-option:hover,
+.airport-option:focus {
+  background: rgb(42 129 123 / 10%);
+}
+
 .preload-input {
   width: 100%;
   min-height: 34px;
@@ -678,6 +744,18 @@ a {
     margin-top: 0;
   }
 
+  .info-dock.has-open-preload {
+    top: calc(20px + env(safe-area-inset-top)) !important;
+    right: calc(10px + env(safe-area-inset-right)) !important;
+    left: calc(10px + env(safe-area-inset-left)) !important;
+    width: auto !important;
+  }
+
+  .info-dock.has-open-preload .preload-panel-shell[open] {
+    max-height: calc(100svh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
   .dock-panel:not([open]) .panel-summary {
     min-height: 34px;
     padding: 8px 10px;
@@ -823,6 +901,18 @@ a {
   display: grid;
   gap: 8px;
   margin-top: 0;
+}
+
+.app-shell.is-compact .info-dock.has-open-preload {
+  top: calc(20px + env(safe-area-inset-top)) !important;
+  right: calc(10px + env(safe-area-inset-right)) !important;
+  left: calc(10px + env(safe-area-inset-left)) !important;
+  width: auto !important;
+}
+
+.app-shell.is-compact .info-dock.has-open-preload .preload-panel-shell[open] {
+  max-height: calc(100svh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
 }
 
 .app-shell.is-compact .dock-panel:not([open]) .panel-summary {

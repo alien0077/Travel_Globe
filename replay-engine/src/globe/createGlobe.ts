@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
+import { resolveBundledAsset } from '../assets/resolveBundledAsset';
 import { fixtureLandmarks } from '../geo/landmarks';
 import { geographicToVector3 } from '../geo/geodesy';
 
@@ -26,6 +27,9 @@ export function createGlobe(radius = 2): GlobeObjects {
     bumpMap: earthTexture,
     bumpScale: 0.018,
     color: 0xffffff,
+    emissive: 0x446676,
+    emissiveMap: earthTexture,
+    emissiveIntensity: 0.18,
     roughness: 0.92,
     metalness: 0.0
   });
@@ -51,16 +55,6 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(createTerminatorShade(radius));
 
   return { globe, earth, clouds };
-}
-
-function resolveBundledAsset(filename: string): string {
-  const currentScript = document.currentScript as HTMLScriptElement | null;
-  const bundledScript =
-    currentScript?.src ||
-    [...document.scripts].find((script) => script.src.endsWith('/index.js') || script.src.endsWith('index.js'))?.src ||
-    window.location.href;
-
-  return new URL(filename, bundledScript).href;
 }
 
 export function createStarField(count = 900, radius = 52): THREE.Points {
@@ -279,7 +273,7 @@ function createTerminatorShade(radius: number): THREE.Mesh {
         varying vec3 vWorldNormal;
         void main() {
           float night = smoothstep(0.18, -0.42, dot(normalize(vWorldNormal), lightDirection));
-          gl_FragColor = vec4(0.01, 0.025, 0.055, night * 0.48);
+          gl_FragColor = vec4(0.01, 0.025, 0.055, night * 0.24);
         }
       `,
       transparent: true,

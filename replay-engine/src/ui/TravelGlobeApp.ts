@@ -14,7 +14,12 @@ import {
 } from '../flight/flightAnalytics';
 import { OfflineAirportFlightPreloadProvider } from '../flight/flightPlanProvider';
 import type { PreloadFlightRequest } from '../flight-preload/buildPreloadedFlightJourney';
-import { findAirportContextByIata, getAirportIndexSummary, listAirportSuggestions } from '../flight-preload/airportIndex';
+import {
+  findAirportContextByIata,
+  getAirportIndexSummary,
+  listAirportSuggestions,
+  type AirportRecord
+} from '../flight-preload/airportIndex';
 import { findNearestLandmark } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
@@ -165,6 +170,9 @@ export class TravelGlobeApp {
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載';
     preloadShell.append(preloadSummary, this.preloadPanel);
+    preloadShell.addEventListener('toggle', () => {
+      dock.classList.toggle('has-open-preload', preloadShell.open);
+    });
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -514,10 +522,11 @@ export class TravelGlobeApp {
     const form = document.createElement('form');
     form.className = 'preload-form';
 
+    const airportSuggestions = listAirportSuggestions();
     const airports = document.createElement('datalist');
     airports.id = 'airport-iata-options';
     airports.replaceChildren(
-      ...listAirportSuggestions().map((airport) => {
+      ...airportSuggestions.map((airport) => {
         const option = document.createElement('option');
         option.value = airport.iataCode ?? '';
         option.label = `${airport.iataCode} ${airport.name}`;
@@ -535,15 +544,36 @@ export class TravelGlobeApp {
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
     submitButton.className = 'preload-submit';
-    submitButton.textContent = '預載進入';
+    submitButton.textContent = '套用航線';
 
     this.preloadStatus.className = 'preload-status';
-    this.preloadStatus.textContent = '輸入 CI100 可由離線班表解析 TPE -> NRT；手動機場欄位可留空或覆寫。';
+    this.preloadStatus.textContent = '輸入航班或選擇起飛/抵達，修改日期時間後按「套用航線」才會更新地球與航跡。';
+
+    const markPending = (): void => {
+      this.preloadStatus.textContent = '已修改設定，請按「套用航線」更新地球、時間與航跡。';
+    };
+    for (const input of [
+      this.flightNumberInput,
+      this.originInput,
+      this.destinationInput,
+      this.departureDateInput,
+      this.departureTimeInput,
+      this.durationInput
+    ]) {
+      input.addEventListener('input', markPending);
+      input.addEventListener('change', markPending);
+    }
 
     form.append(
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
-      field('起飛', this.originInput, { placeholder: '自動', list: airports.id, required: false }),
-      field('抵達', this.destinationInput, { placeholder: '自動', list: airports.id, required: false }),
+      airportField('起飛', this.originInput, airportSuggestions, markPending, {
+        placeholder: 'TPE / Taipei',
+        list: airports.id
+      }),
+      airportField('抵達', this.destinationInput, airportSuggestions, markPending, {
+        placeholder: 'NRT / Tokyo',
+        list: airports.id
+      }),
       field('日期', this.departureDateInput, { type: 'date' }),
       field('時間', this.departureTimeInput, { type: 'time' }),
       field('分鐘', this.durationInput, { type: 'number', min: '30', step: '5', required: false }),
@@ -878,6 +908,74 @@ function field(
     input.setAttribute('list', options.list);
   }
   wrapper.append(text, input);
+  return wrapper;
+}
+
+function airportField(
+  label: string,
+  input: HTMLInputElement,
+  airports: AirportRecord[],
+  onSelect: () => void,
+  options: { placeholder?: string; list?: string } = {}
+): HTMLElement {
+  const wrapper = field(label, input, { placeholder: options.placeholder, list: options.list, required: false });
+  wrapper.classList.add('airport-picker');
+
+  const menu = document.createElement('div');
+  menu.className = 'airport-picker-menu';
+  menu.hidden = true;
+  wrapper.append(menu);
+
+  const showMatches = (): void => {
+    const query = input.value.trim().toUpperCase();
+    const matches = airports
+      .filter((airport) => {
+        const haystack = [
+          airport.iataCode,
+          airport.icaoCode,
+          airport.name,
+          airport.municipality,
+          airport.countryCode
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toUpperCase();
+        return query.length === 0 || haystack.includes(query);
+      })
+      .slice(0, 8);
+
+    const buttons = matches.map((airport) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'airport-option';
+      const code = document.createElement('strong');
+      code.textContent = airport.iataCode ?? '';
+      const name = document.createElement('span');
+      name.textContent = airport.name;
+      const place = document.createElement('small');
+      place.textContent = `${airport.municipality}, ${airport.countryCode}`;
+      button.append(code, name, place);
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        input.value = airport.iataCode ?? '';
+        menu.hidden = true;
+        onSelect();
+      });
+      return button;
+    });
+
+    menu.replaceChildren(...buttons);
+    menu.hidden = buttons.length === 0;
+  };
+
+  input.addEventListener('focus', showMatches);
+  input.addEventListener('input', showMatches);
+  input.addEventListener('blur', () => {
+    window.setTimeout(() => {
+      menu.hidden = true;
+    }, 120);
+  });
+
   return wrapper;
 }
 

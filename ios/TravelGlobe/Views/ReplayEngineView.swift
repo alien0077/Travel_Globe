@@ -124,10 +124,13 @@ struct ReplayEngineView: UIViewRepresentable {
 
             do {
                 let source = try String(contentsOf: scriptURL, encoding: .utf8)
+                let assetBase = scriptURL.deletingLastPathComponent().absoluteString
+                let assetBaseLiteral = Self.javascriptStringLiteral(assetBase)
+                let bootstrappedSource = "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);\n" + source
                 Task { @MainActor in
                     appModel.updateReplayEngineStatus("injecting")
                 }
-                webView.evaluateJavaScript(source) { [weak self] _, error in
+                webView.evaluateJavaScript(bootstrappedSource) { [weak self] _, error in
                     guard let self else { return }
                     if let error {
                         Task { @MainActor in
@@ -144,6 +147,16 @@ struct ReplayEngineView: UIViewRepresentable {
                     appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
                 }
             }
+        }
+
+        private static func javascriptStringLiteral(_ value: String) -> String {
+            guard
+                let data = try? JSONEncoder().encode(value),
+                let literal = String(data: data, encoding: .utf8)
+            else {
+                return "\"\""
+            }
+            return literal
         }
     }
 }

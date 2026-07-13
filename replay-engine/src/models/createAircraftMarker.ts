@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { resolveBundledAsset } from '../assets/resolveBundledAsset';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 import {
@@ -10,6 +11,7 @@ import {
 export function createAircraftMarker(aircraftType?: string): THREE.Group {
   const aircraft = new THREE.Group();
   aircraft.name = aircraftType ? `Aircraft ${aircraftType}` : 'Aircraft library marker';
+  aircraft.add(createEmergencyAircraftMarker());
   void loadExternalAircraftModel(aircraft, aircraftType);
   return aircraft;
 }
@@ -34,6 +36,7 @@ async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: st
       normalizeExternalModel(model);
       aircraft.clear();
       aircraft.add(model);
+      aircraft.add(createEmergencyAircraftMarker());
 
       const beacon = new THREE.PointLight(0x9addff, 0.85, 0.7);
       beacon.position.set(0, 0.072, -0.08);
@@ -42,6 +45,7 @@ async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: st
     undefined,
     () => {
       aircraft.clear();
+      aircraft.add(createEmergencyAircraftMarker());
     }
   );
 }
@@ -145,16 +149,6 @@ function normalizeExternalModel(model: THREE.Object3D): void {
   model.rotation.set(0, 0, 0);
 }
 
-function resolveBundledAsset(filename: string): string {
-  const currentScript = document.currentScript as HTMLScriptElement | null;
-  const bundledScript =
-    currentScript?.src ||
-    [...document.scripts].find((script) => script.src.endsWith('/index.js') || script.src.endsWith('index.js'))?.src ||
-    window.location.href;
-
-  return new URL(filename, bundledScript).href;
-}
-
 export function placeAircraftMarker(
   marker: THREE.Group,
   point: GeographicPoint,
@@ -167,4 +161,69 @@ export function placeAircraftMarker(
   const tangent = new THREE.Vector3(1, 0, 0).applyAxisAngle(normal, THREE.MathUtils.degToRad(bearingDegrees));
   marker.lookAt(marker.position.clone().add(tangent));
   marker.up.copy(normal);
+}
+
+function createEmergencyAircraftMarker(): THREE.Group {
+  const marker = new THREE.Group();
+  marker.name = 'Alien Air compact aircraft marker';
+
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf9fbff,
+    emissive: 0x7a1010,
+    emissiveIntensity: 0.12,
+    roughness: 0.34,
+    metalness: 0.16
+  });
+  const accentMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd71920,
+    emissive: 0x8a0f12,
+    emissiveIntensity: 0.24,
+    roughness: 0.28,
+    metalness: 0.08
+  });
+  const darkMaterial = new THREE.MeshStandardMaterial({
+    color: 0x102331,
+    emissive: 0x07131f,
+    emissiveIntensity: 0.16,
+    roughness: 0.4
+  });
+
+  const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.46, 16), bodyMaterial);
+  fuselage.rotation.x = Math.PI / 2;
+  marker.add(fuselage);
+
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.052, 0.14, 18), accentMaterial);
+  nose.rotation.x = Math.PI / 2;
+  nose.position.z = 0.29;
+  marker.add(nose);
+
+  const leftWing = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.012, 0.085), accentMaterial);
+  leftWing.position.set(-0.16, 0, 0.02);
+  leftWing.rotation.z = -0.08;
+  marker.add(leftWing);
+
+  const rightWing = leftWing.clone();
+  rightWing.position.x = 0.16;
+  rightWing.rotation.z = 0.08;
+  marker.add(rightWing);
+
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.07), accentMaterial);
+  tail.position.z = -0.22;
+  marker.add(tail);
+
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.12, 0.07), accentMaterial);
+  fin.position.set(0, 0.06, -0.2);
+  marker.add(fin);
+
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.034, 12, 8), darkMaterial);
+  cockpit.scale.set(1, 0.45, 0.8);
+  cockpit.position.set(0, 0.035, 0.2);
+  marker.add(cockpit);
+
+  const beacon = new THREE.PointLight(0xfff2e6, 0.7, 0.55);
+  beacon.position.set(0, 0.08, 0);
+  marker.add(beacon);
+
+  marker.scale.setScalar(0.36);
+  return marker;
 }

@@ -59,6 +59,9 @@ for (const viewport of [
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
     const preloadText = document.querySelector('.preload-panel')?.textContent ?? '';
+    const preloadFlightNumber = document.querySelector('.preload-field:nth-child(1) input') instanceof HTMLInputElement
+      ? document.querySelector('.preload-field:nth-child(1) input')?.value ?? ''
+      : '';
     const previewText = document.querySelector('.record-preview')?.textContent ?? '';
     const filterText = document.querySelector('.record-filters')?.textContent ?? '';
     const centerElement = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
@@ -139,8 +142,8 @@ for (const viewport of [
         productText.includes('Journal') &&
         productText.includes('Trips') &&
         productText.includes('Countries') &&
-        preloadText.includes('預載進入') &&
-        preloadText.includes('CI100') &&
+        (preloadText.includes('預載進入') || preloadText.includes('套用航線')) &&
+        (preloadText.includes('CI100') || preloadFlightNumber === 'CI100') &&
         productText.includes('East Asia') &&
         previewText.includes('East Asia') &&
         atlasLayoutVisible &&
