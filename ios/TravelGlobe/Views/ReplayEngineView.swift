@@ -10,14 +10,13 @@ struct ReplayEngineView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        if let assetBaseURL = TravelGlobeAppModel.replayEngineIndexURL()?.deletingLastPathComponent().absoluteString {
-            let assetBaseLiteral = Self.javascriptStringLiteral(assetBaseURL)
-            configuration.userContentController.addUserScript(WKUserScript(
-                source: "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);",
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true
-            ))
-        }
+        configuration.setURLSchemeHandler(ReplayAssetSchemeHandler(), forURLScheme: "travelglobe")
+        let assetBaseLiteral = Self.javascriptStringLiteral(Self.replayAssetBaseURL)
+        configuration.userContentController.addUserScript(WKUserScript(
+            source: "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);",
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        ))
         configuration.userContentController.addUserScript(Self.diagnosticsScript)
         configuration.userContentController.add(context.coordinator, name: "replayDiagnostics")
 
@@ -52,6 +51,8 @@ struct ReplayEngineView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {}
+
+    static let replayAssetBaseURL = "travelglobe://replay/"
 
     static let diagnosticsScript = WKUserScript(
         source: """
@@ -154,8 +155,7 @@ struct ReplayEngineView: UIViewRepresentable {
 
             do {
                 let source = try String(contentsOf: scriptURL, encoding: .utf8)
-                let assetBase = scriptURL.deletingLastPathComponent().absoluteString
-                let assetBaseLiteral = ReplayEngineView.javascriptStringLiteral(assetBase)
+                let assetBaseLiteral = ReplayEngineView.javascriptStringLiteral(ReplayEngineView.replayAssetBaseURL)
                 let bootstrappedSource = "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);\n" + source
                 Task { @MainActor in
                     appModel.updateReplayEngineStatus("injecting")
@@ -177,6 +177,89 @@ struct ReplayEngineView: UIViewRepresentable {
                     appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
                 }
             }
+        }
+    }
+}
+
+final class ReplayAssetSchemeHandler: NSObject, WKURLSchemeHandler {
+    private let replayRootURL: URL? = Bundle.main.resourceURL?.appendingPathComponent("ReplayEngine", isDirectory: true)
+
+    func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
+        guard
+            let requestURL = urlSchemeTask.request.url,
+            let replayRootURL
+        else {
+            fail(urlSchemeTask, url: urlSchemeTask.request.url, statusCode: 404)
+            return
+        }
+
+        let relativePath = requestURL.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let fileURL = replayRootURL.appendingPathComponent(relativePath).standardizedFileURL
+        let rootPath = replayRootURL.standardizedFileURL.path
+        guard fileURL.path == rootPath || fileURL.path.hasPrefix(rootPath + "/") else {
+            fail(urlSchemeTask, url: requestURL, statusCode: 403)
+            return
+        }
+
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let response = HTTPURLResponse(
+                url: requestURL,
+                statusCode: 200,
+                httpVersion: "HTTP/1.1",
+                headerFields: [
+                    "Content-Type": Self.mimeType(for: fileURL),
+                    "Access-Control-Allow-Origin": "*",
+                    "Cache-Control": "no-cache"
+                ]
+            )!
+            urlSchemeTask.didReceive(response)
+            urlSchemeTask.didReceive(data)
+            urlSchemeTask.didFinish()
+        } catch {
+            fail(urlSchemeTask, url: requestURL, statusCode: 404)
+        }
+    }
+
+    func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
+
+    private func fail(_ urlSchemeTask: WKURLSchemeTask, url: URL?, statusCode: Int) {
+        let response = HTTPURLResponse(
+            url: url ?? URL(string: ReplayEngineView.replayAssetBaseURL)!,
+            statusCode: statusCode,
+            httpVersion: "HTTP/1.1",
+            headerFields: [
+                "Content-Type": "text/plain; charset=utf-8",
+                "Access-Control-Allow-Origin": "*"
+            ]
+        )!
+        urlSchemeTask.didReceive(response)
+        urlSchemeTask.didReceive(Data())
+        urlSchemeTask.didFinish()
+    }
+
+    private static func mimeType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
+        case "html":
+            return "text/html; charset=utf-8"
+        case "css":
+            return "text/css; charset=utf-8"
+        case "js", "mjs":
+            return "application/javascript; charset=utf-8"
+        case "json":
+            return "application/json; charset=utf-8"
+        case "jpg", "jpeg":
+            return "image/jpeg"
+        case "png":
+            return "image/png"
+        case "glb":
+            return "model/gltf-binary"
+        case "gltf":
+            return "model/gltf+json"
+        case "bin":
+            return "application/octet-stream"
+        default:
+            return "application/octet-stream"
         }
     }
 }

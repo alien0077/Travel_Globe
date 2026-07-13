@@ -94,29 +94,6 @@ export function splitRouteByAltitudePhase(points: LocationPoint[]): { climb: Loc
   };
 }
 
-export function createRouteEventMarkers(
-  points: GeographicPoint[],
-  color = 0xffffff,
-  altitudeScaleMeters = 620000
-): THREE.Group {
-  const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 0.35,
-    roughness: 0.4
-  });
-
-  for (const point of points) {
-    const marker = new THREE.Mesh(new THREE.SphereGeometry(0.0035, 12, 8), material);
-    const vector = geographicToVector3(point, 2, altitudeScaleMeters);
-    marker.position.set(vector.x, vector.y, vector.z);
-    group.add(marker);
-  }
-
-  return group;
-}
-
 interface RouteTubeOptions extends RouteLineOptions {
   radius?: number;
 }

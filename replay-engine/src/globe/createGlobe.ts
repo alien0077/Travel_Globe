@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
 import { resolveBundledAsset } from '../assets/resolveBundledAsset';
-import { fixtureLandmarks, landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
-import { geographicToVector3 } from '../geo/geodesy';
+import type { GeographicFeature } from '../geo/landmarks';
 
 export interface GlobeObjects {
   globe: THREE.Group;
@@ -62,8 +61,6 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(clouds);
 
   globe.add(createNaturalEarthBoundaries(radius * 1.0004));
-  globe.add(createCityLights(radius * 1.004));
-  globe.add(createLandmarkLabels(radius * 1.018));
   globe.add(createAtmosphere(radius));
 
   return { globe, earth, clouds };
@@ -214,120 +211,11 @@ function createNaturalEarthBoundaries(radius: number): THREE.Group {
   return group;
 }
 
-function createCityLights(radius: number): THREE.Points {
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const color = new THREE.Color();
-
-  for (const feature of fixtureLandmarks) {
-    if (feature.type !== 'majorCity') {
-      continue;
-    }
-    const vector = geographicToVector3(feature, radius, 900000);
-    positions.push(vector.x, vector.y, vector.z);
-    color.set(feature.countryCode === 'JP' ? 0xfff1b0 : 0x9ed8ff);
-    colors.push(color.r, color.g, color.b);
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-  return new THREE.Points(
-    geometry,
-    new THREE.PointsMaterial({
-      size: 0.075,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.95,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    })
-  );
-}
-
-function createLandmarkLabels(radius: number): THREE.Group {
-  const group = new THREE.Group();
-  group.name = 'geographic landmark labels';
-
-  for (const feature of fixtureLandmarks) {
-    if (!shouldLabelFeature(feature)) {
-      continue;
-    }
-    const anchorVector = geographicToVector3(feature, radius, 900000);
-    const anchor = new THREE.Vector3(anchorVector.x, anchorVector.y, anchorVector.z);
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(feature.type === 'majorCity' ? 0.008 : 0.007, 12, 8),
-      new THREE.MeshBasicMaterial({
-        color: feature.type === 'majorCity' ? 0xffd16a : 0x8cffc4,
-        transparent: true,
-        opacity: 0.94,
-        depthWrite: false
-      })
-    );
-    marker.position.copy(anchor);
-    group.add(marker);
-
-    const label = createLabelSprite(feature);
-    label.position.copy(anchor.clone().multiplyScalar(1.006));
-    group.add(label);
-  }
-
-  return group;
-}
-
-function createLabelSprite(feature: GeographicFeature): THREE.Sprite {
-  const texture = createLabelTexture(landmarkDisplayName(feature), feature.type === 'majorCity');
-  const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true,
-      alphaTest: 0.08,
-      opacity: feature.minZoomRank <= 1 ? 0.96 : 0.86,
-      depthWrite: false,
-      depthTest: true
-    })
-  );
-  const scale = feature.type === 'majorCity' ? 0.19 : 0.16;
-  sprite.scale.set(scale, scale * 0.26, 1);
-  sprite.center.set(-0.08, 0.5);
-  return sprite;
-}
-
-function shouldLabelFeature(feature: GeographicFeature): boolean {
+export function shouldRenderGlobeLabel(feature: GeographicFeature): boolean {
   if (feature.type === 'majorCity') {
     return feature.importance >= 0.76 && feature.minZoomRank <= 2;
   }
   return feature.importance >= 0.9 && feature.minZoomRank <= 1;
-}
-
-function createLabelTexture(label: string, isMajorCity: boolean): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const context = canvas.getContext('2d');
-  if (!context) {
-    return new THREE.CanvasTexture(canvas);
-  }
-
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.font = '700 25px sans-serif';
-  context.textAlign = 'left';
-  context.textBaseline = 'middle';
-  context.lineWidth = 6;
-  context.strokeStyle = 'rgba(0, 0, 0, 0.72)';
-  context.fillStyle = isMajorCity ? '#ffffff' : '#d7ffe8';
-  context.strokeText(label, 10, canvas.height / 2);
-  context.fillText(label, 10, canvas.height / 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  texture.generateMipmaps = false;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.premultiplyAlpha = true;
-  return texture;
 }
 
 function createAtmosphere(radius: number): THREE.Mesh {

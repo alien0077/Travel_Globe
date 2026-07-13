@@ -45,3 +45,4 @@
 - Vite build 可能提示單一 bundle 超過 500 kB；目前是 warning，不是 deploy blocker。若後續素材/圖層變大，再做 code-splitting 或資產分層。
 - 本機完整 `xcodebuild test` 曾卡在 simulator workers / `TEST INTERRUPTED`；不要把它當已通過。可先用 simulator generic build 作 smoke verification。
 - Web/iOS 若出現白畫面，優先檢查 `replay-engine/dist/index.html` 的相對路徑、`vite.config.ts` 的 `base: './'`、以及 iOS bundle 是否已重新執行 `copy-replay-to-ios.sh`。
+- iOS WKWebView 不要直接用本機 `file://` URL 作為 WebGL texture / GLB / JSON 等資源來源；常見狀況是網頁看似載入成功，但 GPU 實際不上貼圖或模型。Replay Engine 內嵌 iOS 時應使用自訂 scheme handler（目前為 `travelglobe://replay/`）或等效的 HTTP-like 來源，並在 build 後重新執行 `copy-replay-to-ios.sh`。

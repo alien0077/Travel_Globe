@@ -2,9 +2,16 @@ import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
 import type { JourneySegment, LocationPoint } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
-import { createGlobe, createStarField } from './createGlobe';
+import { fixtureLandmarks, landmarkDisplayName } from '../geo/landmarks';
+import { geographicToVector3 } from '../geo/geodesy';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
+import { createGlobe, createStarField, shouldRenderGlobeLabel } from './createGlobe';
+
+interface GlobeDomLabel {
+  element: HTMLSpanElement;
+  position: THREE.Vector3;
+}
 
 export class TravelGlobeScene {
   private readonly scene = new THREE.Scene();
@@ -13,6 +20,8 @@ export class TravelGlobeScene {
   private readonly cameraController: CameraController;
   private readonly aircraft: THREE.Group;
   private readonly clouds: THREE.Mesh;
+  private readonly labelLayer: HTMLDivElement;
+  private readonly landmarkLabels: GlobeDomLabel[];
   private readonly routeTrack: RouteTrack;
   private readonly resizeObserver: ResizeObserver;
   private readonly activePointers = new Map<number, PointerEvent>();
@@ -36,6 +45,10 @@ export class TravelGlobeScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.container.appendChild(this.renderer.domElement);
+    this.labelLayer = document.createElement('div');
+    this.labelLayer.className = 'globe-label-layer';
+    this.landmarkLabels = createDomLandmarkLabels(this.labelLayer);
+    this.container.appendChild(this.labelLayer);
     this.bindInteraction();
 
     this.scene.background = new THREE.Color(0xd7e5e1);
@@ -71,6 +84,7 @@ export class TravelGlobeScene {
     this.renderer.setAnimationLoop((timeMs) => {
       onFrame(timeMs);
       this.clouds.rotation.y = timeMs * 0.000012;
+      this.updateLabelOverlay();
       this.renderer.render(this.scene, this.camera);
     });
   }
@@ -86,6 +100,7 @@ export class TravelGlobeScene {
       }
     });
     this.renderer.dispose();
+    this.labelLayer.remove();
     this.renderer.domElement.remove();
   }
 
@@ -165,6 +180,46 @@ export class TravelGlobeScene {
     return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
   }
 
+  private updateLabelOverlay(): void {
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    const cameraDirection = this.camera.position.clone().normalize();
+    this.camera.updateMatrixWorld();
+
+    for (const label of this.landmarkLabels) {
+      const normal = label.position.clone().normalize();
+      const projected = label.position.clone().project(this.camera);
+      const isVisible = normal.dot(cameraDirection) > -0.08 && projected.z > -1 && projected.z < 1;
+      if (!isVisible) {
+        label.element.hidden = true;
+        continue;
+      }
+
+      label.element.hidden = false;
+      label.element.style.transform = `translate(${((projected.x + 1) / 2) * width}px, ${((-projected.y + 1) / 2) * height}px)`;
+    }
+  }
+}
+
+function createDomLandmarkLabels(layer: HTMLDivElement): GlobeDomLabel[] {
+  const labels: GlobeDomLabel[] = [];
+  for (const feature of fixtureLandmarks) {
+    if (!shouldRenderGlobeLabel(feature)) {
+      continue;
+    }
+
+    const element = document.createElement('span');
+    element.className = `globe-place-label ${feature.type === 'majorCity' ? 'is-city' : 'is-landmark'}`;
+    element.textContent = landmarkDisplayName(feature);
+    layer.appendChild(element);
+
+    const vector = geographicToVector3(feature, 2.04, 900000);
+    labels.push({
+      element,
+      position: new THREE.Vector3(vector.x, vector.y, vector.z)
+    });
+  }
+  return labels;
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]): void {
