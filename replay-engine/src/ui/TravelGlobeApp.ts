@@ -356,9 +356,9 @@ export class TravelGlobeApp {
       display: 'grid',
       alignContent: 'start',
       gap: '10px',
-      overflowY: 'auto',
+      overflow: 'hidden',
       padding: '10px',
-      pointerEvents: 'auto',
+      pointerEvents: 'none',
       background: 'linear-gradient(180deg, rgba(8,17,23,.56) 0%, rgba(8,17,23,.2) 44%, rgba(8,17,23,.68) 100%)',
       WebkitOverflowScrolling: 'touch'
     });
@@ -373,24 +373,27 @@ export class TravelGlobeApp {
 
     Object.assign(elements.hud.style, {
       order: '1',
-      padding: '13px'
+      padding: '13px',
+      maxHeight: '34vh',
+      overflowY: 'auto',
+      pointerEvents: 'auto'
     });
     Object.assign(this.recordPreview.style, {
-      order: '2',
-      display: 'grid',
-      gridTemplateColumns: '100px minmax(0, 1fr)',
-      minHeight: '128px'
+      display: 'none'
     });
     Object.assign(elements.dock.style, {
       order: '3',
       display: 'grid',
-      gap: '10px'
+      gap: '10px',
+      marginTop: 'auto',
+      pointerEvents: 'auto'
     });
     Object.assign(elements.controls.style, {
       order: '4',
       display: 'grid',
       gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-      margin: '0'
+      margin: '0',
+      pointerEvents: 'auto'
     });
 
     for (const panel of this.root.querySelectorAll<HTMLElement>('.hud, .dock-panel, .record-preview, .controls')) {

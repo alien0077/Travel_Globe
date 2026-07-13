@@ -622,12 +622,11 @@ a {
     display: grid;
     align-content: start;
     gap: 10px;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
       calc(10px + env(safe-area-inset-left));
     background: linear-gradient(180deg, rgb(8 17 23 / 56%) 0%, rgb(8 17 23 / 20%) 44%, rgb(8 17 23 / 68%) 100%);
-    pointer-events: auto;
-    -webkit-overflow-scrolling: touch;
+    pointer-events: none;
   }
 
   .hud,
@@ -642,17 +641,18 @@ a {
   .hud {
     order: 1;
     padding: 13px;
+    max-height: 34svh;
+    overflow-y: auto;
   }
 
   .record-preview {
-    order: 2;
-    grid-template-columns: 100px minmax(0, 1fr);
-    min-height: 128px;
+    display: none;
   }
 
   .info-dock {
     order: 3;
     display: grid;
+    margin-top: auto;
   }
 
   .controls {
@@ -694,6 +694,12 @@ a {
     width: 100%;
     min-width: 0;
   }
+
+  .hud,
+  .info-dock,
+  .controls {
+    pointer-events: auto;
+  }
 }
 
 .app-shell.is-compact {
@@ -725,12 +731,11 @@ a {
   display: grid;
   align-content: start;
   gap: 10px;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
     calc(10px + env(safe-area-inset-left));
   background: linear-gradient(180deg, rgb(8 17 23 / 56%) 0%, rgb(8 17 23 / 20%) 44%, rgb(8 17 23 / 68%) 100%);
-  pointer-events: auto;
-  -webkit-overflow-scrolling: touch;
+  pointer-events: none;
 }
 
 .app-shell.is-compact .hud,
@@ -745,17 +750,18 @@ a {
 .app-shell.is-compact .hud {
   order: 1;
   padding: 13px;
+  max-height: 34svh;
+  overflow-y: auto;
 }
 
 .app-shell.is-compact .record-preview {
-  order: 2;
-  grid-template-columns: 100px minmax(0, 1fr);
-  min-height: 128px;
+  display: none;
 }
 
 .app-shell.is-compact .info-dock {
   order: 3;
   display: grid;
+  margin-top: auto;
 }
 
 .app-shell.is-compact .controls {
@@ -793,4 +799,10 @@ a {
   grid-column: 1 / -1;
   width: 100%;
   min-width: 0;
+}
+
+.app-shell.is-compact .hud,
+.app-shell.is-compact .info-dock,
+.app-shell.is-compact .controls {
+  pointer-events: auto;
 }
