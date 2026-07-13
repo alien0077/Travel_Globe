@@ -6,6 +6,7 @@ import {
   type LandmarkProximity
 } from '../geo/landmarks';
 import { haversineDistanceMeters, initialBearingDegrees } from '../geo/geodesy';
+import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { calculateRouteDistance, getRouteTimeBounds, sampleReplayAt, type ReplaySample } from '../replay/buildReplayFrames';
 
 export type FlightEventKind =
@@ -74,7 +75,7 @@ export function buildFlightOverlay(journey: Journey, segment: JourneySegment): F
 
   return {
     flightNumber: readString(segment.metadata.flightNumber, 'CI100'),
-    aircraftType: readString(segment.metadata.aircraftType, ''),
+    aircraftType: readString(segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE),
     plannedRoute,
     actualRoute,
     events: detectFlightEvents(journey, segment),

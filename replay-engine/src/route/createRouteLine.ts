@@ -11,8 +11,8 @@ export interface RouteLineOptions {
 export type RouteTrack = THREE.Group & {
   userData: {
     routeTrack: {
-      flown: THREE.Line;
-      remaining: THREE.Line;
+      flown: THREE.Mesh;
+      remaining: THREE.Mesh;
       climb: THREE.Group;
       descent: THREE.Group;
       altitudeScaleMeters: number;
@@ -42,8 +42,8 @@ export function createRouteTrack(
   altitudeScaleMeters = 620000
 ): RouteTrack {
   const track = new THREE.Group() as RouteTrack;
-  const remaining = createRouteLine([], { color: 0x2f8a50, opacity: 0.46, altitudeScaleMeters });
-  const flown = createRouteLine([], { color: 0x6cff8d, opacity: 0.98, altitudeScaleMeters });
+  const remaining = createRouteTube([], { color: 0x2f8a50, opacity: 0.58, altitudeScaleMeters, radius: 0.0068 });
+  const flown = createRouteTube([], { color: 0x78ff9e, opacity: 1, altitudeScaleMeters, radius: 0.0088 });
   const climb = new THREE.Group();
   const descent = new THREE.Group();
 
@@ -64,12 +64,10 @@ export function updateRouteTrack(
   altitudeScaleMeters = track.userData.routeTrack.altitudeScaleMeters
 ): void {
   const { flown, remaining, climb, descent } = track.userData.routeTrack;
-  updateRouteLine(flown, flownRoute, altitudeScaleMeters);
-  updateRouteLine(remaining, remainingRouteFrom(fullRoute, flownRoute), altitudeScaleMeters);
-
-  const phases = splitRouteByAltitudePhase(fullRoute);
-  updatePhaseGroup(climb, phases.climb, 0x62c8ff, 0.64, altitudeScaleMeters);
-  updatePhaseGroup(descent, phases.descent, 0xffb35c, 0.72, altitudeScaleMeters);
+  updateRouteTube(flown, flownRoute, altitudeScaleMeters, 0.0088);
+  updateRouteTube(remaining, remainingRouteFrom(fullRoute, flownRoute), altitudeScaleMeters, 0.0068);
+  climb.clear();
+  descent.clear();
   track.userData.routeTrack.altitudeScaleMeters = altitudeScaleMeters;
 }
 
@@ -119,6 +117,32 @@ export function createRouteEventMarkers(
   return group;
 }
 
+interface RouteTubeOptions extends RouteLineOptions {
+  radius?: number;
+}
+
+export function createRouteTube(points: LocationPoint[], options: RouteTubeOptions = {}): THREE.Mesh {
+  const geometry = createRouteTubeGeometry(points, options.altitudeScaleMeters, options.radius);
+  const material = new THREE.MeshBasicMaterial({
+    color: options.color ?? 0x6cff8d,
+    transparent: true,
+    opacity: options.opacity ?? 0.96,
+    depthWrite: false
+  });
+
+  return new THREE.Mesh(geometry, material);
+}
+
+export function updateRouteTube(
+  tube: THREE.Mesh,
+  points: LocationPoint[],
+  altitudeScaleMeters?: number,
+  radius?: number
+): void {
+  tube.geometry.dispose();
+  tube.geometry = createRouteTubeGeometry(points, altitudeScaleMeters, radius);
+}
+
 function createRouteGeometry(points: LocationPoint[], altitudeScaleMeters = 700000): THREE.BufferGeometry {
   const positions: number[] = [];
 
@@ -130,6 +154,24 @@ function createRouteGeometry(points: LocationPoint[], altitudeScaleMeters = 7000
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   return geometry;
+}
+
+function createRouteTubeGeometry(
+  points: LocationPoint[],
+  altitudeScaleMeters = 700000,
+  radius = 0.007
+): THREE.BufferGeometry {
+  const vectors = createSmoothedRoutePoints(points).map((point) => {
+    const vector = geographicToVector3(point, 2, altitudeScaleMeters);
+    return new THREE.Vector3(vector.x, vector.y, vector.z);
+  });
+
+  if (vectors.length < 2) {
+    return new THREE.BufferGeometry();
+  }
+
+  const curve = new THREE.CatmullRomCurve3(vectors);
+  return new THREE.TubeGeometry(curve, Math.max(16, vectors.length * 2), radius, 6, false);
 }
 
 function createSmoothedRoutePoints(points: LocationPoint[]): GeographicPoint[] {
@@ -207,34 +249,4 @@ function remainingRouteFrom(fullRoute: LocationPoint[], flownRoute: LocationPoin
   }
   const currentMs = Date.parse(current.timestamp);
   return [current, ...fullRoute.filter((point) => Date.parse(point.timestamp) > currentMs)];
-}
-
-function updatePhaseGroup(
-  group: THREE.Group,
-  points: LocationPoint[],
-  color: number,
-  opacity: number,
-  altitudeScaleMeters: number
-): void {
-  for (const child of group.children) {
-    if (child instanceof THREE.Line) {
-      child.geometry.dispose();
-      disposeLineMaterial(child.material);
-    }
-  }
-  group.clear();
-  if (points.length < 2) {
-    return;
-  }
-  group.add(createRouteLine(points, { color, opacity, altitudeScaleMeters }));
-}
-
-function disposeLineMaterial(material: THREE.Material | THREE.Material[]): void {
-  if (Array.isArray(material)) {
-    for (const item of material) {
-      item.dispose();
-    }
-    return;
-  }
-  material.dispose();
 }

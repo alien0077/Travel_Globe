@@ -1,6 +1,6 @@
 # Travel Globe Handoff
 
-Updated: 2026-07-11
+Updated: 2026-07-13
 
 ## Current Direction
 
@@ -104,6 +104,7 @@ These are the main half-finished areas to continue next:
 - Frequencies and navaids: transformed into an aviation context index and visible in product stats; a full airport detail/search UI is still not built.
 - Offline packs: core pack state now references real generated layers; install/download remains a browser-local product state, not a real remote package installer.
 - Geographic borders: Natural Earth 110m coastlines/country boundaries now render on the globe; higher-detail packs and label ranking remain future work.
+- Landmark fixtures: `shared/fixtures/landmarks.json` currently contains a curated East Asia / Southeast Asia seed set for in-flight labels and window-side guidance, but it is not yet a complete landmark database. Missing work: add a reviewed regional/global landmark fixture pipeline, source attribution, per-region offline packs, richer categories such as mountains/islands/bays/cultural landmarks, and viewport-aware label collision/ranking so labels do not become a wall of text on mobile.
 - Runtime adapter split: browser export is behind the adapter; import and native recording handoff are still not fully abstracted behind one runtime-capability layer.
 - Photo matching and journal media: iOS/photo matcher pieces exist, but Travel Atlas cards still use generated placeholders.
 - Notifications: rules exist, but native notification scheduling is not wired to replay/recording events.

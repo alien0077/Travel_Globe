@@ -25,7 +25,7 @@ describe('flight overlay analytics', () => {
     );
   });
 
-  it('does not inject a default aircraft type when metadata is missing', () => {
+  it('defaults to A320 when aircraft metadata is missing', () => {
     const overlay = buildFlightOverlay(sampleJourney, {
       ...segment,
       metadata: {
@@ -33,7 +33,7 @@ describe('flight overlay analytics', () => {
       }
     });
 
-    expect(overlay.aircraftType).toBe('');
+    expect(overlay.aircraftType).toBe('A320');
   });
 
   it('formats HUD values for in-flight replay', () => {

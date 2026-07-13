@@ -1,6 +1,7 @@
 export const REQUIRED_AIRCRAFT_TYPES = ['A320', 'A321', 'B737', 'B767', 'B777', 'B787', 'A350', 'A380'] as const;
 
 export type RequiredAircraftType = (typeof REQUIRED_AIRCRAFT_TYPES)[number];
+export const DEFAULT_AIRCRAFT_TYPE = 'A320' satisfies RequiredAircraftType;
 export type AircraftModelFormat = 'glb' | 'gltf';
 export type AircraftModelLicense = 'CC0' | 'CC BY';
 
@@ -77,6 +78,11 @@ export function selectAircraftModel(
   const requested = findAircraftModel(library, aircraftType);
   if (requested && isAircraftModelReady(requested)) {
     return requested;
+  }
+
+  const defaultAircraft = findAircraftModel(library, DEFAULT_AIRCRAFT_TYPE);
+  if (defaultAircraft && isAircraftModelReady(defaultAircraft)) {
+    return defaultAircraft;
   }
 
   return library.aircraft.find(isAircraftModelReady);

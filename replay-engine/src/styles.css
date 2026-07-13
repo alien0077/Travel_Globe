@@ -32,7 +32,7 @@ a {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 100svh;
+  min-height: 0;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 38%, rgb(58 151 166 / 24%) 0 22%, rgb(58 151 166 / 0%) 58%),
@@ -789,7 +789,7 @@ a {
 
   .pilot-hud {
     inset: calc(86px + env(safe-area-inset-top)) calc(74px + env(safe-area-inset-right))
-      calc(164px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+      calc(148px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
   }
 
   .pilot-horizon {
@@ -858,35 +858,39 @@ a {
 
   .controls {
     right: calc(10px + env(safe-area-inset-right));
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: calc(16px + env(safe-area-inset-bottom));
     left: calc(10px + env(safe-area-inset-left));
-    grid-template-columns: 66px 64px minmax(0, 1fr);
-    gap: 7px;
-    padding: 7px;
+    grid-template-columns: 60px 58px minmax(0, 1fr);
+    gap: 5px;
+    padding: 6px;
   }
 
   .control-button,
   .control-select,
   .preload-input {
-    min-height: 34px;
+    min-height: 30px;
     font-size: 12px;
   }
 
   .hud-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
   }
 
   .hud-metric {
-    padding: 5px 6px;
+    min-height: 40px;
+    padding: 4px 6px;
+    gap: 1px;
   }
 
   .hud-metric span {
-    font-size: 9px;
+    font-size: 8.5px;
+    line-height: 1.05;
   }
 
   .hud-metric strong {
-    font-size: 11px;
+    font-size: 10.5px;
+    line-height: 1.1;
   }
 
   .action-grid,
@@ -902,6 +906,6 @@ a {
   }
 
   .hud-metric strong {
-    font-size: 10px;
+    font-size: 9.8px;
   }
 }

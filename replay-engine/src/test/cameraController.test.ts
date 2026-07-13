@@ -66,4 +66,23 @@ describe('camera controller interaction', () => {
 
     expect(distances.get('totalRoute')).toBeGreaterThan(distances.get('flightPreview') ?? 0);
   });
+
+  it('keeps pilot view close to the horizon instead of looking down at the ground', () => {
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const controller = new CameraController(camera);
+    const point = { latitude: 25.1, longitude: 121.6, altitudeMeters: 4_000 };
+    controller.setMode('pilotView');
+
+    for (let index = 0; index < 48; index += 1) {
+      controller.update(point, 52);
+    }
+
+    const normal = camera.position.clone().normalize();
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const horizonBias = direction.dot(normal);
+
+    expect(horizonBias).toBeGreaterThan(-0.03);
+    expect(horizonBias).toBeLessThan(0.08);
+  });
 });

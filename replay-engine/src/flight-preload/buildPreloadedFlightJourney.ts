@@ -4,6 +4,7 @@ import {
   initialBearingDegrees,
   interpolateGreatCircle
 } from '../geo/geodesy';
+import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { findAirportByIata, normalizeIata, type AirportRecord } from './airportIndex';
 import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
 
@@ -140,7 +141,7 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     },
     metadata: {
       flightNumber,
-      aircraftType: request.aircraftType?.trim() || 'Planned flight',
+      aircraftType: request.aircraftType?.trim() || DEFAULT_AIRCRAFT_TYPE,
       preloadSource
     }
   };

@@ -67,15 +67,15 @@ export class CameraController {
     if (this.mode === 'pilotView') {
       this.desired
         .copy(this.target)
-        .add(forward.clone().multiplyScalar(0.075))
-        .add(normal.clone().multiplyScalar(0.035));
+        .add(forward.clone().multiplyScalar(0.06))
+        .add(normal.clone().multiplyScalar(0.055));
       this.camera.position.lerp(this.desired, 0.18);
       this.camera.up.copy(normal);
       this.camera.lookAt(
-        this.target
+        this.camera.position
           .clone()
-          .add(forward.clone().multiplyScalar(1.35))
-          .add(normal.clone().multiplyScalar(-0.015))
+          .add(forward.clone().multiplyScalar(3.2))
+          .add(normal.clone().multiplyScalar(0.018))
       );
       return;
     }

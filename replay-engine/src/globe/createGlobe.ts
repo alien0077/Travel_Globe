@@ -282,14 +282,15 @@ function createLabelSprite(feature: GeographicFeature): THREE.Sprite {
     new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
+      alphaTest: 0.08,
       opacity: feature.minZoomRank <= 1 ? 0.96 : 0.86,
       depthWrite: false,
       depthTest: true
     })
   );
-  const scale = feature.type === 'majorCity' ? 0.2 : 0.18;
-  sprite.scale.set(scale, scale * 0.3, 1);
-  sprite.center.set(0.5, -0.35);
+  const scale = feature.type === 'majorCity' ? 0.19 : 0.16;
+  sprite.scale.set(scale, scale * 0.26, 1);
+  sprite.center.set(-0.08, 0.5);
   return sprite;
 }
 
@@ -303,25 +304,29 @@ function shouldLabelFeature(feature: GeographicFeature): boolean {
 function createLabelTexture(label: string, isMajorCity: boolean): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
-  canvas.height = 72;
+  canvas.height = 64;
   const context = canvas.getContext('2d');
   if (!context) {
     return new THREE.CanvasTexture(canvas);
   }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.font = '700 24px sans-serif';
-  context.textAlign = 'center';
+  context.font = '700 25px sans-serif';
+  context.textAlign = 'left';
   context.textBaseline = 'middle';
-  context.lineWidth = 7;
-  context.strokeStyle = 'rgba(0, 0, 0, 0.62)';
+  context.lineWidth = 6;
+  context.strokeStyle = 'rgba(0, 0, 0, 0.72)';
   context.fillStyle = isMajorCity ? '#ffffff' : '#d7ffe8';
-  context.strokeText(label, canvas.width / 2, canvas.height / 2);
-  context.fillText(label, canvas.width / 2, canvas.height / 2);
+  context.strokeText(label, 10, canvas.height / 2);
+  context.fillText(label, 10, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.premultiplyAlpha = true;
   return texture;
 }
 

@@ -24,8 +24,8 @@ describe('route track rendering', () => {
 
     expect(positionCount(track.userData.routeTrack.flown)).toBeGreaterThan(4);
     expect(positionCount(track.userData.routeTrack.remaining)).toBeGreaterThan(3);
-    expect(track.userData.routeTrack.climb.children.length).toBe(1);
-    expect(track.userData.routeTrack.descent.children.length).toBe(1);
+    expect(track.userData.routeTrack.climb.children.length).toBe(0);
+    expect(track.userData.routeTrack.descent.children.length).toBe(0);
   });
 });
 
@@ -44,6 +44,6 @@ function makeRoute(altitudes: number[]): LocationPoint[] {
   }));
 }
 
-function positionCount(line: THREE.Line): number {
-  return line.geometry.getAttribute('position').count;
+function positionCount(trackSegment: THREE.Mesh): number {
+  return trackSegment.geometry.getAttribute('position').count;
 }

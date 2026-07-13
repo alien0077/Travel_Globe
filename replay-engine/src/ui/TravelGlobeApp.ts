@@ -25,6 +25,7 @@ import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
 import { generateOfflineJournal } from '../journal/generateJournal';
+import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
   coreOfflinePacks,
@@ -118,8 +119,7 @@ export class TravelGlobeApp {
     this.scene = new TravelGlobeScene(
       this.viewport,
       this.segment,
-      this.flightOverlay,
-      this.travelRecords.map((record) => record.location)
+      this.flightOverlay
     );
     this.scene.start((timeMs) => this.frame(timeMs));
     await this.adapter.saveJourney(journey);
@@ -454,7 +454,7 @@ export class TravelGlobeApp {
         return option;
       })
     );
-    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(stringValue(segment.metadata.aircraftType, 'B737'));
+    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(stringValue(segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE));
 
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
@@ -915,7 +915,7 @@ const aircraftTypeOptions = [
 function normalizeAircraftSelectValue(value: string): string {
   const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   const match = aircraftTypeOptions.find((option) => normalized.includes(option.value));
-  return match?.value ?? 'B737';
+  return match?.value ?? DEFAULT_AIRCRAFT_TYPE;
 }
 
 function airportField(

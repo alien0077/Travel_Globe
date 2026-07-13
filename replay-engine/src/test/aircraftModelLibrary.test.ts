@@ -25,10 +25,12 @@ describe('aircraft model library', () => {
     expect(findAircraftModel(aircraftLibrary, 'a350-900')?.id).toBe('A350');
   });
 
-  it('selects the requested ready model or falls back to the first downloaded ready model', () => {
+  it('selects the requested ready model or falls back to the default A320 model', () => {
     const b737 = aircraftLibrary.aircraft.find((entry) => entry.id === 'B737');
+    const a320 = aircraftLibrary.aircraft.find((entry) => entry.id === 'A320');
     const a380 = aircraftLibrary.aircraft.find((entry) => entry.id === 'A380');
     expect(b737).toBeDefined();
+    expect(a320).toBeDefined();
     expect(a380).toBeDefined();
 
     const library: AircraftModelLibrary = {
@@ -61,6 +63,20 @@ describe('aircraft model library', () => {
           derivativesAllowed: true,
           editorialOnly: false,
           polygonBudget: { min: 500, max: 40000, actual: 8000 }
+        },
+        {
+          ...a320!,
+          status: 'ready',
+          modelUrl: 'assets/aircraft/a320-200/a320-200-lod0.glb',
+          license: 'CC BY',
+          author: 'Test Author',
+          sourceName: 'Sketchfab',
+          sourceUrl: 'https://sketchfab.com/3d-models/test',
+          attribution: 'Test model by Test Author via Sketchfab.',
+          commercialUse: true,
+          derivativesAllowed: true,
+          editorialOnly: false,
+          polygonBudget: { min: 500, max: 40000, actual: 8000 }
         }
       ]
     };
@@ -68,8 +84,8 @@ describe('aircraft model library', () => {
     expect(isAircraftModelReady(library.aircraft[0])).toBe(true);
     expect(isAircraftModelReady(library.aircraft[1])).toBe(true);
     expect(selectAircraftModel(library, 'Airbus A380-800')?.id).toBe('A380');
-    expect(selectAircraftModel(library, undefined)?.id).toBe('B737');
-    expect(selectAircraftModel(library, 'Unknown aircraft')?.id).toBe('B737');
+    expect(selectAircraftModel(library, undefined)?.id).toBe('A320');
+    expect(selectAircraftModel(library, 'Unknown aircraft')?.id).toBe('A320');
   });
 
   it('rejects non-commercial, no-derivatives, editorial, and non-offline ready assets', () => {

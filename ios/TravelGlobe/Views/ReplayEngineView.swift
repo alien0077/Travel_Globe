@@ -10,6 +10,14 @@ struct ReplayEngineView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
+        if let assetBaseURL = TravelGlobeAppModel.replayEngineIndexURL()?.deletingLastPathComponent().absoluteString {
+            let assetBaseLiteral = Self.javascriptStringLiteral(assetBaseURL)
+            configuration.userContentController.addUserScript(WKUserScript(
+                source: "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);",
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        }
         configuration.userContentController.addUserScript(Self.diagnosticsScript)
         configuration.userContentController.add(context.coordinator, name: "replayDiagnostics")
 
@@ -69,6 +77,16 @@ struct ReplayEngineView: UIViewRepresentable {
         forMainFrameOnly: true
     )
 
+    static func javascriptStringLiteral(_ value: String) -> String {
+        guard
+            let data = try? JSONEncoder().encode(value),
+            let literal = String(data: data, encoding: .utf8)
+        else {
+            return "\"\""
+        }
+        return literal
+    }
+
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         private let appModel: TravelGlobeAppModel
         private var hasRuntimeDiagnostic = false
@@ -79,7 +97,19 @@ struct ReplayEngineView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            injectReplayBundle(into: webView)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                webView.evaluateJavaScript("Boolean(document.querySelector('.app-shell'))") { [weak self] result, _ in
+                    guard let self else { return }
+                    if (result as? Bool) == true {
+                        Task { @MainActor in
+                            self.appModel.updateReplayEngineStatus("loaded")
+                        }
+                        return
+                    }
+                    self.injectReplayBundle(into: webView)
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -125,7 +155,7 @@ struct ReplayEngineView: UIViewRepresentable {
             do {
                 let source = try String(contentsOf: scriptURL, encoding: .utf8)
                 let assetBase = scriptURL.deletingLastPathComponent().absoluteString
-                let assetBaseLiteral = Self.javascriptStringLiteral(assetBase)
+                let assetBaseLiteral = ReplayEngineView.javascriptStringLiteral(assetBase)
                 let bootstrappedSource = "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);\n" + source
                 Task { @MainActor in
                     appModel.updateReplayEngineStatus("injecting")
@@ -147,16 +177,6 @@ struct ReplayEngineView: UIViewRepresentable {
                     appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
                 }
             }
-        }
-
-        private static func javascriptStringLiteral(_ value: String) -> String {
-            guard
-                let data = try? JSONEncoder().encode(value),
-                let literal = String(data: data, encoding: .utf8)
-            else {
-                return "\"\""
-            }
-            return literal
         }
     }
 }

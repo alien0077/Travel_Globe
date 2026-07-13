@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
-import type { GeographicPoint, JourneySegment, LocationPoint } from '../data/types';
+import type { JourneySegment, LocationPoint } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
 import { createGlobe, createStarField } from './createGlobe';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
-import { createRouteEventMarkers, createRouteLine, createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
+import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
 
 export class TravelGlobeScene {
   private readonly scene = new THREE.Scene();
@@ -21,8 +21,7 @@ export class TravelGlobeScene {
   constructor(
     private readonly container: HTMLElement,
     private readonly segment: JourneySegment,
-    overlay: FlightOverlay,
-    travelRecordPoints: GeographicPoint[] = []
+    overlay: FlightOverlay
   ) {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     this.camera.position.set(0, 2.45, 5.2);
@@ -46,11 +45,8 @@ export class TravelGlobeScene {
     const { globe, clouds } = createGlobe();
     this.clouds = clouds;
     this.scene.add(globe);
-    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.28, altitudeScaleMeters: 180000 }));
     this.routeTrack = createRouteTrack(segment.derivedReplayRoute.points, [segment.derivedReplayRoute.points[0]], 180000);
     this.scene.add(this.routeTrack);
-    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999, 180000));
-    this.scene.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42, 180000));
     this.scene.add(this.aircraft);
 
     const ambient = new THREE.AmbientLight(0xf5fbff, 3.2);
