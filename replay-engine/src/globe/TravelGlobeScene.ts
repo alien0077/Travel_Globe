@@ -17,8 +17,6 @@ export class TravelGlobeScene {
   private readonly resizeObserver: ResizeObserver;
   private readonly activePointers = new Map<number, PointerEvent>();
   private previousPinchDistance?: number;
-  private readonly visualRoot = new THREE.Group();
-  private readonly viewRotation = new THREE.Quaternion();
 
   constructor(
     private readonly container: HTMLElement,
@@ -44,21 +42,20 @@ export class TravelGlobeScene {
     this.scene.background = new THREE.Color(0xf6fbf7);
     this.scene.fog = new THREE.Fog(0xf6fbf7, 8, 15);
     this.scene.add(createStarField(360, 46));
-    this.scene.add(this.visualRoot);
 
     const { globe, clouds } = createGlobe();
     this.clouds = clouds;
-    this.visualRoot.add(globe);
-    this.visualRoot.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.82, altitudeScaleMeters: 650000 }));
+    this.scene.add(globe);
+    this.scene.add(createRouteLine(overlay.plannedRoute, { color: 0xf3b342, opacity: 0.82, altitudeScaleMeters: 650000 }));
     this.actualRouteLine = createRouteLine([segment.derivedReplayRoute.points[0]], {
       color: 0x2bdc70,
       opacity: 0.98,
       altitudeScaleMeters: 600000
     });
-    this.visualRoot.add(this.actualRouteLine);
-    this.visualRoot.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999));
-    this.visualRoot.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42));
-    this.visualRoot.add(this.aircraft);
+    this.scene.add(this.actualRouteLine);
+    this.scene.add(createRouteEventMarkers(overlay.events.map((event) => event.point), 0x18a999));
+    this.scene.add(createRouteEventMarkers(travelRecordPoints, 0xf08c42));
+    this.scene.add(this.aircraft);
 
     const ambient = new THREE.AmbientLight(0xeaf8ff, 2.2);
     const sun = new THREE.DirectionalLight(0xffffff, 3.4);
@@ -74,7 +71,6 @@ export class TravelGlobeScene {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     updateRouteLine(this.actualRouteLine, actualRoutePoints, 600000);
     this.cameraController.setMode(cameraMode);
-    this.cameraController.setViewRotation(this.viewRotation);
     this.cameraController.update(point, bearingDegrees);
   }
 
@@ -151,7 +147,7 @@ export class TravelGlobeScene {
       return;
     }
 
-    this.rotateView(event.clientX - previous.clientX, event.clientY - previous.clientY);
+    this.cameraController.rotate(event.clientX - previous.clientX, event.clientY - previous.clientY);
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
@@ -176,15 +172,6 @@ export class TravelGlobeScene {
     return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
   }
 
-  private rotateView(deltaX: number, deltaY: number): void {
-    const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion).normalize();
-    const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion).normalize();
-    const yaw = new THREE.Quaternion().setFromAxisAngle(cameraUp, deltaX * 0.006);
-    const pitch = new THREE.Quaternion().setFromAxisAngle(cameraRight, deltaY * 0.004);
-    this.viewRotation.premultiply(pitch).premultiply(yaw).normalize();
-    this.visualRoot.quaternion.copy(this.viewRotation);
-    this.cameraController.setViewRotation(this.viewRotation);
-  }
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]): void {

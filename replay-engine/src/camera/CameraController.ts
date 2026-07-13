@@ -11,16 +11,11 @@ export class CameraController {
   private zoom = 1;
   private readonly target = new THREE.Vector3();
   private readonly desired = new THREE.Vector3();
-  private readonly viewRotation = new THREE.Quaternion();
 
   constructor(private readonly camera: THREE.PerspectiveCamera) {}
 
   setMode(mode: CameraMode): void {
     this.mode = mode;
-  }
-
-  setViewRotation(rotation: THREE.Quaternion): void {
-    this.viewRotation.copy(rotation);
   }
 
   rotate(deltaX: number, deltaY: number): void {
@@ -34,10 +29,9 @@ export class CameraController {
 
   update(point: GeographicPoint, bearingDegrees: number): void {
     const aircraftPosition = geographicToVector3(point, 2, 700000);
-    const sourceNormal = new THREE.Vector3(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z).normalize();
-    const forward = this.forwardVector(sourceNormal, bearingDegrees).applyQuaternion(this.viewRotation).normalize();
-    this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z).applyQuaternion(this.viewRotation);
+    this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z);
     const normal = this.target.clone().normalize();
+    const forward = this.forwardVector(normal, bearingDegrees);
 
     if (this.mode === 'global') {
       const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
