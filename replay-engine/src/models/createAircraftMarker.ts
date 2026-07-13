@@ -29,7 +29,7 @@ async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: st
     (gltf) => {
       const model = gltf.scene;
       model.name = `${selected.id} external aircraft model`;
-      if (selected.neutralizeLivery) {
+      if (selected.neutralizeLivery && !/Alien Air/i.test(selected.attribution)) {
         neutralizeAircraftLivery(model);
       }
       normalizeExternalModel(model);
@@ -162,7 +162,6 @@ export function placeAircraftMarker(
   const forward = forwardVector(normal, bearingDegrees);
   marker.up.copy(normal);
   marker.lookAt(marker.position.clone().add(forward));
-  marker.rotateY(Math.PI);
 }
 
 function forwardVector(normal: THREE.Vector3, bearingDegrees: number): THREE.Vector3 {

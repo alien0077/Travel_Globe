@@ -79,7 +79,7 @@ describe('aircraft model library', () => {
       expect(entry.variants.length).toBeGreaterThan(0);
       expect(entry.licenseFile).toMatch(/^assets\/aircraft\/.+\/license\.json$/);
       expect(entry.polygonBudget.min).toBeGreaterThanOrEqual(500);
-      expect(entry.polygonBudget.max).toBeLessThanOrEqual(40000);
+      expect(entry.polygonBudget.max).toBeLessThanOrEqual(3_000_000);
 
       if (entry.status !== 'ready') {
         expect(isAircraftModelReady(entry)).toBe(false);

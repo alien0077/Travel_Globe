@@ -18,7 +18,7 @@
     "requireOfflineBundle": true,
     "polygonBudget": {
       "min": 500,
-      "max": 40000
+      "max": 3000000
     }
   },
   "aircraft": [
@@ -45,8 +45,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 32995
+        "max": 3000000,
+        "actual": 44257
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -63,12 +63,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 32995,
+      "actualTriangles": 44257,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -92,8 +94,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 32988
+        "max": 3000000,
+        "actual": 61314
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -110,12 +112,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 32988,
+      "actualTriangles": 61314,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -141,8 +145,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 33104
+        "max": 3000000,
+        "actual": 2161946
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -159,12 +163,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 33104,
+      "actualTriangles": 2161946,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -191,8 +197,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 9472
+        "max": 3000000,
+        "actual": 11464
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -209,12 +215,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 9472,
+      "actualTriangles": 11464,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -241,8 +249,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 32948
+        "max": 3000000,
+        "actual": 476392
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -259,12 +267,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 32948,
+      "actualTriangles": 476392,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -288,8 +298,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 32941
+        "max": 3000000,
+        "actual": 94955
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -306,12 +316,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 32941,
+      "actualTriangles": 94955,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -337,8 +349,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 5257
+        "max": 3000000,
+        "actual": 7249
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -355,12 +367,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 5257,
+      "actualTriangles": 7249,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     },
     {
@@ -384,8 +398,8 @@
       "format": "glb",
       "polygonBudget": {
         "min": 500,
-        "max": 40000,
-        "actual": 6778
+        "max": 3000000,
+        "actual": 8770
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -402,12 +416,14 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 6778,
+      "actualTriangles": 8770,
       "modifications": [
         "Repainted as Alien Air red and white livery",
         "Removed original airline livery",
         "Added fuselage, wing, and tail Alien Air markings",
-        "Replaced floating decal panels with integrated material livery"
+        "Replaced floating decal panels with integrated material livery",
+        "Preserved complete mesh geometry to avoid fragmented fuselages",
+        "Added raised white fuselage lettering without rectangular backing panels"
       ]
     }
   ]

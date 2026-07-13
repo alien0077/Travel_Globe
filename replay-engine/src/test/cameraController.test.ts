@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { CameraController } from '../camera/CameraController';
-import { geographicToVector3 } from '../geo/geodesy';
 
 describe('camera controller interaction', () => {
-  it('zooms global view toward the current ground position', () => {
+  it('zooms global view toward the globe while keeping free orbit control', () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const controller = new CameraController(camera);
     const point = { latitude: 35.7, longitude: 140.0, altitudeMeters: 10_000 };
@@ -19,9 +18,9 @@ describe('camera controller interaction', () => {
       controller.update(point, 60);
     }
 
-    const surface = new THREE.Vector3(...Object.values(geographicToVector3(point, 2, 900000)));
     expect(camera.position.length()).toBeLessThan(initialDistance);
-    expect(camera.position.distanceTo(surface)).toBeLessThan(2.4);
+    expect(camera.position.length()).toBeGreaterThan(1.6);
+    expect(camera.position.distanceTo(new THREE.Vector3(0, 0, 0))).toBeLessThan(initialDistance);
   });
 
   it('uses drag deltas in the same direction as the gesture', () => {

@@ -48,9 +48,8 @@ export function createGlobe(radius = 2): GlobeObjects {
   );
   globe.add(clouds);
 
-  globe.add(createLatLongGrid(radius * 1.002));
-  globe.add(createNaturalEarthBoundaries(radius * 1.003));
-  globe.add(createCityLights(radius * 1.008));
+  globe.add(createNaturalEarthBoundaries(radius * 1.0004));
+  globe.add(createCityLights(radius * 1.004));
   globe.add(createAtmosphere(radius));
 
   return { globe, earth, clouds };
@@ -96,61 +95,6 @@ function createSeededRandom(seed: number): () => number {
     state = (1664525 * state + 1013904223) >>> 0;
     return state / 0xffffffff;
   };
-}
-
-function createLatLongGrid(radius: number): THREE.Group {
-  const group = new THREE.Group();
-  const material = new THREE.LineBasicMaterial({
-    color: 0xb7e8ff,
-    transparent: true,
-    opacity: 0.08
-  });
-
-  for (let lat = -60; lat <= 60; lat += 30) {
-    group.add(createLatitudeLine(lat, radius, material));
-  }
-
-  for (let lon = -150; lon <= 180; lon += 30) {
-    group.add(createLongitudeLine(lon, radius, material));
-  }
-
-  return group;
-}
-
-function createLatitudeLine(latitude: number, radius: number, material: THREE.LineBasicMaterial): THREE.Line {
-  const positions: number[] = [];
-  const lat = THREE.MathUtils.degToRad(latitude);
-
-  for (let lon = -180; lon <= 180; lon += 4) {
-    const lonRad = THREE.MathUtils.degToRad(lon);
-    positions.push(
-      radius * Math.cos(lat) * Math.sin(lonRad),
-      radius * Math.sin(lat),
-      radius * Math.cos(lat) * Math.cos(lonRad)
-    );
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  return new THREE.Line(geometry, material);
-}
-
-function createLongitudeLine(longitude: number, radius: number, material: THREE.LineBasicMaterial): THREE.Line {
-  const positions: number[] = [];
-  const lon = THREE.MathUtils.degToRad(longitude);
-
-  for (let lat = -90; lat <= 90; lat += 4) {
-    const latRad = THREE.MathUtils.degToRad(lat);
-    positions.push(
-      radius * Math.cos(latRad) * Math.sin(lon),
-      radius * Math.sin(latRad),
-      radius * Math.cos(latRad) * Math.cos(lon)
-    );
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  return new THREE.Line(geometry, material);
 }
 
 interface BoundaryLine {

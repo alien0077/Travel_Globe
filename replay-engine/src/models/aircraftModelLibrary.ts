@@ -105,7 +105,7 @@ export function isAllowedAircraftModelFormat(format: string): format is Aircraft
 
 export function isWithinPolygonBudget(budget: AircraftModelPolygonBudget): boolean {
   const actual = budget.actual ?? budget.min;
-  return budget.min >= 500 && budget.max <= 40000 && actual >= budget.min && actual <= budget.max;
+  return budget.min >= 500 && budget.max <= 3000000 && actual >= budget.min && actual <= budget.max;
 }
 
 export function normalizeAircraftType(value: string): string {

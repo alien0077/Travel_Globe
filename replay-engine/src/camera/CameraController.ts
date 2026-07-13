@@ -19,8 +19,8 @@ export class CameraController {
   }
 
   rotate(deltaX: number, deltaY: number): void {
-    this.orbitYaw -= deltaX * 0.006;
-    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch - deltaY * 0.004, -1.05, 1.05);
+    this.orbitYaw += deltaX * 0.006;
+    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch + deltaY * 0.004, -1.18, 1.18);
   }
 
   zoomBy(delta: number): void {
@@ -34,21 +34,18 @@ export class CameraController {
     const forward = this.forwardVector(normal, bearingDegrees);
 
     if (this.mode === 'global') {
-      const zoomIn = THREE.MathUtils.clamp((1 - this.zoom) / 0.84, 0, 1);
-      const surfaceTarget = normal.clone().multiplyScalar(2.02);
-      const worldTarget = new THREE.Vector3(0, 0, 0).lerp(surfaceTarget, zoomIn);
-      const globalBase = new THREE.Vector3(0, 2.45, 5.2 * this.zoom);
-      const localRight = new THREE.Vector3().crossVectors(forward, normal).normalize();
-      const localUp = normal.clone();
-      const localBase = normal
-        .clone()
-        .multiplyScalar(1.1 + 3.0 * this.zoom)
-        .add(localRight.multiplyScalar(this.orbitYaw * 0.45))
-        .add(localUp.multiplyScalar(this.orbitPitch * 0.42));
-      const base = globalBase.lerp(surfaceTarget.clone().add(localBase), zoomIn);
+      const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
+      const yaw = this.orbitYaw;
+      const pitch = 0.45 + this.orbitPitch;
+      const orbitDirection = new THREE.Vector3(
+        Math.sin(yaw) * Math.cos(pitch),
+        Math.sin(pitch),
+        Math.cos(yaw) * Math.cos(pitch)
+      ).normalize();
+      const base = orbitDirection.multiplyScalar(distance);
       this.camera.position.lerp(base, 0.08);
-      this.camera.up.copy(new THREE.Vector3(0, 1, 0).lerp(normal, zoomIn).normalize());
-      this.camera.lookAt(worldTarget);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(0, 0, 0);
       return;
     }
 

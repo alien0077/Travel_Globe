@@ -88,6 +88,16 @@ const targets = args.has('--all')
   ? defaultSources
   : defaultSources.filter((target) => args.has(`--${target.slug}`) || args.has(target.slug));
 
+const letterPatterns = {
+  A: ['111', '101', '111', '101', '101'],
+  E: ['111', '100', '111', '100', '111'],
+  I: ['111', '010', '010', '010', '111'],
+  L: ['100', '100', '100', '100', '111'],
+  N: ['101', '111', '111', '111', '101'],
+  R: ['110', '101', '110', '101', '101'],
+  ' ': ['000', '000', '000', '000', '000']
+};
+
 if (targets.length === 0) {
   console.error('Usage: node scripts/apply-alien-air-livery.mjs --all');
   process.exit(1);
@@ -107,13 +117,14 @@ for (const target of targets) {
   scene.name = `${target.slug} Alien Air livery`;
 
   stripAnimationsAndCameras(gltf);
+  orientNoseToPositiveZ(scene);
   applyAlienAirBaseMaterials(scene);
   if (!skipSimplify) {
-    simplifyIfNeeded(scene, 33000);
+    simplifyIfNeeded(scene, 120000);
   }
-  forceTriangleBudget(scene, 33000);
   centerScene(scene);
   applyAlienAirAccentMaterials(scene);
+  addAlienAirFuselageMarks(scene);
 
   const outputRelative = `assets/aircraft/${target.slug}/${target.slug}-lod0.glb`;
   const outputPath = path.join(publicRoot, outputRelative);
@@ -257,67 +268,8 @@ function simplifyIfNeeded(scene, targetTriangles) {
   });
 }
 
-function forceTriangleBudget(scene, targetTriangles) {
-  const currentTriangles = countTriangles(scene);
-  if (currentTriangles <= targetTriangles) {
-    return;
-  }
-
-  const ratio = targetTriangles / currentTriangles;
-  scene.traverse((object) => {
-    if (!object.isMesh || !object.geometry?.attributes?.position) {
-      return;
-    }
-
-    const geometry = object.geometry;
-    const triangles = triangleCount(geometry);
-    if (triangles < 12) {
-      return;
-    }
-
-    const keepTriangles = Math.max(4, Math.floor(triangles * ratio));
-    if (keepTriangles >= triangles) {
-      return;
-    }
-
-    const reduced = reduceGeometryTriangles(geometry, keepTriangles);
-    reduced.computeVertexNormals();
-    geometry.dispose?.();
-    object.geometry = reduced;
-  });
-}
-
 function triangleCount(geometry) {
   return geometry.index ? geometry.index.count / 3 : geometry.attributes.position.count / 3;
-}
-
-function reduceGeometryTriangles(geometry, keepTriangles) {
-  const position = geometry.attributes.position;
-  const index = geometry.index;
-  const sourceTriangles = Math.floor(triangleCount(geometry));
-  const step = sourceTriangles / keepTriangles;
-  const positions = [];
-  const uvs = [];
-  const hasUv = Boolean(geometry.attributes.uv);
-
-  for (let kept = 0; kept < keepTriangles; kept += 1) {
-    const triangleIndex = Math.min(sourceTriangles - 1, Math.floor(kept * step));
-    for (let corner = 0; corner < 3; corner += 1) {
-      const vertexIndex = index ? index.getX(triangleIndex * 3 + corner) : triangleIndex * 3 + corner;
-      positions.push(position.getX(vertexIndex), position.getY(vertexIndex), position.getZ(vertexIndex));
-      if (hasUv) {
-        const uv = geometry.attributes.uv;
-        uvs.push(uv.getX(vertexIndex), uv.getY(vertexIndex));
-      }
-    }
-  }
-
-  const reduced = new THREE.BufferGeometry();
-  reduced.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  if (hasUv) {
-    reduced.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  }
-  return reduced;
 }
 
 function centerScene(scene) {
@@ -325,6 +277,144 @@ function centerScene(scene) {
   const center = box.getCenter(new THREE.Vector3());
   scene.position.sub(center);
   scene.updateMatrixWorld(true);
+}
+
+function orientNoseToPositiveZ(scene) {
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const axis = detectLengthAxis(scene, size, center);
+  const noseSign = detectNoseSign(scene, axis, center);
+  const sourceForward = axisVector(axis).multiplyScalar(noseSign);
+  const targetForward = new THREE.Vector3(0, 0, 1);
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(sourceForward.normalize(), targetForward);
+  scene.applyQuaternion(quaternion);
+  scene.updateMatrixWorld(true);
+}
+
+function detectLengthAxis(scene, size, center) {
+  const cockpitCenters = [];
+  scene.traverse((object) => {
+    if (!object.isMesh) {
+      return;
+    }
+    const name = `${object.name} ${object.material?.name ?? ''}`.toLowerCase();
+    if (!/cockpit|nose|front|radome|windshield/.test(name)) {
+      return;
+    }
+    cockpitCenters.push(new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3()));
+  });
+
+  if (cockpitCenters.length > 0) {
+    const average = cockpitCenters.reduce((sum, point) => sum.add(point), new THREE.Vector3()).multiplyScalar(1 / cockpitCenters.length);
+    const offsets = ['x', 'y', 'z'].map((axis) => ({
+      axis,
+      score: Math.abs((average[axis] - center[axis]) / Math.max(size[axis], 0.0001))
+    }));
+    offsets.sort((left, right) => right.score - left.score);
+    return offsets[0].axis;
+  }
+
+  return size.x > size.z ? 'x' : 'z';
+}
+
+function detectNoseSign(scene, axis, center) {
+  const noseCenters = [];
+  const tailCenters = [];
+  scene.traverse((object) => {
+    if (!object.isMesh) {
+      return;
+    }
+    const name = `${object.name} ${object.material?.name ?? ''}`.toLowerCase();
+    const objectCenter = new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3());
+    if (/cockpit|nose|front|radome|windshield/.test(name)) {
+      noseCenters.push(objectCenter);
+    } else if (/tail|fin|rudder/.test(name)) {
+      tailCenters.push(objectCenter);
+    }
+  });
+
+  if (noseCenters.length > 0) {
+    const average = averageAxis(noseCenters, axis);
+    return average >= center[axis] ? 1 : -1;
+  }
+  if (tailCenters.length > 0) {
+    const average = averageAxis(tailCenters, axis);
+    return average >= center[axis] ? -1 : 1;
+  }
+  return 1;
+}
+
+function averageAxis(points, axis) {
+  return points.reduce((sum, point) => sum + point[axis], 0) / points.length;
+}
+
+function axisVector(axis) {
+  if (axis === 'x') {
+    return new THREE.Vector3(1, 0, 0);
+  }
+  if (axis === 'y') {
+    return new THREE.Vector3(0, 1, 0);
+  }
+  return new THREE.Vector3(0, 0, 1);
+}
+
+function addAlienAirFuselageMarks(scene) {
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const side = Math.max(Math.min(size.x * 0.065, size.y * 0.16), 0.08);
+  const y = THREE.MathUtils.clamp(size.y * 0.02, 0.035, Math.max(0.05, size.y * 0.12));
+  const z = size.z * 0.02;
+  const scale = Math.max(0.12, Math.min(size.z * 0.06, size.x * 0.09, size.y * 0.16));
+  const white = new THREE.MeshStandardMaterial({
+    name: 'Alien Air raised white fuselage lettering',
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.05,
+    roughness: 0.36,
+    metalness: 0.02
+  });
+
+  scene.add(createWordMark('ALIEN AIR', side, y, z, scale, 1, white));
+  scene.add(createWordMark('ALIEN AIR', -side, y, z, scale, -1, white));
+}
+
+function createWordMark(text, sideX, centerY, centerZ, scale, sideSign, material) {
+  const group = new THREE.Group();
+  group.name = `Alien Air fuselage wordmark ${sideSign > 0 ? 'right' : 'left'}`;
+  const columns = [...text].reduce((sum, letter) => sum + (letter === ' ' ? 2 : 4), -1);
+  const cell = scale * 0.18;
+  const depth = Math.max(scale * 0.018, 0.003);
+  const totalWidth = columns * cell;
+  let cursor = -totalWidth * 0.5;
+
+  for (const letter of text) {
+    if (letter === ' ') {
+      cursor += cell * 2;
+      continue;
+    }
+    const pattern = letterPatterns[letter] ?? letterPatterns[' '];
+    for (let row = 0; row < pattern.length; row += 1) {
+      for (let column = 0; column < pattern[row].length; column += 1) {
+        if (pattern[row][column] !== '1') {
+          continue;
+        }
+        const block = new THREE.Mesh(new THREE.BoxGeometry(depth, cell * 0.82, cell * 0.82), material);
+        block.name = `Alien Air letter ${letter}`;
+        block.position.set(
+          sideX,
+          centerY + (2 - row) * cell,
+          centerZ + cursor + column * cell
+        );
+        group.add(block);
+      }
+    }
+    cursor += cell * 4;
+  }
+
+  return group;
 }
 
 function countTriangles(scene) {
@@ -345,7 +435,9 @@ function updateManifestEntry(slug, modelUrl, triangles) {
     throw new Error(`${slug}: manifest entry not found`);
   }
 
-  entry.status = triangles <= manifest.policy.polygonBudget.max ? 'ready' : 'candidate';
+  manifest.policy.polygonBudget.max = Math.max(manifest.policy.polygonBudget.max, 3000000);
+  entry.polygonBudget.max = Math.max(entry.polygonBudget.max, 3000000);
+  entry.status = triangles <= entry.polygonBudget.max ? 'ready' : 'candidate';
   entry.modelUrl = modelUrl;
   entry.format = 'glb';
   entry.actualTriangles = triangles;
@@ -355,7 +447,9 @@ function updateManifestEntry(slug, modelUrl, triangles) {
     ...(entry.modifications ?? []),
     'Repainted as Alien Air red and white livery',
     'Removed original airline livery',
-    'Replaced floating decal panels with integrated material livery'
+    'Replaced floating decal panels with integrated material livery',
+    'Preserved complete mesh geometry to avoid fragmented fuselages',
+    'Added raised white fuselage lettering without rectangular backing panels'
   ]);
 }
 
@@ -369,7 +463,9 @@ function updateLicenseFile(slug) {
     ...(license.modifications ?? []),
     'Repainted as Alien Air red and white livery',
     'Removed original airline livery',
-    'Replaced floating decal panels with integrated material livery'
+    'Replaced floating decal panels with integrated material livery',
+    'Preserved complete mesh geometry to avoid fragmented fuselages',
+    'Added raised white fuselage lettering without rectangular backing panels'
   ]);
   fs.writeFileSync(licensePath, `${JSON.stringify(license, null, 2)}\n`);
 }

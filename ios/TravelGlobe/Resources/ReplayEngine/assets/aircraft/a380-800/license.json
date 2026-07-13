@@ -14,6 +14,8 @@
     "Repainted as Alien Air red and white livery",
     "Removed original airline livery",
     "Added fuselage, wing, and tail Alien Air markings",
-    "Replaced floating decal panels with integrated material livery"
+    "Replaced floating decal panels with integrated material livery",
+    "Preserved complete mesh geometry to avoid fragmented fuselages",
+    "Added raised white fuselage lettering without rectangular backing panels"
   ]
 }
