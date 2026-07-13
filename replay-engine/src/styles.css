@@ -619,12 +619,9 @@ a {
     position: absolute;
     inset: 0;
     z-index: 2;
-    display: grid;
-    align-content: start;
-    gap: 10px;
+    display: block;
     overflow: hidden;
-    padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
-      calc(10px + env(safe-area-inset-left));
+    padding: 0;
     background: linear-gradient(180deg, rgb(8 17 23 / 56%) 0%, rgb(8 17 23 / 20%) 44%, rgb(8 17 23 / 68%) 100%);
     pointer-events: none;
   }
@@ -639,10 +636,31 @@ a {
   }
 
   .hud {
-    order: 1;
-    padding: 13px;
-    max-height: 34svh;
-    overflow-y: auto;
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right));
+    left: calc(10px + env(safe-area-inset-left));
+    width: auto;
+    padding: 12px;
+    max-height: 25svh;
+    overflow: hidden;
+  }
+
+  .hud-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px 8px;
+    margin-top: 10px;
+  }
+
+  .hud-point {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .below-me,
+  .capability {
+    display: none;
   }
 
   .record-preview {
@@ -650,16 +668,36 @@ a {
   }
 
   .info-dock {
-    order: 3;
+    position: absolute;
+    top: calc(20px + 25svh + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right));
+    left: auto;
+    width: min(184px, calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)));
     display: grid;
-    margin-top: auto;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .dock-panel:not([open]) .panel-summary {
+    min-height: 34px;
+    padding: 8px 10px;
   }
 
   .controls {
-    order: 4;
+    position: absolute;
+    right: calc(10px + env(safe-area-inset-right));
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: calc(10px + env(safe-area-inset-left));
+    width: auto;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 82px 82px minmax(0, 1fr);
+    gap: 8px;
     margin: 0;
+    padding: 8px;
+  }
+
+  .secondary-action {
+    display: none;
   }
 
   .product-list {
@@ -685,7 +723,7 @@ a {
   }
 
   .camera-select {
-    grid-column: span 2;
+    grid-column: auto;
     min-width: 0;
   }
 
@@ -728,12 +766,9 @@ a {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: grid;
-  align-content: start;
-  gap: 10px;
+  display: block;
   overflow: hidden;
-  padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
-    calc(10px + env(safe-area-inset-left));
+  padding: 0;
   background: linear-gradient(180deg, rgb(8 17 23 / 56%) 0%, rgb(8 17 23 / 20%) 44%, rgb(8 17 23 / 68%) 100%);
   pointer-events: none;
 }
@@ -748,10 +783,31 @@ a {
 }
 
 .app-shell.is-compact .hud {
-  order: 1;
-  padding: 13px;
-  max-height: 34svh;
-  overflow-y: auto;
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  right: calc(10px + env(safe-area-inset-right));
+  left: calc(10px + env(safe-area-inset-left));
+  width: auto;
+  padding: 12px;
+  max-height: 25svh;
+  overflow: hidden;
+}
+
+.app-shell.is-compact .hud-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 8px;
+  margin-top: 10px;
+}
+
+.app-shell.is-compact .hud-point {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.app-shell.is-compact .below-me,
+.app-shell.is-compact .capability {
+  display: none;
 }
 
 .app-shell.is-compact .record-preview {
@@ -759,16 +815,36 @@ a {
 }
 
 .app-shell.is-compact .info-dock {
-  order: 3;
+  position: absolute;
+  top: calc(20px + 25svh + env(safe-area-inset-top));
+  right: calc(10px + env(safe-area-inset-right));
+  left: auto;
+  width: min(184px, calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)));
   display: grid;
-  margin-top: auto;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.app-shell.is-compact .dock-panel:not([open]) .panel-summary {
+  min-height: 34px;
+  padding: 8px 10px;
 }
 
 .app-shell.is-compact .controls {
-  order: 4;
+  position: absolute;
+  right: calc(10px + env(safe-area-inset-right));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: calc(10px + env(safe-area-inset-left));
+  width: auto;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 82px 82px minmax(0, 1fr);
+  gap: 8px;
   margin: 0;
+  padding: 8px;
+}
+
+.app-shell.is-compact .secondary-action {
+  display: none;
 }
 
 .app-shell.is-compact .product-list,
@@ -791,7 +867,7 @@ a {
 }
 
 .app-shell.is-compact .camera-select {
-  grid-column: span 2;
+  grid-column: auto;
   min-width: 0;
 }
 

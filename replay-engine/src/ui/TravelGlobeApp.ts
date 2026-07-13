@@ -221,48 +221,48 @@ export class TravelGlobeApp {
 
     const importButton = document.createElement('button');
     importButton.type = 'button';
-    importButton.className = 'control-button';
+    importButton.className = 'control-button secondary-action';
     importButton.textContent = 'Import';
     importButton.addEventListener('click', () => this.fileInput.click());
 
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
-    exportButton.className = 'control-button';
+    exportButton.className = 'control-button secondary-action';
     exportButton.textContent = 'Export';
     exportButton.addEventListener('click', () => this.exportTravelGlobe());
 
     const shareButton = document.createElement('button');
     shareButton.type = 'button';
-    shareButton.className = 'control-button';
+    shareButton.className = 'control-button secondary-action';
     shareButton.textContent = 'Share';
     shareButton.addEventListener('click', () => this.exportShareSafeJson());
 
     const manualLink = document.createElement('a');
-    manualLink.className = 'control-button control-link';
+    manualLink.className = 'control-button control-link secondary-action';
     manualLink.href = './readme.html';
     manualLink.textContent = '使用手冊';
 
     const gpxButton = document.createElement('button');
     gpxButton.type = 'button';
-    gpxButton.className = 'control-button';
+    gpxButton.className = 'control-button secondary-action';
     gpxButton.textContent = 'GPX';
     gpxButton.addEventListener('click', () => this.exportGpx());
 
     const kmlButton = document.createElement('button');
     kmlButton.type = 'button';
-    kmlButton.className = 'control-button';
+    kmlButton.className = 'control-button secondary-action';
     kmlButton.textContent = 'KML';
     kmlButton.addEventListener('click', () => this.exportKml());
 
     const journalButton = document.createElement('button');
     journalButton.type = 'button';
-    journalButton.className = 'control-button';
+    journalButton.className = 'control-button secondary-action';
     journalButton.textContent = 'Journal';
     journalButton.addEventListener('click', () => this.exportJournalMarkdown());
 
     const packButton = document.createElement('button');
     packButton.type = 'button';
-    packButton.className = 'control-button';
+    packButton.className = 'control-button secondary-action';
     packButton.textContent = 'Pack';
     packButton.addEventListener('click', () => {
       this.packState = installPack(this.packState, coreOfflinePacks[1]);
@@ -353,11 +353,9 @@ export class TravelGlobeApp {
       position: 'absolute',
       inset: '0',
       zIndex: '2',
-      display: 'grid',
-      alignContent: 'start',
-      gap: '10px',
+      display: 'block',
       overflow: 'hidden',
-      padding: '10px',
+      padding: '0',
       pointerEvents: 'none',
       background: 'linear-gradient(180deg, rgba(8,17,23,.56) 0%, rgba(8,17,23,.2) 44%, rgba(8,17,23,.68) 100%)',
       WebkitOverflowScrolling: 'touch'
@@ -372,28 +370,62 @@ export class TravelGlobeApp {
     }
 
     Object.assign(elements.hud.style, {
-      order: '1',
-      padding: '13px',
-      maxHeight: '34vh',
-      overflowY: 'auto',
+      position: 'absolute',
+      top: '10px',
+      left: '10px',
+      right: '10px',
+      width: 'auto',
+      padding: '12px',
+      maxHeight: '25vh',
+      overflow: 'hidden',
       pointerEvents: 'auto'
+    });
+    for (const extra of [this.belowMe, this.capability]) {
+      extra.style.display = 'none';
+    }
+    Object.assign(this.hudPoint.style, {
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
     });
     Object.assign(this.recordPreview.style, {
       display: 'none'
     });
     Object.assign(elements.dock.style, {
-      order: '3',
+      position: 'absolute',
+      top: 'calc(20px + 25vh)',
+      right: '10px',
+      left: 'auto',
+      width: 'min(184px, calc(100vw - 20px))',
       display: 'grid',
-      gap: '10px',
-      marginTop: 'auto',
+      gap: '8px',
+      marginTop: '0',
       pointerEvents: 'auto'
     });
     Object.assign(elements.controls.style, {
-      order: '4',
+      position: 'absolute',
+      left: '10px',
+      right: '10px',
+      bottom: '10px',
+      width: 'auto',
       display: 'grid',
-      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+      gridTemplateColumns: '82px 82px minmax(0, 1fr)',
+      gap: '8px',
       margin: '0',
+      padding: '8px',
       pointerEvents: 'auto'
+    });
+    for (const secondaryAction of elements.controls.querySelectorAll<HTMLElement>('.secondary-action')) {
+      secondaryAction.style.display = 'none';
+    }
+    Object.assign(this.cameraSelect.style, {
+      gridColumn: 'auto',
+      minWidth: '0'
+    });
+    Object.assign(this.scrubber.style, {
+      gridColumn: '1 / -1',
+      width: '100%',
+      minWidth: '0'
     });
 
     for (const panel of this.root.querySelectorAll<HTMLElement>('.hud, .dock-panel, .record-preview, .controls')) {
