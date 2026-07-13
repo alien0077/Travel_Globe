@@ -1,228 +1,159 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { resolveBundledAsset } from '../assets/resolveBundledAsset';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
 import {
   DEFAULT_AIRCRAFT_TYPE,
+  REQUIRED_AIRCRAFT_TYPES,
   normalizeAircraftType,
+  selectAircraftModel,
+  type AircraftModelLibrary,
   type RequiredAircraftType
 } from './aircraftModelLibrary';
 
 export const AIRCRAFT_MODEL_TARGET_SIZE = 0.16;
 export const AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS = 3500;
 
-interface ProceduralAircraftProfile {
-  id: RequiredAircraftType;
-  length: number;
-  wingspan: number;
-  bodyRadius: number;
-  wingDepth: number;
-  tailSpan: number;
-  tailHeight: number;
-  engines: 2 | 4;
-  accentColor: number;
-  doubleDeck?: boolean;
+interface AircraftModelCorrection {
+  rotation?: [number, number, number];
+  scaleMultiplier?: number;
+  yOffset?: number;
 }
 
-const AIRCRAFT_PROFILES: Record<RequiredAircraftType, ProceduralAircraftProfile> = {
-  A320: {
-    id: 'A320',
-    length: 0.142,
-    wingspan: 0.138,
-    bodyRadius: 0.016,
-    wingDepth: 0.024,
-    tailSpan: 0.058,
-    tailHeight: 0.04,
-    engines: 2,
-    accentColor: 0x2a817b
-  },
-  A321: {
-    id: 'A321',
-    length: 0.158,
-    wingspan: 0.144,
-    bodyRadius: 0.016,
-    wingDepth: 0.025,
-    tailSpan: 0.06,
-    tailHeight: 0.042,
-    engines: 2,
-    accentColor: 0x2a817b
-  },
-  B737: {
-    id: 'B737',
-    length: 0.146,
-    wingspan: 0.134,
-    bodyRadius: 0.015,
-    wingDepth: 0.024,
-    tailSpan: 0.056,
-    tailHeight: 0.04,
-    engines: 2,
-    accentColor: 0x366e99
-  },
-  B767: {
-    id: 'B767',
-    length: 0.17,
-    wingspan: 0.172,
-    bodyRadius: 0.019,
-    wingDepth: 0.03,
-    tailSpan: 0.072,
-    tailHeight: 0.049,
-    engines: 2,
-    accentColor: 0x376f9c
-  },
-  B777: {
-    id: 'B777',
-    length: 0.188,
-    wingspan: 0.196,
-    bodyRadius: 0.021,
-    wingDepth: 0.034,
-    tailSpan: 0.082,
-    tailHeight: 0.055,
-    engines: 2,
-    accentColor: 0x315f90
-  },
-  B787: {
-    id: 'B787',
-    length: 0.18,
-    wingspan: 0.19,
-    bodyRadius: 0.02,
-    wingDepth: 0.032,
-    tailSpan: 0.078,
-    tailHeight: 0.052,
-    engines: 2,
-    accentColor: 0x337593
-  },
-  A350: {
-    id: 'A350',
-    length: 0.184,
-    wingspan: 0.194,
-    bodyRadius: 0.02,
-    wingDepth: 0.033,
-    tailSpan: 0.078,
-    tailHeight: 0.053,
-    engines: 2,
-    accentColor: 0x2e7d89
-  },
-  A380: {
-    id: 'A380',
-    length: 0.2,
-    wingspan: 0.224,
-    bodyRadius: 0.026,
-    wingDepth: 0.038,
-    tailSpan: 0.092,
-    tailHeight: 0.066,
-    engines: 4,
-    accentColor: 0x2f8c82,
-    doubleDeck: true
-  }
+const AIRCRAFT_MODEL_CORRECTIONS: Partial<Record<RequiredAircraftType, AircraftModelCorrection>> = {
+  A321: { scaleMultiplier: 0.9 },
+  B767: { rotation: [0, Math.PI / 2, 0], scaleMultiplier: 0.88 },
+  B777: { scaleMultiplier: 0.82 },
+  A380: { rotation: [0, Math.PI / 2, 0], scaleMultiplier: 0.9 }
 };
+
+const aircraftModelCache = new Map<string, Promise<THREE.Group | undefined>>();
 
 export function createAircraftMarker(aircraftType?: string): THREE.Group {
   const aircraft = new THREE.Group();
-  const profile = aircraftProfileFor(aircraftType);
-  aircraft.name = `Aircraft ${profile.id}`;
-  aircraft.add(createProceduralAircraftModel(profile));
+  const normalizedType = normalizeRequestedAircraftType(aircraftType);
+  aircraft.name = `Aircraft ${normalizedType}`;
+  aircraft.add(createLoadingAircraftSilhouette());
+  void loadExternalAircraftModel(aircraft, aircraftType);
   return aircraft;
 }
 
-function aircraftProfileFor(aircraftType: string | undefined): ProceduralAircraftProfile {
+function normalizeRequestedAircraftType(aircraftType: string | undefined): RequiredAircraftType {
   const normalized = normalizeAircraftType(aircraftType ?? DEFAULT_AIRCRAFT_TYPE);
-  if (normalized in AIRCRAFT_PROFILES) {
-    return AIRCRAFT_PROFILES[normalized as RequiredAircraftType];
-  }
-  return AIRCRAFT_PROFILES[DEFAULT_AIRCRAFT_TYPE];
+  return REQUIRED_AIRCRAFT_TYPES.includes(normalized as RequiredAircraftType)
+    ? (normalized as RequiredAircraftType)
+    : DEFAULT_AIRCRAFT_TYPE;
 }
 
-function createProceduralAircraftModel(profile: ProceduralAircraftProfile): THREE.Group {
-  const group = new THREE.Group();
-  group.name = `${profile.id} procedural aircraft model`;
-  const materials = createAircraftMaterials(profile.accentColor);
+async function loadExternalAircraftModel(aircraft: THREE.Group, aircraftType: string | undefined): Promise<void> {
+  const library = await readAircraftModelLibrary();
+  const selected = library ? selectAircraftModel(library, aircraftType ?? DEFAULT_AIRCRAFT_TYPE) : undefined;
+  if (!selected) {
+    return;
+  }
 
-  const fuselage = new THREE.Mesh(
-    new THREE.CapsuleGeometry(profile.bodyRadius, profile.length, 10, 20),
-    materials.body
-  );
-  fuselage.rotation.x = Math.PI / 2;
-  group.add(fuselage);
+  const model = await cachedAircraftModel(selected.id, selected.modelUrl, selected.neutralizeLivery);
+  if (!model) {
+    return;
+  }
 
-  const nose = new THREE.Mesh(
-    new THREE.SphereGeometry(profile.bodyRadius * 0.92, 16, 12),
-    materials.body
-  );
-  nose.scale.set(0.86, 0.74, 1.18);
-  nose.position.z = -profile.length * 0.5;
-  group.add(nose);
+  aircraft.clear();
+  aircraft.name = `Aircraft ${selected.id}`;
+  aircraft.add(model);
 
-  const cockpit = new THREE.Mesh(
-    new THREE.BoxGeometry(profile.bodyRadius * 1.3, profile.bodyRadius * 0.42, profile.bodyRadius * 0.48),
-    materials.dark
-  );
-  cockpit.position.set(0, profile.bodyRadius * 0.72, -profile.length * 0.43);
-  cockpit.rotation.x = -0.18;
-  group.add(cockpit);
+  const beacon = new THREE.PointLight(0x9addff, 0.85, 0.7);
+  beacon.position.set(0, 0.07, -0.08);
+  aircraft.add(beacon);
+}
 
-  if (profile.doubleDeck) {
-    const upperDeck = new THREE.Mesh(
-      new THREE.BoxGeometry(profile.bodyRadius * 1.15, profile.bodyRadius * 0.18, profile.length * 0.34),
-      materials.body
+function cachedAircraftModel(
+  aircraftType: RequiredAircraftType,
+  modelPath: string,
+  neutralizeLivery: boolean
+): Promise<THREE.Group | undefined> {
+  const cacheKey = `${aircraftType}:${modelPath}:${neutralizeLivery ? 'neutral' : 'original'}`;
+  const existing = aircraftModelCache.get(cacheKey);
+  if (existing) {
+    return existing.then((model) => model?.clone(true));
+  }
+
+  const promise = loadAircraftModel(aircraftType, modelPath, neutralizeLivery);
+  aircraftModelCache.set(cacheKey, promise);
+  return promise.then((model) => model?.clone(true));
+}
+
+async function loadAircraftModel(
+  aircraftType: RequiredAircraftType,
+  modelPath: string,
+  neutralizeLivery: boolean
+): Promise<THREE.Group | undefined> {
+  return new Promise((resolve) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      resolveBundledAsset(modelPath),
+      (gltf) => {
+        const model = gltf.scene;
+        model.name = `${aircraftType} external aircraft model`;
+        if (neutralizeLivery) {
+          neutralizeAircraftLivery(model);
+        }
+        prepareAircraftMeshes(model);
+        normalizeExternalModel(model, aircraftType);
+        resolve(model);
+      },
+      undefined,
+      () => resolve(undefined)
     );
-    upperDeck.position.set(0, profile.bodyRadius * 1.04, -profile.length * 0.16);
-    group.add(upperDeck);
-  }
-
-  const wing = new THREE.Mesh(
-    new THREE.BoxGeometry(profile.wingspan, 0.005, profile.wingDepth),
-    materials.wing
-  );
-  wing.position.z = profile.length * 0.03;
-  wing.rotation.z = 0.015;
-  group.add(wing);
-
-  const tailWing = new THREE.Mesh(
-    new THREE.BoxGeometry(profile.tailSpan, 0.004, profile.wingDepth * 0.66),
-    materials.wing
-  );
-  tailWing.position.z = profile.length * 0.46;
-  group.add(tailWing);
-
-  const verticalTail = new THREE.Mesh(
-    new THREE.BoxGeometry(profile.bodyRadius * 0.52, profile.tailHeight, profile.wingDepth * 0.75),
-    materials.accent
-  );
-  verticalTail.position.set(0, profile.tailHeight * 0.48, profile.length * 0.49);
-  verticalTail.rotation.x = -0.08;
-  group.add(verticalTail);
-
-  const enginePositions = engineOffsets(profile);
-  for (const offsetX of enginePositions) {
-    const engine = new THREE.Mesh(
-      new THREE.CapsuleGeometry(profile.bodyRadius * 0.38, profile.wingDepth * 0.74, 8, 12),
-      materials.engine
-    );
-    engine.rotation.x = Math.PI / 2;
-    engine.position.set(offsetX, -profile.bodyRadius * 0.82, profile.length * 0.005);
-    group.add(engine);
-  }
-
-  const beacon = new THREE.PointLight(0x9addff, 0.72, 0.62);
-  beacon.position.set(0, profile.bodyRadius * 1.6, profile.length * 0.15);
-  group.add(beacon);
-
-  normalizeProceduralAircraft(group);
-  return group;
+  });
 }
 
-function engineOffsets(profile: ProceduralAircraftProfile): number[] {
-  if (profile.engines === 4) {
-    return [
-      -profile.wingspan * 0.34,
-      -profile.wingspan * 0.18,
-      profile.wingspan * 0.18,
-      profile.wingspan * 0.34
-    ];
+async function readAircraftModelLibrary(): Promise<AircraftModelLibrary | undefined> {
+  try {
+    const response = await fetch(resolveBundledAsset('models/aircraft/library.json'));
+    if (!response.ok) {
+      return undefined;
+    }
+    return (await response.json()) as AircraftModelLibrary;
+  } catch {
+    return undefined;
   }
-  return [-profile.wingspan * 0.24, profile.wingspan * 0.24];
 }
 
-function createAircraftMaterials(accentColor: number): Record<'body' | 'wing' | 'engine' | 'dark' | 'accent', THREE.Material> {
+function prepareAircraftMeshes(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
+
+    object.castShadow = false;
+    object.receiveShadow = false;
+    object.frustumCulled = false;
+    forceDoubleSidedMaterial(object.material);
+  });
+}
+
+function forceDoubleSidedMaterial(material: THREE.Material | THREE.Material[]): void {
+  const materials = Array.isArray(material) ? material : [material];
+  for (const item of materials) {
+    item.side = THREE.DoubleSide;
+    item.needsUpdate = true;
+  }
+}
+
+function neutralizeAircraftLivery(root: THREE.Object3D): void {
+  const materials = createNeutralLiveryMaterials();
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
+
+    const name = `${object.name} ${object.material instanceof THREE.Material ? object.material.name : ''}`.toLowerCase();
+    object.material = chooseNeutralMaterial(name, materials);
+  });
+}
+
+function createNeutralLiveryMaterials(): Record<'body' | 'wing' | 'engine' | 'dark' | 'accent', THREE.Material> {
   return {
     body: new THREE.MeshStandardMaterial({
       name: 'Travel Globe clean white fuselage',
@@ -256,7 +187,7 @@ function createAircraftMaterials(accentColor: number): Record<'body' | 'wing' | 
     }),
     accent: new THREE.MeshStandardMaterial({
       name: 'Travel Globe teal accent',
-      color: accentColor,
+      color: 0x2a817b,
       emissive: 0x145d58,
       emissiveIntensity: 0.18,
       roughness: 0.32
@@ -264,7 +195,32 @@ function createAircraftMaterials(accentColor: number): Record<'body' | 'wing' | 
   };
 }
 
-function normalizeProceduralAircraft(model: THREE.Group): void {
+function chooseNeutralMaterial(
+  name: string,
+  materials: Record<'body' | 'wing' | 'engine' | 'dark' | 'accent', THREE.Material>
+): THREE.Material {
+  if (/window|glass|cockpit|tire|wheel|fan|inlet|black/.test(name)) {
+    return materials.dark;
+  }
+  if (/engine|nacelle|turbine|pylon/.test(name)) {
+    return materials.engine;
+  }
+  if (/wing|flap|slat|aileron|stabilizer|tail|rudder|elevator/.test(name)) {
+    return materials.wing;
+  }
+  if (/stripe|logo|livery|paint|decal/.test(name)) {
+    return materials.accent;
+  }
+  return materials.body;
+}
+
+function normalizeExternalModel(model: THREE.Group, aircraftType: RequiredAircraftType): void {
+  const correction = AIRCRAFT_MODEL_CORRECTIONS[aircraftType] ?? {};
+  model.position.set(0, 0, 0);
+  model.scale.setScalar(1);
+  model.rotation.set(...(correction.rotation ?? [0, 0, 0]));
+  model.updateMatrixWorld(true);
+
   const box = new THREE.Box3().setFromObject(model);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
@@ -273,10 +229,47 @@ function normalizeProceduralAircraft(model: THREE.Group): void {
     return;
   }
 
-  for (const child of model.children) {
-    child.position.sub(center);
-  }
-  model.scale.setScalar(AIRCRAFT_MODEL_TARGET_SIZE / longest);
+  const scale = (AIRCRAFT_MODEL_TARGET_SIZE * (correction.scaleMultiplier ?? 1)) / longest;
+  model.scale.setScalar(scale);
+  model.position.set(
+    -center.x * scale,
+    -center.y * scale + (correction.yOffset ?? 0),
+    -center.z * scale
+  );
+}
+
+function createLoadingAircraftSilhouette(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = `${DEFAULT_AIRCRAFT_TYPE} loading aircraft silhouette`;
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf8fbff,
+    emissive: 0x5f8fb3,
+    emissiveIntensity: 0.18,
+    roughness: 0.34,
+    metalness: 0.1
+  });
+  const wingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd7f2ff,
+    emissive: 0x2a6f9d,
+    emissiveIntensity: 0.16,
+    roughness: 0.36,
+    metalness: 0.08,
+    side: THREE.DoubleSide
+  });
+
+  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.1, 8, 14), bodyMaterial);
+  fuselage.rotation.x = Math.PI / 2;
+  group.add(fuselage);
+
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(0.096, 0.003, 0.018), wingMaterial);
+  wing.position.z = 0.006;
+  group.add(wing);
+
+  const tailWing = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.003, 0.012), wingMaterial);
+  tailWing.position.z = 0.052;
+  group.add(tailWing);
+
+  return group;
 }
 
 export function placeAircraftMarker(
