@@ -240,6 +240,7 @@ export class TravelGlobeApp {
     this.scrubber.max = '1000';
     this.scrubber.value = '0';
     this.scrubber.addEventListener('input', () => {
+      this.scene?.prepareForTimelineJump();
       this.clock?.seekPercent(Number(this.scrubber.value) / 1000);
     });
 

@@ -89,6 +89,11 @@ input {
   transition: opacity 180ms ease-out;
 }
 
+.globe-place-label.is-hidden {
+  opacity: 0;
+  transform: translate(-9999px, -9999px);
+}
+
 .globe-place-label::before {
   width: 6px;
   height: 6px;

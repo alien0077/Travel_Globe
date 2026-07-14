@@ -43,6 +43,8 @@ export class TravelGlobeScene {
   private readonly activePointers = new Map<number, PointerEvent>();
   private currentCameraMode: CameraMode = 'flightPreview';
   private currentPoint?: LocationPoint;
+  private previousCameraMode?: CameraMode;
+  private suppressLabelsUntilMs = 0;
   private previousPinchDistance?: number;
 
   constructor(
@@ -97,14 +99,20 @@ export class TravelGlobeScene {
   }
 
   update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode, actualRoutePoints: LocationPoint[]): void {
+    const snapCamera = shouldSnapCamera(this.currentPoint, point, this.previousCameraMode, cameraMode);
+    if (snapCamera && this.currentPoint) {
+      this.suppressLabelsUntilMs = performance.now() + 180;
+      this.hideAllLabels();
+    }
     this.currentPoint = point;
     this.currentCameraMode = cameraMode;
+    this.previousCameraMode = cameraMode;
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.aircraft.visible = cameraMode !== 'pilotView';
     updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
     this.updateDayNight(point);
     this.cameraController.setMode(cameraMode);
-    this.cameraController.update(point, bearingDegrees);
+    this.cameraController.update(point, bearingDegrees, { snap: snapCamera });
   }
 
   start(onFrame: (timeMs: number) => void): void {
@@ -129,6 +137,12 @@ export class TravelGlobeScene {
     this.renderer.dispose();
     this.labelLayer.remove();
     this.renderer.domElement.remove();
+  }
+
+  prepareForTimelineJump(): void {
+    this.suppressLabelsUntilMs = performance.now() + 180;
+    this.hideAllLabels();
+    void this.labelLayer.offsetHeight;
   }
 
   private resize(): void {
@@ -232,6 +246,11 @@ export class TravelGlobeScene {
   }
 
   private updateLabelOverlay(): void {
+    if (performance.now() < this.suppressLabelsUntilMs) {
+      this.hideAllLabels();
+      return;
+    }
+
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
     this.camera.updateMatrixWorld();
@@ -241,7 +260,7 @@ export class TravelGlobeScene {
       : 180000;
 
     for (const label of this.landmarkLabels) {
-      label.element.hidden = true;
+      hideLabel(label.element);
       const projected = label.position.clone().project(this.camera);
       if (
         projected.z <= -1 ||
@@ -273,11 +292,23 @@ export class TravelGlobeScene {
 
     const visibleLabels = selectVisibleLabels(candidates, labelCountLimit(this.currentCameraMode));
     for (const candidate of visibleLabels) {
-      candidate.label.element.hidden = false;
+      candidate.label.element.classList.remove('is-hidden');
       candidate.label.element.style.opacity = candidate.opacity.toFixed(3);
       candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px)`;
     }
   }
+
+  private hideAllLabels(): void {
+    for (const label of this.landmarkLabels) {
+      hideLabel(label.element);
+    }
+  }
+}
+
+function hideLabel(element: HTMLSpanElement): void {
+  element.classList.add('is-hidden');
+  element.style.opacity = '0';
+  element.style.transform = 'translate(-9999px, -9999px)';
 }
 
 function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeature[]): GlobeDomLabel[] {
@@ -288,7 +319,7 @@ function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeat
     }
 
     const element = document.createElement('span');
-    element.className = `globe-place-label ${feature.type === 'majorCity' ? 'is-city' : 'is-landmark'}`;
+    element.className = `globe-place-label ${feature.type === 'majorCity' ? 'is-city' : 'is-landmark'} is-hidden`;
     element.textContent = landmarkDisplayName(feature);
     layer.appendChild(element);
 
@@ -414,6 +445,25 @@ function labelCountLimit(cameraMode: CameraMode): number {
     default:
       return 12;
   }
+}
+
+function shouldSnapCamera(
+  previousPoint: LocationPoint | undefined,
+  currentPoint: LocationPoint,
+  previousMode: CameraMode | undefined,
+  currentMode: CameraMode
+): boolean {
+  if (!previousPoint || previousMode !== currentMode) {
+    return true;
+  }
+
+  const previousMs = Date.parse(previousPoint.timestamp);
+  const currentMs = Date.parse(currentPoint.timestamp);
+  if (Number.isFinite(previousMs) && Number.isFinite(currentMs) && currentMs < previousMs - 1000) {
+    return true;
+  }
+
+  return haversineDistanceMeters(previousPoint, currentPoint) > 15000;
 }
 
 function createRouteCityLights(features: GeographicFeature[]): { points: THREE.Points; material: THREE.PointsMaterial } {

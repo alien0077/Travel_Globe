@@ -31,7 +31,8 @@ export class CameraController {
     this.zoom = THREE.MathUtils.clamp(this.zoom * (1 + delta), 0.16, 2.8);
   }
 
-  update(point: GeographicPoint, bearingDegrees: number): void {
+  update(point: GeographicPoint, bearingDegrees: number, options: { snap?: boolean } = {}): void {
+    const lerpAmount = options.snap ? 1 : undefined;
     const aircraftPosition = geographicToVector3(point, 2, CAMERA_ALTITUDE_SCALE_METERS);
     this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z);
     const normal = this.target.clone().normalize();
@@ -45,7 +46,7 @@ export class CameraController {
         .add(forward.clone().multiplyScalar(-distance))
         .add(right.multiplyScalar(0.45 * distance))
         .add(normal.clone().multiplyScalar(1.18 * this.zoom));
-      this.camera.position.lerp(this.desired, 0.1);
+      this.camera.position.lerp(this.desired, lerpAmount ?? 0.1);
       this.camera.up.copy(normal);
       this.camera.lookAt(this.target.clone().add(forward.clone().multiplyScalar(0.12)));
       return;
@@ -58,7 +59,7 @@ export class CameraController {
         .add(normal.clone().multiplyScalar(1.18 * this.zoom))
         .add(right.multiplyScalar(0.09))
         .add(forward.clone().multiplyScalar(-0.08));
-      this.camera.position.lerp(this.desired, 0.12);
+      this.camera.position.lerp(this.desired, lerpAmount ?? 0.12);
       this.camera.up.copy(forward);
       this.camera.lookAt(this.target);
       return;
@@ -69,7 +70,7 @@ export class CameraController {
         .copy(this.target)
         .add(forward.clone().multiplyScalar(0.025))
         .add(normal.clone().multiplyScalar(0.045));
-      this.camera.position.lerp(this.desired, 0.18);
+      this.camera.position.lerp(this.desired, lerpAmount ?? 0.18);
       this.camera.up.copy(normal);
       const horizonLookTarget = this.camera.position
         .clone()
@@ -89,7 +90,7 @@ export class CameraController {
         Math.cos(yaw) * Math.cos(pitch)
       ).normalize();
       const base = orbitDirection.multiplyScalar(distance);
-      this.camera.position.lerp(base, 0.08);
+      this.camera.position.lerp(base, lerpAmount ?? 0.08);
       this.camera.up.set(0, 1, 0);
       this.camera.lookAt(0, 0, 0);
       return;
@@ -104,7 +105,7 @@ export class CameraController {
         .add(orbitRight.multiplyScalar(Math.sin(orbitAngle) * 1.1))
         .add(normal.clone().multiplyScalar(0.5 + this.orbitPitch * 0.28))
         .multiplyScalar(this.zoom);
-      this.camera.position.lerp(this.target.clone().add(cinematicOffset), 0.08);
+      this.camera.position.lerp(this.target.clone().add(cinematicOffset), lerpAmount ?? 0.08);
       this.camera.up.copy(normal);
       this.camera.lookAt(this.target.clone().add(normal.clone().multiplyScalar(0.08)));
       return;
@@ -122,7 +123,7 @@ export class CameraController {
       .add(yawedRight.multiplyScalar(profile.right * distance))
       .add(pitchedUp);
 
-    this.camera.position.lerp(this.desired, 0.1);
+    this.camera.position.lerp(this.desired, lerpAmount ?? 0.1);
 
     const lookAhead = this.target
       .clone()
