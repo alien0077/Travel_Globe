@@ -277,18 +277,43 @@ function createRouteCityLights(features: GeographicFeature[]): { points: THREE.P
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: 0.035,
+    size: 0.028,
+    map: createCityLightSpriteTexture(),
     vertexColors: true,
     transparent: true,
     opacity: 0.02,
     blending: THREE.AdditiveBlending,
-    depthWrite: false
+    depthWrite: false,
+    alphaTest: 0.08
   });
 
   return {
     points: new THREE.Points(geometry, material),
     material
   };
+}
+
+function createCityLightSpriteTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  const glow = context.createRadialGradient(32, 32, 0, 32, 32, 31);
+  glow.addColorStop(0, 'rgba(255, 250, 214, 1)');
+  glow.addColorStop(0.28, 'rgba(255, 216, 119, 0.92)');
+  glow.addColorStop(0.62, 'rgba(255, 183, 77, 0.32)');
+  glow.addColorStop(1, 'rgba(255, 183, 77, 0)');
+  context.fillStyle = glow;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function nightFactorAt(timestamp: string, longitude: number): number {
@@ -324,6 +349,9 @@ function disposeMaterial(material: THREE.Material | THREE.Material[]): void {
       item.dispose();
     }
     return;
+  }
+  if ('map' in material && material.map instanceof THREE.Texture) {
+    material.map.dispose();
   }
   material.dispose();
 }
