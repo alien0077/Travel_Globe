@@ -99,20 +99,25 @@ deploy_web() {
   echo "[3/6] Pushing $BRANCH to $REMOTE..."
   git push "$REMOTE" "$BRANCH"
 
-  echo "[4/6] Locating Web Static Hosting workflow run..."
+  echo "[4/6] Triggering Web Static Hosting workflow..."
+  local head_sha=""
+  head_sha=$(git rev-parse HEAD)
+  gh workflow run "Web Static Hosting" --repo alien0077/Travel_Globe --ref "$BRANCH"
+
+  echo "Locating workflow run for $head_sha..."
   local run_id=""
-  for attempt in {1..20}; do
+  for attempt in {1..30}; do
     run_id=$(gh run list \
       --repo alien0077/Travel_Globe \
       --workflow "Web Static Hosting" \
       --branch "$BRANCH" \
-      --limit 1 \
-      --json databaseId \
-      --jq '.[0].databaseId // empty')
+      --limit 10 \
+      --json databaseId,headSha \
+      --jq "map(select(.headSha == \"$head_sha\")) | sort_by(.databaseId) | reverse | .[0].databaseId // empty")
     if [[ -n "$run_id" ]]; then
       break
     fi
-    echo "Waiting for workflow run ($attempt/20)..."
+    echo "Waiting for workflow run ($attempt/30)..."
     sleep 3
   done
   if [[ -z "$run_id" ]]; then
