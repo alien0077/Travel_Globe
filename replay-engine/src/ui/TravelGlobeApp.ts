@@ -491,7 +491,6 @@ export class TravelGlobeApp {
       this.destinationInput,
       this.departureDateInput,
       this.departureTimeInput,
-      this.durationInput,
       this.aircraftTypeSelect
     ]) {
       input.addEventListener('input', markPending);
@@ -514,7 +513,6 @@ export class TravelGlobeApp {
       }),
       field('日期', this.departureDateInput, { type: 'date' }),
       field('時間', this.departureTimeInput, { type: 'time' }),
-      field('分鐘', this.durationInput, { type: 'number', min: '30', step: '5', required: false }),
       selectField('機型', this.aircraftTypeSelect),
       submitButton
     );
