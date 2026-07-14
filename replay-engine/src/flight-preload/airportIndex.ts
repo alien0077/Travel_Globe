@@ -3,6 +3,7 @@ import aviationContextIndex from '../../../shared/offline-packs/core-global/avia
 import type { PlaceReference } from '../data/types';
 
 export interface AirportRecord extends PlaceReference {
+  ident?: string;
   municipality: string;
   icaoCode?: string;
   type: string;
@@ -39,6 +40,7 @@ export interface AirportContextRecord {
 
 interface AirportIndexRecord {
   id: string;
+  ident?: string;
   type: string;
   name: string;
   iataCode: string;
@@ -53,12 +55,19 @@ interface AirportIndexRecord {
 }
 
 const airports = (airportsIndex.airports as AirportIndexRecord[]).map(toAirportRecord);
-const airportsByIata = new Map(airports.map((airport) => [airport.iataCode, airport]));
+const airportsByCode = new Map<string, AirportRecord>();
+for (const airport of airports) {
+  for (const code of [airport.iataCode, airport.icaoCode, airport.ident]) {
+    if (code) {
+      airportsByCode.set(normalizeIata(code), airport);
+    }
+  }
+}
 const contexts = aviationContextIndex.contexts as AirportContextRecord[];
 const contextsByIata = new Map(contexts.map((context) => [context.iataCode, context]));
 
 export function findAirportByIata(iataCode: string): AirportRecord | undefined {
-  return airportsByIata.get(normalizeIata(iataCode));
+  return airportsByCode.get(normalizeIata(iataCode));
 }
 
 export function listAirportSuggestions(): AirportRecord[] {
@@ -84,6 +93,7 @@ export function normalizeIata(value: string): string {
 function toAirportRecord(airport: AirportIndexRecord): AirportRecord {
   return {
     id: airport.id,
+    ident: airport.ident,
     name: airport.name,
     iataCode: airport.iataCode,
     icaoCode: airport.icaoCode,

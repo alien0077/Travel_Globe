@@ -2,7 +2,9 @@ import type { GeographicPoint, Journey, JourneySegment, LocationPoint, TimelineE
 import {
   findNearestLandmark,
   fixtureLandmarks,
+  landmarksNearRoute,
   landmarkWindowHint,
+  type GeographicFeature,
   type LandmarkProximity
 } from '../geo/landmarks';
 import { haversineDistanceMeters, initialBearingDegrees } from '../geo/geodesy';
@@ -154,8 +156,12 @@ export function buildFlightHudMetrics(
   };
 }
 
-export function summarizeBelowMe(point: GeographicPoint, headingDegrees: number): BelowMeSummary {
-  const nearby = fixtureLandmarks
+export function summarizeBelowMe(
+  point: GeographicPoint,
+  headingDegrees: number,
+  features: GeographicFeature[] = fixtureLandmarks
+): BelowMeSummary {
+  const nearby = features
     .map((feature) => ({
       feature,
       distanceMeters: haversineDistanceMeters(point, feature),
@@ -175,6 +181,10 @@ export function summarizeBelowMe(point: GeographicPoint, headingDegrees: number)
     nextMajorCity,
     windowHint: nearest ? landmarkWindowHint(nearest) : undefined
   };
+}
+
+export function landmarksForSegment(segment: JourneySegment): GeographicFeature[] {
+  return landmarksNearRoute(segment.derivedReplayRoute.points);
 }
 
 export function calculateRouteDeviationMeters(sample: ReplaySample, plannedRoute: LocationPoint[]): number {

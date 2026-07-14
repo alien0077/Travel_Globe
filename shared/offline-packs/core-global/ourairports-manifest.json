@@ -49,12 +49,12 @@
   "indexes": {
     "airports": {
       "path": "shared/offline-packs/core-global/airports-index.json",
-      "records": 9057
+      "records": 4170
     },
     "aviationContext": {
       "path": "shared/offline-packs/core-global/aviation-context-index.json",
-      "airportContexts": 5801,
-      "frequencies": 18878,
+      "airportContexts": 3146,
+      "frequencies": 10880,
       "navaids": 11009
     }
   }

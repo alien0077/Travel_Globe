@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
 import type { JourneySegment, LocationPoint } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
-import { fixtureLandmarks, landmarkDisplayName } from '../geo/landmarks';
+import { landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
 import { geographicToVector3 } from '../geo/geodesy';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
@@ -30,7 +30,8 @@ export class TravelGlobeScene {
   constructor(
     private readonly container: HTMLElement,
     private readonly segment: JourneySegment,
-    overlay: FlightOverlay
+    overlay: FlightOverlay,
+    routeLandmarks: GeographicFeature[]
   ) {
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     this.camera.position.set(0, 2.45, 5.2);
@@ -47,7 +48,7 @@ export class TravelGlobeScene {
     this.container.appendChild(this.renderer.domElement);
     this.labelLayer = document.createElement('div');
     this.labelLayer.className = 'globe-label-layer';
-    this.landmarkLabels = createDomLandmarkLabels(this.labelLayer);
+    this.landmarkLabels = createDomLandmarkLabels(this.labelLayer, routeLandmarks);
     this.container.appendChild(this.labelLayer);
     this.bindInteraction();
 
@@ -201,9 +202,9 @@ export class TravelGlobeScene {
   }
 }
 
-function createDomLandmarkLabels(layer: HTMLDivElement): GlobeDomLabel[] {
+function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeature[]): GlobeDomLabel[] {
   const labels: GlobeDomLabel[] = [];
-  for (const feature of fixtureLandmarks) {
+  for (const feature of features) {
     if (!shouldRenderGlobeLabel(feature)) {
       continue;
     }

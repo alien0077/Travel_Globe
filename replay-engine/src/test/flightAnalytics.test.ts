@@ -5,8 +5,10 @@ import {
   buildFlightHudMetrics,
   buildFlightOverlay,
   getActualRouteThrough,
+  landmarksForSegment,
   summarizeBelowMe
 } from '../flight/flightAnalytics';
+import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
 
 describe('flight overlay analytics', () => {
@@ -64,5 +66,22 @@ describe('flight overlay analytics', () => {
     expect(summary.belowLabel.length).toBeGreaterThan(0);
     expect(summary.nearby.length).toBeGreaterThanOrEqual(3);
     expect(summary.windowHint).toMatch(/在你的/);
+  });
+
+  it('filters landmark guidance to the active flight corridor', () => {
+    const preloaded = buildPreloadedFlightJourney({
+      flightNumber: 'XX901',
+      originIata: 'AAL',
+      destinationIata: 'PTD',
+      departureDate: '2026-07-14',
+      departureTime: '09:30',
+      durationMinutes: 480
+    });
+    const routeSegment = getPrimaryFlightSegment(preloaded.journey);
+    const routeLandmarks = landmarksForSegment(routeSegment);
+    const names = routeLandmarks.map((feature) => feature.nameZh ?? feature.name);
+
+    expect(routeLandmarks.length).toBeGreaterThan(0);
+    expect(names).not.toEqual(expect.arrayContaining(['東京', '台北101', '上海']));
   });
 });

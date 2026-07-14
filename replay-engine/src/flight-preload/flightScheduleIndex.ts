@@ -7,6 +7,7 @@ export interface FlightScheduleRecord {
   destinationIata: string;
   defaultDepartureTime: string;
   defaultDurationMinutes: number;
+  defaultAircraftType: string;
   source: 'offline-schedule-index';
 }
 
@@ -18,6 +19,7 @@ const schedules: FlightScheduleRecord[] = [
     destinationIata: 'NRT',
     defaultDepartureTime: '09:30',
     defaultDurationMinutes: 185,
+    defaultAircraftType: 'A350',
     source: 'offline-schedule-index'
   },
   {
@@ -27,6 +29,7 @@ const schedules: FlightScheduleRecord[] = [
     destinationIata: 'HND',
     defaultDepartureTime: '09:30',
     defaultDurationMinutes: 190,
+    defaultAircraftType: 'B787',
     source: 'offline-schedule-index'
   }
 ];

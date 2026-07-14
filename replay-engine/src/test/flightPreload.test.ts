@@ -21,7 +21,23 @@ describe('flight preload', () => {
     expect(segment.origin.iataCode).toBe('TPE');
     expect(segment.destination.iataCode).toBe('NRT');
     expect(segment.statistics?.durationSeconds).toBe(185 * 60);
+    expect(segment.metadata.aircraftType).toBe('A350');
     expect(result.warnings[0]).toContain('CI100 已由離線班表解析為 TPE -> NRT');
+  });
+
+  it('uses known schedule defaults when the form only has a flight number and date', () => {
+    const result = buildPreloadedFlightJourney({
+      flightNumber: 'BR190',
+      departureDate: '2026-07-11',
+      departureTime: ''
+    });
+    const segment = getPrimaryFlightSegment(result.journey);
+
+    expect(segment.origin.iataCode).toBe('TPE');
+    expect(segment.destination.iataCode).toBe('HND');
+    expect(segment.startTime).toBe(new Date('2026-07-11T09:30').toISOString());
+    expect(segment.statistics?.durationSeconds).toBe(190 * 60);
+    expect(segment.metadata.aircraftType).toBe('B787');
   });
 
   it('builds a valid planned journey from flight form input', () => {
@@ -70,7 +86,7 @@ describe('flight preload', () => {
     const summary = getAirportIndexSummary();
     const tpeContext = findAirportContextByIata('TPE');
 
-    expect(summary.airports).toBeGreaterThan(7_000);
+    expect(summary.airports).toBeGreaterThan(4_000);
     expect(summary.airportContexts).toBeGreaterThan(1_000);
     expect(summary.navaids).toBeGreaterThan(5_000);
     expect(tpeContext?.frequencies.length).toBeGreaterThan(0);

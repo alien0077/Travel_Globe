@@ -20,6 +20,7 @@
 		814283ACF7BC2EBCC65E02B5 /* TravelGlobeSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77FCF9E0EEDD334E3ECC7EED /* TravelGlobeSmokeTests.swift */; };
 		82A6A8C53C8BCF671BFD0C57 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB983C97E2BBF993C6407F3D /* RootView.swift */; };
 		B28E9D099B044862FD9E68AB /* JourneyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB77EE5813E617B4BA4D1FD /* JourneyRepository.swift */; };
+		BC6535C63BF7850D7460D60E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4BEE803776E37A5E5F1188C3 /* Assets.xcassets */; };
 		BCE0B58F4BCA5B06506F93F7 /* TravelGlobeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */; };
 		C90AD1C85D96B80CA72368C0 /* ReplayEngineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47184B7B785052BAA17EE18 /* ReplayEngineView.swift */; };
 		D292B4405487DE9638BA05CF /* LocationRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */; };
@@ -42,6 +43,7 @@
 		37C34C6DE857F0F58A8B8DE9 /* LocationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationRecorder.swift; sourceTree = "<group>"; };
 		4607B68952B6B53CA818579B /* SQLiteJourneyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteJourneyRepository.swift; sourceTree = "<group>"; };
 		480CB427495C0810C8840F72 /* TravelGlobeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeBridge.swift; sourceTree = "<group>"; };
+		4BEE803776E37A5E5F1188C3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		60F4769D88B1264D396C82B8 /* TravelGlobe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TravelGlobe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F81BF6982EC4DFFCBE4D955 /* TravelGlobeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelGlobeApp.swift; sourceTree = "<group>"; };
 		732A7E600DBEA8B007D415AE /* TravelNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TravelNotificationService.swift; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 		71C5F8C9D844D7A8310589FB /* TravelGlobe */ = {
 			isa = PBXGroup;
 			children = (
+				4BEE803776E37A5E5F1188C3 /* Assets.xcassets */,
 				36D183A8897926BE8FF6E644 /* App */,
 				BEF55688B886917D1B94E7BE /* Bridge */,
 				199049862475290ED18B4BE6 /* Database */,
@@ -275,6 +278,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC6535C63BF7850D7460D60E /* Assets.xcassets in Resources */,
 				671640751A97F36CED620912 /* ReplayEngine in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

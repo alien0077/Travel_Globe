@@ -179,6 +179,7 @@ console.log(`Prepared aviation context index with ${airportContexts.length} airp
 function shouldIndexAirport(airport) {
   return (
     /^[A-Z0-9]{3}$/.test(airport.iata_code) &&
+    airport.scheduled_service === 'yes' &&
     airport.type !== 'closed' &&
     Number.isFinite(Number(airport.latitude_deg)) &&
     Number.isFinite(Number(airport.longitude_deg))

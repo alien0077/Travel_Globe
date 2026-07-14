@@ -53,7 +53,8 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     throw new Error('起飛與抵達機場不可相同');
   }
 
-  const startMs = parseDepartureTime(request.departureDate, request.departureTime);
+  const departureTime = request.departureTime || schedule?.defaultDepartureTime || '';
+  const startMs = parseDepartureTime(request.departureDate, departureTime);
   const distanceMeters = haversineDistanceMeters(origin, destination);
   const durationMinutes = request.durationMinutes ?? schedule?.defaultDurationMinutes ?? estimateDurationMinutes(distanceMeters);
   const durationSeconds = Math.max(30 * 60, Math.round(durationMinutes * 60));
@@ -141,7 +142,7 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     },
     metadata: {
       flightNumber,
-      aircraftType: request.aircraftType?.trim() || DEFAULT_AIRCRAFT_TYPE,
+      aircraftType: request.aircraftType?.trim() || schedule?.defaultAircraftType || DEFAULT_AIRCRAFT_TYPE,
       preloadSource
     }
   };

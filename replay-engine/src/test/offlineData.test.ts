@@ -12,8 +12,8 @@ describe('offline data indexes', () => {
   });
 
   it('tracks generated OurAirports indexes in a source manifest', () => {
-    expect(ourAirportsManifest.indexes.airports.records).toBeGreaterThan(7_000);
-    expect(ourAirportsManifest.indexes.aviationContext.frequencies).toBeGreaterThan(18_000);
+    expect(ourAirportsManifest.indexes.airports.records).toBeGreaterThan(4_000);
+    expect(ourAirportsManifest.indexes.aviationContext.frequencies).toBeGreaterThan(10_000);
     expect(ourAirportsManifest.indexes.aviationContext.navaids).toBeGreaterThan(5_000);
   });
 });

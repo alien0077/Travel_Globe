@@ -9,6 +9,7 @@ import {
   buildFlightOverlay,
   calculateRouteDeviationMeters,
   getActualRouteThrough,
+  landmarksForSegment,
   summarizeBelowMe,
   type FlightOverlay
 } from '../flight/flightAnalytics';
@@ -20,7 +21,8 @@ import {
   listAirportSuggestions,
   type AirportRecord
 } from '../flight-preload/airportIndex';
-import { findNearestLandmark, landmarkDisplayName, windowDirectionLabel } from '../geo/landmarks';
+import { findScheduleByFlightNumber } from '../flight-preload/flightScheduleIndex';
+import { landmarkDisplayName, windowDirectionLabel, type GeographicFeature } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
@@ -58,6 +60,7 @@ export class TravelGlobeApp {
   private clock?: ReplayClock;
   private segment?: JourneySegment;
   private flightOverlay?: FlightOverlay;
+  private routeLandmarks: GeographicFeature[] = [];
   private cameraMode: CameraMode = 'flightPreview';
   private lastFrameMs?: number;
   private packState: OfflinePackState = { packs: [] };
@@ -108,6 +111,7 @@ export class TravelGlobeApp {
     this.journey = journey;
     this.segment = getPrimaryFlightSegment(journey);
     this.flightOverlay = buildFlightOverlay(journey, this.segment);
+    this.routeLandmarks = landmarksForSegment(this.segment);
     this.travelRecords = buildTravelRecords(journey);
     this.activeRecordId = this.travelRecords[0]?.id;
     const bounds = getRouteTimeBounds(this.segment);
@@ -119,7 +123,8 @@ export class TravelGlobeApp {
     this.scene = new TravelGlobeScene(
       this.viewport,
       this.segment,
-      this.flightOverlay
+      this.flightOverlay,
+      this.routeLandmarks
     );
     this.scene.start((timeMs) => this.frame(timeMs));
     await this.adapter.saveJourney(journey);
@@ -429,20 +434,10 @@ export class TravelGlobeApp {
     form.className = 'preload-form';
 
     const airportSuggestions = listAirportSuggestions();
-    const airports = document.createElement('datalist');
-    airports.id = 'airport-iata-options';
-    airports.replaceChildren(
-      ...airportSuggestions.map((airport) => {
-        const option = document.createElement('option');
-        option.value = airport.iataCode ?? '';
-        option.label = `${airport.iataCode} ${airport.name}`;
-        return option;
-      })
-    );
 
     this.flightNumberInput.value = stringValue(segment.metadata.flightNumber, 'CI100');
-    this.originInput.value = '';
-    this.destinationInput.value = '';
+    this.originInput.value = segment.origin.iataCode ?? '';
+    this.destinationInput.value = segment.destination.iataCode ?? '';
     this.departureDateInput.value = toInputDate(segment.startTime);
     this.departureTimeInput.value = toInputTime(segment.startTime);
     this.durationInput.value = '';
@@ -467,6 +462,19 @@ export class TravelGlobeApp {
     const markPending = (): void => {
       this.preloadStatus.textContent = '已修改設定，請按「套用航線」更新地球、時間與航跡。';
     };
+    const applyKnownFlight = (): void => {
+      const schedule = findScheduleByFlightNumber(this.flightNumberInput.value);
+      if (!schedule) {
+        markPending();
+        return;
+      }
+      this.originInput.value = schedule.originIata;
+      this.destinationInput.value = schedule.destinationIata;
+      this.departureTimeInput.value = schedule.defaultDepartureTime;
+      this.durationInput.value = String(schedule.defaultDurationMinutes);
+      this.aircraftTypeSelect.value = schedule.defaultAircraftType;
+      this.preloadStatus.textContent = `${schedule.flightNumber} 已帶入 ${schedule.originIata} -> ${schedule.destinationIata}、${schedule.defaultDepartureTime}、${schedule.defaultAircraftType}。請按「套用航線」更新地球與航跡。`;
+    };
     for (const input of [
       this.flightNumberInput,
       this.originInput,
@@ -479,16 +487,20 @@ export class TravelGlobeApp {
       input.addEventListener('input', markPending);
       input.addEventListener('change', markPending);
     }
+    this.flightNumberInput.addEventListener('input', () => {
+      if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
+        applyKnownFlight();
+      }
+    });
+    this.flightNumberInput.addEventListener('change', applyKnownFlight);
 
     form.append(
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
       airportField('起飛', this.originInput, airportSuggestions, markPending, {
-        placeholder: 'TPE / Taipei',
-        list: airports.id
+        placeholder: 'TPE / Taipei'
       }),
       airportField('抵達', this.destinationInput, airportSuggestions, markPending, {
-        placeholder: 'NRT / Tokyo',
-        list: airports.id
+        placeholder: 'NRT / Tokyo'
       }),
       field('日期', this.departureDateInput, { type: 'date' }),
       field('時間', this.departureTimeInput, { type: 'time' }),
@@ -501,7 +513,7 @@ export class TravelGlobeApp {
       void this.preloadFlightFromForm();
     });
 
-    this.preloadPanel.replaceChildren(airports, form, this.preloadStatus);
+    this.preloadPanel.replaceChildren(form, this.preloadStatus);
   }
 
   private async preloadFlightFromForm(): Promise<void> {
@@ -687,15 +699,15 @@ export class TravelGlobeApp {
   }
 
   private renderBelowMe(sample: ReturnType<typeof sampleReplayAt>): void {
-    const nearest = findNearestLandmark(sample.point, sample.bearingDegrees);
-    const summary = summarizeBelowMe(sample.point, sample.bearingDegrees);
+    const summary = summarizeBelowMe(sample.point, sample.bearingDegrees, this.routeLandmarks);
     const nearby = summary.nearby
       .slice(0, 3)
       .map((item) => `${landmarkDisplayName(item.feature)} ${formatDistance(item.distanceMeters)}`)
-      .join(' | ');
+      .join(' | ') || '航線附近沒有可用景點資料';
     const nextCity = summary.nextMajorCity
       ? `下一座主要城市：${landmarkDisplayName(summary.nextMajorCity.feature)} ${formatDistance(summary.nextMajorCity.distanceMeters)}`
       : '';
+    const nearest = summary.nearby[0];
     const nearestLine = nearest
       ? `窗外提醒：${landmarkDisplayName(nearest.feature)}在你的${windowDirectionLabel(nearest.relativeWindow)}，距離 ${formatDistance(nearest.distanceMeters)}`
       : '窗外提醒：附近沒有可用景點資料';
@@ -911,6 +923,7 @@ const aircraftTypeOptions = [
   { value: 'A350', label: 'A350' },
   { value: 'A380', label: 'A380' }
 ];
+const AIRPORT_MATCH_LIMIT = 12;
 
 function normalizeAircraftSelectValue(value: string): string {
   const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -935,39 +948,29 @@ function airportField(
 
   const showMatches = (): void => {
     const query = input.value.trim().toUpperCase();
-    const matches = airports
-      .filter((airport) => {
-        const haystack = [
-          airport.iataCode,
-          airport.icaoCode,
-          airport.name,
-          airport.municipality,
-          airport.countryCode
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toUpperCase();
-        return query.length === 0 || haystack.includes(query);
-      })
-      .slice(0, 8);
+    const matches = matchAirportSuggestions(airports, query, AIRPORT_MATCH_LIMIT);
 
     const buttons = matches.map((airport) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'airport-option';
       const code = document.createElement('strong');
-      code.textContent = airport.iataCode ?? '';
+      code.textContent = airportDisplayCode(airport);
       const name = document.createElement('span');
       name.textContent = airport.name;
       const place = document.createElement('small');
       place.textContent = `${airport.municipality}, ${airport.countryCode}`;
       button.append(code, name, place);
-      button.addEventListener('pointerdown', (event) => {
+      const selectAirport = (event: Event): void => {
         event.preventDefault();
-        input.value = airport.iataCode ?? '';
+        event.stopPropagation();
+        input.value = airportDisplayCode(airport);
         menu.hidden = true;
+        input.blur();
         onSelect();
-      });
+      };
+      button.addEventListener('pointerdown', selectAirport);
+      button.addEventListener('click', selectAirport);
       return button;
     });
 
@@ -984,6 +987,83 @@ function airportField(
   });
 
   return wrapper;
+}
+
+export function matchAirportSuggestions(
+  airports: AirportRecord[],
+  query: string,
+  limit = AIRPORT_MATCH_LIMIT
+): AirportRecord[] {
+  const normalizedQuery = query.trim().toUpperCase();
+  return airports
+    .map((airport) => ({
+      airport,
+      rank: airportMatchRank(airport, normalizedQuery)
+    }))
+    .filter((match) => match.rank >= 0)
+    .sort((a, b) =>
+      a.rank - b.rank ||
+      airportSortKey(a.airport).localeCompare(airportSortKey(b.airport))
+    )
+    .slice(0, limit)
+    .map((match) => match.airport);
+}
+
+function airportMatchRank(airport: AirportRecord, query: string): number {
+  const iata = airport.iataCode?.toUpperCase() ?? '';
+  const icao = airport.icaoCode?.toUpperCase() ?? '';
+  const ident = airport.ident?.toUpperCase() ?? '';
+  const name = airport.name.toUpperCase();
+  const municipality = airport.municipality.toUpperCase();
+  const country = airport.countryCode?.toUpperCase() ?? '';
+
+  if (query.length === 0) {
+    if (airport.scheduledService && airport.type === 'large_airport') {
+      return 60;
+    }
+    if (airport.scheduledService && airport.type === 'medium_airport') {
+      return 70;
+    }
+    if (airport.scheduledService) {
+      return 80;
+    }
+    return 95;
+  }
+  if (iata === query) {
+    return 0;
+  }
+  if (icao === query) {
+    return 1;
+  }
+  if (ident === query) {
+    return 2;
+  }
+  if (iata.startsWith(query)) {
+    return 10;
+  }
+  if (icao.startsWith(query)) {
+    return 12;
+  }
+  if (ident.startsWith(query)) {
+    return 14;
+  }
+  if (name.startsWith(query) || municipality.startsWith(query)) {
+    return 20;
+  }
+  if (name.includes(query) || municipality.includes(query) || country.includes(query)) {
+    return 30;
+  }
+  return -1;
+}
+
+function airportSortKey(airport: AirportRecord): string {
+  const scheduledRank = airport.scheduledService ? '0' : '1';
+  const typeRank = airport.type === 'large_airport' ? '0' : airport.type === 'medium_airport' ? '1' : '2';
+  return `${scheduledRank}-${typeRank}-${airportDisplayCode(airport)}-${airport.name}`;
+}
+
+function airportDisplayCode(airport: AirportRecord): string {
+  return airport.iataCode ?? airport.icaoCode ?? airport.ident ?? '';
 }
 
 function stringValue(value: unknown, fallback: string): string {

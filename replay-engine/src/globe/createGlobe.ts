@@ -213,7 +213,7 @@ function createNaturalEarthBoundaries(radius: number): THREE.Group {
 
 export function shouldRenderGlobeLabel(feature: GeographicFeature): boolean {
   if (feature.type === 'majorCity') {
-    return feature.importance >= 0.76 && feature.minZoomRank <= 2;
+    return feature.importance >= 0.76 && feature.minZoomRank <= 8;
   }
   return feature.importance >= 0.9 && feature.minZoomRank <= 1;
 }
