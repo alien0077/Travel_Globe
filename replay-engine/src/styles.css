@@ -504,22 +504,40 @@ a {
 }
 
 .preload-form {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.9fr);
+  column-gap: 14px;
+  row-gap: 9px;
 }
 
 .preload-field {
   display: grid;
   gap: 4px;
+  min-width: 0;
   color: #9fbec0;
   font-size: 10px;
   font-weight: 850;
 }
 
 .preload-input {
+  min-width: 0;
   width: 100%;
   padding: 0 9px;
   font-size: 16px;
   text-transform: uppercase;
+}
+
+select.preload-input {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 30px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #f5fbff 50%),
+    linear-gradient(135deg, #f5fbff 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 52%,
+    calc(100% - 11px) 52%;
+  background-repeat: no-repeat;
+  background-size: 6px 6px;
 }
 
 .preload-submit {
@@ -940,9 +958,13 @@ a {
   }
 
   .action-grid,
-  .preload-form,
   .product-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .preload-form {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 0.72fr);
+    column-gap: 12px;
   }
 }
 

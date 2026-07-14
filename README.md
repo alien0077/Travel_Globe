@@ -42,6 +42,16 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -quiet 
 
 The production build uses relative asset paths so `replay-engine/dist` can be served from static hosting or opened by an offline-capable local server.
 
+## Data Coverage
+
+- Airports: the preload airport picker uses the generated OurAirports scheduled-service index with IATA codes only. It is intended for commercial-flight airports, not every heliport, closed airport, or private strip.
+- Aviation context: the core offline pack includes OurAirports frequencies and navaids for airport context and product stats.
+- Places and labels: route labels/HUD nearby guidance use a merged set of curated East Asia/Southeast Asia landmarks plus Natural Earth 110m populated places. The global city layer currently contributes major/populated city names; richer global landmarks are not complete yet.
+- Globe geography: Natural Earth 110m coastlines and country borders render on the globe.
+- Route filtering: globe labels and HUD nearby places are filtered to landmarks/cities near the active route so an Alaska/Europe route does not pull unrelated East Asia labels.
+- Flight numbers: the offline schedule seed currently resolves `CI100` (`TPE -> NRT`), `BR190` (`TPE -> HND`), `FD234` (`KHH -> NRT`), and `FD235` (`NRT -> KHH`). Wider airline schedule lookup still requires an imported/licensed schedule source or a flight API.
+- Day/night rendering: the globe lighting now changes by replay time and local longitude, and route-nearby cities glow at night as simulated city lights. This is a procedural route-city effect, not a full NASA Black Marble night-lights texture.
+
 ## Deployment
 
 - Web static hosting: `./deploy.sh` verifies the Replay Engine, pushes `main`, watches the GitHub Pages workflow, and checks `https://alien0077.github.io/Travel_Globe/`.

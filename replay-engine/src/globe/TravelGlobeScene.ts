@@ -19,7 +19,12 @@ export class TravelGlobeScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cameraController: CameraController;
   private readonly aircraft: THREE.Group;
+  private readonly earth: THREE.Mesh;
   private readonly clouds: THREE.Mesh;
+  private readonly ambient: THREE.AmbientLight;
+  private readonly sun: THREE.DirectionalLight;
+  private readonly cityLights: THREE.Points;
+  private readonly cityLightMaterial: THREE.PointsMaterial;
   private readonly labelLayer: HTMLDivElement;
   private readonly landmarkLabels: GlobeDomLabel[];
   private readonly routeTrack: RouteTrack;
@@ -56,17 +61,22 @@ export class TravelGlobeScene {
     this.scene.fog = new THREE.Fog(0xd7e5e1, 9, 18);
     this.scene.add(createStarField(360, 46));
 
-    const { globe, clouds } = createGlobe();
+    const { globe, earth, clouds } = createGlobe();
+    this.earth = earth;
     this.clouds = clouds;
     this.scene.add(globe);
+    const cityLights = createRouteCityLights(routeLandmarks);
+    this.cityLights = cityLights.points;
+    this.cityLightMaterial = cityLights.material;
+    this.scene.add(this.cityLights);
     this.routeTrack = createRouteTrack(segment.derivedReplayRoute.points, [segment.derivedReplayRoute.points[0]], 180000);
     this.scene.add(this.routeTrack);
     this.scene.add(this.aircraft);
 
-    const ambient = new THREE.AmbientLight(0xf5fbff, 3.2);
-    const sun = new THREE.DirectionalLight(0xffffff, 4.2);
-    sun.position.set(-3, 4, 7);
-    this.scene.add(ambient, sun);
+    this.ambient = new THREE.AmbientLight(0xf5fbff, 3.2);
+    this.sun = new THREE.DirectionalLight(0xffffff, 4.2);
+    this.sun.position.set(-3, 4, 7);
+    this.scene.add(this.ambient, this.sun);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.container);
@@ -77,6 +87,7 @@ export class TravelGlobeScene {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.aircraft.visible = cameraMode !== 'pilotView';
     updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
+    this.updateDayNight(point);
     this.cameraController.setMode(cameraMode);
     this.cameraController.update(point, bearingDegrees);
   }
@@ -181,6 +192,30 @@ export class TravelGlobeScene {
     return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
   }
 
+  private updateDayNight(point: LocationPoint): void {
+    const nightFactor = nightFactorAt(point.timestamp, point.longitude);
+    const dayFactor = 1 - nightFactor;
+    const daySky = new THREE.Color(0xd7e5e1);
+    const nightSky = new THREE.Color(0x07111d);
+    const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
+    this.scene.background = sky;
+    if (this.scene.fog) {
+      this.scene.fog.color.copy(sky);
+    }
+
+    this.ambient.intensity = lerp(0.72, 3.2, dayFactor);
+    this.sun.intensity = lerp(0.28, 4.2, dayFactor);
+    const earthMaterial = this.earth.material;
+    if (earthMaterial instanceof THREE.MeshStandardMaterial) {
+      earthMaterial.emissiveIntensity = lerp(0.1, 0.38, dayFactor);
+    }
+    if (this.clouds.material instanceof THREE.Material) {
+      this.clouds.material.opacity = lerp(0.12, 0.22, dayFactor);
+    }
+    this.cityLightMaterial.opacity = lerp(0.02, 0.92, nightFactor);
+    this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
+  }
+
   private updateLabelOverlay(): void {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
@@ -221,6 +256,66 @@ function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeat
     });
   }
   return labels;
+}
+
+function createRouteCityLights(features: GeographicFeature[]): { points: THREE.Points; material: THREE.PointsMaterial } {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const lightFeatures = features
+    .filter((feature) => feature.type === 'majorCity' && feature.importance >= 0.76)
+    .sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
+    .slice(0, 96);
+
+  for (const feature of lightFeatures) {
+    const vector = geographicToVector3(feature, 2.018, 900000);
+    positions.push(vector.x, vector.y, vector.z);
+    const warm = Math.min(1, 0.55 + Math.log10(Math.max(10_000, feature.population ?? 80_000)) / 12);
+    colors.push(1, warm, 0.48);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const material = new THREE.PointsMaterial({
+    size: 0.035,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.02,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  return {
+    points: new THREE.Points(geometry, material),
+    material
+  };
+}
+
+function nightFactorAt(timestamp: string, longitude: number): number {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return 0;
+  }
+  const utcHour =
+    date.getUTCHours() +
+    date.getUTCMinutes() / 60 +
+    date.getUTCSeconds() / 3600;
+  const localHour = positiveModulo(utcHour + longitude / 15, 24);
+  const dayScore = (Math.cos(((localHour - 12) / 12) * Math.PI) + 1) / 2;
+  return 1 - smoothstep(0.18, 0.55, dayScore);
+}
+
+function positiveModulo(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function lerp(a: number, b: number, fraction: number): number {
+  return a + (b - a) * fraction;
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]): void {

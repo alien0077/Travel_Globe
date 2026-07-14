@@ -1,6 +1,6 @@
 # Travel Globe Handoff
 
-Updated: 2026-07-13
+Updated: 2026-07-14
 
 ## Current Direction
 
@@ -42,6 +42,8 @@ First version does not require a paid flight API. The app resolves known flight 
 
 - `CI100`: China Airlines, `TPE -> NRT`, default duration 185 minutes
 - `BR190`: EVA Air, `TPE -> HND`, default duration 190 minutes
+- `FD234`: Thai AirAsia, Taiwan departure segment `KHH -> NRT`, default duration 235 minutes, aircraft seed `A320`
+- `FD235`: Thai AirAsia, displayed as `NRT -> KHH` for the return segment, default duration 235 minutes, aircraft seed `A320`
 
 Implemented file:
 
@@ -88,6 +90,8 @@ npm --prefix replay-engine run build
 - OurAirports-generated global airport index.
 - OurAirports-generated frequency and navaid aviation context index.
 - Natural Earth coastline/country boundary extraction and globe rendering.
+- Natural Earth 110m populated places merged into route-filtered labels/HUD context.
+- Procedural replay-time day/night lighting and route-nearby city light points for night segments.
 - Offline pack manifests wired to generated Natural Earth and OurAirports indexes.
 - Runtime adapter browser export path for `.travelglobe` and share-safe JSON.
 - Great Circle planned route generation with replay, processed, and raw routes.
@@ -101,10 +105,12 @@ These are the main half-finished areas to continue next:
 
 - Network flight-plan provider: source type exists, but no API implementation or key-management path is wired.
 - Flight schedule coverage: only a seed schedule index exists; broad flight-number lookup needs an imported or licensed schedule source.
+- Flight schedule accuracy: FD234/FD235 currently know route segment, rough duration, and aircraft family only; exact seasonal schedule, operating days, departure/arrival time, aircraft substitutions, and multi-leg `DMK-KHH-NRT` / `NRT-KHH-DMK` modeling still need an API or reviewed timetable import.
 - Frequencies and navaids: transformed into an aviation context index and visible in product stats; a full airport detail/search UI is still not built.
 - Offline packs: core pack state now references real generated layers; install/download remains a browser-local product state, not a real remote package installer.
 - Geographic borders: Natural Earth 110m coastlines/country boundaries now render on the globe; higher-detail packs and label ranking remain future work.
-- Landmark fixtures: `shared/fixtures/landmarks.json` currently contains a curated East Asia / Southeast Asia seed set for in-flight labels and window-side guidance, but it is not yet a complete landmark database. Missing work: add a reviewed regional/global landmark fixture pipeline, source attribution, per-region offline packs, richer categories such as mountains/islands/bays/cultural landmarks, and viewport-aware label collision/ranking so labels do not become a wall of text on mobile.
+- Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks with Natural Earth 110m populated places. This covers global major city names but not a complete global landmark database. Missing work: add a reviewed regional/global landmark fixture pipeline, source attribution, per-region offline packs, richer categories such as mountains/islands/bays/cultural landmarks, higher-detail populated-place packs, and viewport-aware label collision/ranking so labels do not become a wall of text on mobile.
+- Night lighting coverage: current night mode uses replay time/local longitude plus route-nearby city points as procedural lights. Missing work: full global night-light texture, weather/cloud darkness variation, seasonal sun position/terminator accuracy, and per-city light intensity calibrated from real night-lights data.
 - Runtime adapter split: browser export is behind the adapter; import and native recording handoff are still not fully abstracted behind one runtime-capability layer.
 - Photo matching and journal media: iOS/photo matcher pieces exist, but Travel Atlas cards still use generated placeholders.
 - Notifications: rules exist, but native notification scheduling is not wired to replay/recording events.
