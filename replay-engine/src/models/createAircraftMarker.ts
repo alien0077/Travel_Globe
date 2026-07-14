@@ -23,9 +23,10 @@ interface AircraftModelCorrection {
 
 const AIRCRAFT_MODEL_CORRECTIONS: Partial<Record<RequiredAircraftType, AircraftModelCorrection>> = {
   A321: { scaleMultiplier: 0.9 },
-  B767: { rotation: [0, Math.PI / 2, 0], scaleMultiplier: 0.88 },
-  B777: { scaleMultiplier: 0.82 },
-  A380: { rotation: [0, Math.PI / 2, 0], scaleMultiplier: 0.9 }
+  B737: { rotation: [0, -Math.PI / 2, 0] },
+  B767: { scaleMultiplier: 0.88 },
+  B777: { rotation: [0, Math.PI / 2, 0], scaleMultiplier: 0.82 },
+  A380: { scaleMultiplier: 0.9 }
 };
 
 const aircraftModelCache = new Map<string, Promise<THREE.Group | undefined>>();
