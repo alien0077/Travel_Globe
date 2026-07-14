@@ -2,6 +2,12 @@ import CoreLocation
 import Foundation
 
 final class LocationRecorder: NSObject, CLLocationManagerDelegate {
+    private struct OneShotLocationRequest {
+        var journeyId: UUID
+        var segmentId: String?
+        var continuation: CheckedContinuation<LocationPointRecord, Error>
+    }
+
     private let manager = CLLocationManager()
     private let repository: JourneyRepository
     private var activeJourneyId: UUID?
@@ -9,6 +15,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     private var profile: RecordingProfile = .balanced
     private var lastAcceptedPoint: LocationPointRecord?
     private var lastSavedPoint: LocationPointRecord?
+    private var oneShotLocationRequest: OneShotLocationRequest?
 
     var onLocationUpdate: ((LocationPointRecord) -> Void)?
 
@@ -41,7 +48,39 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         lastSavedPoint = nil
     }
 
+    func requestCurrentPoint(journeyId: UUID, segmentId: String?) async throws -> LocationPointRecord {
+        try await withCheckedThrowingContinuation { continuation in
+            oneShotLocationRequest = OneShotLocationRequest(
+                journeyId: journeyId,
+                segmentId: segmentId,
+                continuation: continuation
+            )
+            manager.requestWhenInUseAuthorization()
+            manager.desiredAccuracy = kCLLocationAccuracyBest
+            manager.distanceFilter = kCLDistanceFilterNone
+            manager.requestLocation()
+        }
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let request = oneShotLocationRequest {
+            if let point = locations.compactMap({ location in
+                makePoint(
+                    from: location,
+                    journeyId: request.journeyId,
+                    segmentId: request.segmentId,
+                    source: "quickGps",
+                    checkTimestampOrder: false
+                )
+            }).last {
+                oneShotLocationRequest = nil
+                request.continuation.resume(returning: point)
+            } else {
+                oneShotLocationRequest = nil
+                request.continuation.resume(throwing: LocationRecorderError.noUsableLocation)
+            }
+        }
+
         guard let journeyId = activeJourneyId else { return }
         for location in locations {
             guard let point = makePoint(from: location, journeyId: journeyId) else {
@@ -60,7 +99,20 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    private func makePoint(from location: CLLocation, journeyId: UUID) -> LocationPointRecord? {
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if let request = oneShotLocationRequest {
+            oneShotLocationRequest = nil
+            request.continuation.resume(throwing: error)
+        }
+    }
+
+    private func makePoint(
+        from location: CLLocation,
+        journeyId: UUID,
+        segmentId: String? = nil,
+        source: String = "gps",
+        checkTimestampOrder: Bool = true
+    ) -> LocationPointRecord? {
         let coordinate = location.coordinate
         guard
             coordinate.latitude.isFinite,
@@ -70,7 +122,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
             location.horizontalAccuracy.isFinite,
             location.horizontalAccuracy >= 0,
             location.horizontalAccuracy <= maxHorizontalAccuracyMeters,
-            lastAcceptedPoint.map({ location.timestamp > $0.timestamp }) ?? true
+            checkTimestampOrder ? (lastAcceptedPoint.map({ location.timestamp > $0.timestamp }) ?? true) : true
         else {
             return nil
         }
@@ -78,7 +130,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         return LocationPointRecord(
                 id: UUID(),
                 journeyId: journeyId,
-                segmentId: activeSegmentId,
+                segmentId: segmentId ?? activeSegmentId,
                 timestamp: location.timestamp,
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
@@ -87,7 +139,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
                 courseDegrees: location.course >= 0 ? location.course : nil,
                 horizontalAccuracyMeters: location.horizontalAccuracy,
                 verticalAccuracyMeters: location.verticalAccuracy >= 0 ? location.verticalAccuracy : nil,
-                source: "gps"
+                source: source
             )
     }
 
@@ -148,6 +200,10 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
             manager.activityType = .other
         }
     }
+}
+
+enum LocationRecorderError: Error {
+    case noUsableLocation
 }
 
 private func distanceMeters(from lhs: LocationPointRecord, to rhs: LocationPointRecord) -> Double {

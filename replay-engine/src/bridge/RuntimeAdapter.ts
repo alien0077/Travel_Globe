@@ -4,6 +4,7 @@ import { createShareSafeJourney } from '../privacy/redactJourney';
 
 export interface RuntimeAdapter {
   loadJourney(): Promise<Journey>;
+  loadJourneyById(journeyId: string): Promise<Journey | undefined>;
   saveJourney(journey: Journey): Promise<void>;
   exportJourney(journey: Journey): Promise<void>;
   exportShareSafeJourney(journey: Journey): Promise<void>;
@@ -25,6 +26,16 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
       return this.journey;
     }
     this.journey = JSON.parse(stored) as Journey;
+    return this.journey;
+  }
+
+  async loadJourneyById(journeyId: string): Promise<Journey | undefined> {
+    const stored = localStorage.getItem(storageKey(journeyId));
+    if (!stored) {
+      return undefined;
+    }
+    this.journey = JSON.parse(stored) as Journey;
+    localStorage.setItem(currentJourneyKey, this.journey.id);
     return this.journey;
   }
 

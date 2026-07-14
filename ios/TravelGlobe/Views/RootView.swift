@@ -48,6 +48,7 @@ struct RootView: View {
                 HStack(alignment: .top, spacing: 12) {
                     MetricBlock(title: "State", value: appModel.recordingState.rawValue.capitalized)
                     MetricBlock(title: "GPS", value: "\(appModel.activeLocationPointCount) points")
+                    MetricBlock(title: "Visits", value: "\(appModel.activeVisitPointCount)")
                 }
 
                 Text(appModel.latestJourneySummary)
@@ -57,6 +58,29 @@ struct RootView: View {
                     .minimumScaleFactor(0.82)
 
                 StatusPill(text: appModel.recordingPlanStatus)
+                StatusPill(text: appModel.visitPointStatus)
+
+                if !appModel.flightPlans.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Record Into")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                        Picker(
+                            "Record Into",
+                            selection: Binding(
+                                get: { appModel.selectedFlightPlanKey },
+                                set: { appModel.selectFlightPlan($0) }
+                            )
+                        ) {
+                            ForEach(appModel.flightPlans) { plan in
+                                Text(plan.displayTitle)
+                                    .tag(plan.selectionKey)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
 
                 HStack(spacing: 10) {
                     ActionButton(title: "Start") {
@@ -64,6 +88,15 @@ struct RootView: View {
                     }
                     ActionButton(title: "Stop", style: .secondary) {
                         Task { await appModel.stopRecording() }
+                    }
+                }
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ActionButton(title: "GPS打卡", style: .secondary) {
+                        Task { await appModel.addCurrentGPSVisitPoint() }
+                    }
+                    ActionButton(title: "照片打卡", style: .secondary) {
+                        Task { await appModel.importPhotoGPSVisitPoints() }
                     }
                 }
             }

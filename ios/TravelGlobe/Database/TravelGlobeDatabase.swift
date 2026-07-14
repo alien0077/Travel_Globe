@@ -96,6 +96,34 @@ final class TravelGlobeDatabase {
         CREATE INDEX IF NOT EXISTS idx_location_points_journey_time
         ON location_points (journey_id, timestamp);
         """)
+
+        try execute("""
+        CREATE TABLE IF NOT EXISTS visit_points (
+            id TEXT PRIMARY KEY,
+            journey_id TEXT NOT NULL,
+            segment_id TEXT,
+            timestamp REAL NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            altitude_meters REAL,
+            horizontal_accuracy_meters REAL,
+            title TEXT NOT NULL,
+            note TEXT,
+            source TEXT NOT NULL,
+            source_id TEXT
+        );
+        """)
+
+        try execute("""
+        CREATE INDEX IF NOT EXISTS idx_visit_points_journey_time
+        ON visit_points (journey_id, timestamp);
+        """)
+
+        try execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_visit_points_source
+        ON visit_points (journey_id, source, source_id)
+        WHERE source_id IS NOT NULL;
+        """)
     }
 
     private func databaseURL() throws -> URL {

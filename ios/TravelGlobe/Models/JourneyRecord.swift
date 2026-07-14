@@ -47,7 +47,22 @@ struct LocationPointRecord: Identifiable, Codable, Equatable {
     var source: String
 }
 
-struct FlightPlanRecord: Codable, Equatable {
+struct VisitPointRecord: Identifiable, Codable, Equatable {
+    var id: UUID
+    var journeyId: UUID
+    var segmentId: String? = nil
+    var timestamp: Date
+    var latitude: Double
+    var longitude: Double
+    var altitudeMeters: Double?
+    var horizontalAccuracyMeters: Double?
+    var title: String
+    var note: String?
+    var source: String
+    var sourceId: String?
+}
+
+struct FlightPlanRecord: Codable, Equatable, Identifiable {
     var webJourneyId: String
     var segmentId: String
     var flightNumber: String
@@ -57,6 +72,14 @@ struct FlightPlanRecord: Codable, Equatable {
     var durationMinutes: Int?
     var aircraftType: String?
     var plannedRoute: [FlightPlanPointRecord]
+
+    var id: String {
+        selectionKey
+    }
+
+    var selectionKey: String {
+        "\(webJourneyId)|\(segmentId)"
+    }
 
     var displayTitle: String {
         "\(flightNumber) \(originIata) -> \(destinationIata)"

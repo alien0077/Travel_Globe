@@ -3,7 +3,10 @@ import {
   flightPlanPayloadFromJourney,
   parseNativePayload,
   postNativeMessage,
-  type NativeRecordingPayload
+  type NativeFlightPlanPayload,
+  type NativeRecordingPayload,
+  type NativeVisitPointPayload,
+  type NativeVisitPointsPayload
 } from '../bridge/nativeBridge';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
@@ -709,7 +712,7 @@ export class TravelGlobeApp {
     if (!this.journey || !this.segment || !this.clock) {
       return;
     }
-    const title = window.prompt('新增旅遊紀錄標題', '旅遊事件');
+    const title = window.prompt('新增旅遊紀錄標題', '人工打卡');
     if (!title?.trim()) {
       return;
     }
@@ -991,6 +994,21 @@ export class TravelGlobeApp {
       this.capability.textContent = `Live GPS recording：${started.flightNumber ?? 'GPS'} 已開始`;
       return;
     }
+    const addedVisitPoint = parseNativePayload<NativeVisitPointsPayload>(nativeMessage, 'visitPoint.added');
+    if (addedVisitPoint) {
+      void this.applyNativeVisitPoints(addedVisitPoint, true);
+      return;
+    }
+    const syncedVisitPoints = parseNativePayload<NativeVisitPointsPayload>(nativeMessage, 'visitPoints.sync');
+    if (syncedVisitPoints) {
+      void this.applyNativeVisitPoints(syncedVisitPoints, false);
+      return;
+    }
+    const selected = parseNativePayload<NativeFlightPlanPayload>(nativeMessage, 'flightPlan.selected');
+    if (selected) {
+      void this.activateNativeFlightPlan(selected);
+      return;
+    }
     const ready = parseNativePayload<{ flightNumber?: string; originIata?: string; destinationIata?: string }>(
       nativeMessage,
       'flightPlan.ready'
@@ -1011,6 +1029,123 @@ export class TravelGlobeApp {
     this.liveGps.ingest(point, performance.now());
     this.capability.textContent = 'Live GPS recording：已接收 iPhone CoreLocation 真實定位';
   };
+
+  private async applyNativeVisitPoints(payload: NativeVisitPointsPayload, focusNewest: boolean): Promise<void> {
+    const targetJourney = payload.webJourneyId && payload.webJourneyId !== this.journey?.id
+      ? await this.adapter.loadJourneyById(payload.webJourneyId)
+      : this.journey;
+    if (!targetJourney) {
+      this.capability.textContent = 'iOS 打卡點：找不到對應行程';
+      return;
+    }
+
+    const segment = payload.segmentId
+      ? targetJourney.segments.find((candidate) => candidate.id === payload.segmentId) ?? getPrimaryFlightSegment(targetJourney)
+      : getPrimaryFlightSegment(targetJourney);
+    const incomingEvents = payload.points.map((point) => visitPointToEvent(point, targetJourney.id, segment.id));
+    const incomingIds = new Set(incomingEvents.map((event) => event.id));
+    const mergedEvents = [
+      ...targetJourney.events.filter((event) => !incomingIds.has(event.id)),
+      ...incomingEvents
+    ].sort((left, right) => Date.parse(left.timestamp) - Date.parse(right.timestamp));
+    const segmentEventIds = new Set(segment.events.filter((id) => !incomingIds.has(id)));
+    for (const event of incomingEvents) {
+      segmentEventIds.add(event.id);
+    }
+    const updatedJourney: Journey = {
+      ...targetJourney,
+      events: mergedEvents,
+      segments: targetJourney.segments.map((candidate) =>
+        candidate.id === segment.id
+          ? { ...candidate, events: [...segmentEventIds] }
+          : candidate
+      ),
+      metadata: {
+        ...targetJourney.metadata,
+        nativeVisitPointsSyncedAt: new Date().toISOString()
+      }
+    };
+    await this.loadJourney(updatedJourney);
+    if (focusNewest && incomingEvents.length > 0) {
+      this.activeRecordId = incomingEvents[incomingEvents.length - 1].id;
+      this.renderTimeline();
+      this.renderRecordPreview();
+    }
+    const gpsCount = payload.points.filter((point) => point.source === 'quickGps' || point.source === 'recordingMarker').length;
+    const photoCount = payload.points.filter((point) => point.source === 'photoGps').length;
+    this.capability.textContent = `iOS 打卡點：GPS打卡 ${gpsCount} 筆，照片打卡 ${photoCount} 筆`;
+  }
+
+  private async activateNativeFlightPlan(plan: NativeFlightPlanPayload): Promise<void> {
+    const storedJourney = await this.adapter.loadJourneyById(plan.webJourneyId);
+    if (storedJourney) {
+      await this.loadJourney(storedJourney);
+      this.capability.textContent = `iOS selected flight plan：${plan.flightNumber} ${plan.originIata} -> ${plan.destinationIata}`;
+      return;
+    }
+
+    const departure = plan.departureTime && Number.isFinite(Date.parse(plan.departureTime))
+      ? new Date(plan.departureTime)
+      : new Date();
+    const result = await this.flightPreloadProvider.preloadFlight({
+      flightNumber: plan.flightNumber,
+      originIata: plan.originIata,
+      destinationIata: plan.destinationIata,
+      departureDate: toInputDate(departure.toISOString()),
+      departureTime: toInputTime(departure.toISOString()),
+      durationMinutes: plan.durationMinutes,
+      aircraftType: plan.aircraftType
+    });
+    await this.loadJourney(result.journey);
+    this.capability.textContent = `iOS selected flight plan：${plan.flightNumber} ${plan.originIata} -> ${plan.destinationIata}`;
+  }
+}
+
+function visitPointToEvent(point: NativeVisitPointPayload, journeyId: string, segmentId: string): TimelineEvent {
+  const sourceLabel = visitPointSourceLabel(point.source);
+  const timestamp = Number.isFinite(Date.parse(point.timestamp))
+    ? new Date(point.timestamp).toISOString()
+    : new Date().toISOString();
+  return {
+    id: `visit-${point.id}`,
+    journeyId,
+    segmentId,
+    timestamp,
+    type: 'visitPoint',
+    title: sourceLabel,
+    subtitle: point.note?.trim() || sourceLabel,
+    location: {
+      latitude: point.latitude,
+      longitude: point.longitude,
+      altitudeMeters: finiteNumber(point.altitudeMeters ?? undefined)
+    },
+    mediaIds: [],
+    importance: point.source === 'photoGps' ? 0.78 : 0.74,
+    source: point.source,
+    metadata: {
+      editable: true,
+      visitPointId: point.id,
+      visitPointSource: point.source,
+      sourceId: point.sourceId ?? undefined,
+      horizontalAccuracyMeters: finiteNumber(point.horizontalAccuracyMeters ?? undefined)
+    }
+  };
+}
+
+function visitPointSourceLabel(source: string): string {
+  switch (source) {
+    case 'photoGps':
+      return '照片打卡';
+    case 'quickGps':
+    case 'recordingMarker':
+      return 'GPS打卡';
+    default:
+      return '到此一遊';
+  }
+}
+
+function finiteNumber(value: number | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function metricItem(label: string, value: string): HTMLElement {

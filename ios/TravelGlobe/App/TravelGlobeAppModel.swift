@@ -9,6 +9,7 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var diagnostics: [RecordingDiagnostic] = []
     @Published var activeLocationPointCount = 0
+    @Published var activeVisitPointCount = 0
     @Published var storedJourneyCount = 0
     @Published var latestJourneySummary = "No stored journey"
     @Published var locationPermissionStatus = "Location: not checked"
@@ -18,7 +19,10 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var latestLiveLocationMessage: NativeBridgeMessage?
     @Published var outboundBridgeMessages: [NativeBridgeMessage] = []
     @Published var pendingFlightPlan: FlightPlanRecord?
+    @Published var flightPlans: [FlightPlanRecord] = []
+    @Published var selectedFlightPlanKey = ""
     @Published var recordingPlanStatus = "No flight plan applied"
+    @Published var visitPointStatus = "No visit points"
 
     let locationRecorder: LocationRecorder
     let bridge = TravelGlobeBridge()
@@ -32,6 +36,13 @@ final class TravelGlobeAppModel: ObservableObject {
     ) {
         self.repository = repository
         self.locationRecorder = LocationRecorder(repository: repository)
+        self.flightPlans = Self.loadStoredFlightPlans()
+        self.selectedFlightPlanKey = Self.loadSelectedFlightPlanKey()
+        if let selected = flightPlans.first(where: { $0.selectionKey == selectedFlightPlanKey }) ?? flightPlans.first {
+            pendingFlightPlan = selected
+            selectedFlightPlanKey = selected.selectionKey
+            recordingPlanStatus = "Selected \(selected.flightNumber) \(selected.originIata) -> \(selected.destinationIata)"
+        }
         self.locationRecorder.onLocationUpdate = { [weak self] point in
             Task { @MainActor in
                 self?.publishLiveLocation(point)
@@ -48,7 +59,7 @@ final class TravelGlobeAppModel: ObservableObject {
             let journey = try await repository.createJourney(
                 title: "New Flight Recording",
                 segmentType: .flight,
-                flightPlan: pendingFlightPlan
+                flightPlan: selectedFlightPlan
             )
             activeJourney = journey
             recordingState = .recording
@@ -69,11 +80,14 @@ final class TravelGlobeAppModel: ObservableObject {
         if let activeJourney {
             let completedJourney = (try? await repository.journey(id: activeJourney.id)) ?? activeJourney
             let points = (try? await repository.locationPoints(journeyId: activeJourney.id, since: nil)) ?? []
+            let visitPoints = (try? await repository.visitPoints(journeyId: activeJourney.id)) ?? []
             self.activeJourney = completedJourney
             activeLocationPointCount = points.count
+            activeVisitPointCount = visitPoints.count
             recordingPlanStatus = completedJourney.flightNumber.map { "Completed \($0) \(completedJourney.originIata ?? "") -> \(completedJourney.destinationIata ?? "")" }
                 ?? "Completed GPS-only flight"
             enqueueRecordingStatus("recording.completed", journey: completedJourney, points: points)
+            enqueueVisitPointsStatus("visitPoints.sync", journey: completedJourney, points: visitPoints)
         }
         await refreshDiagnostics()
     }
@@ -94,6 +108,80 @@ final class TravelGlobeAppModel: ObservableObject {
         }
     }
 
+    func addCurrentGPSVisitPoint() async {
+        do {
+            guard let journey = try await targetJourneyForVisitPoint() else {
+                visitPointStatus = "No journey available for visit point"
+                return
+            }
+            let locationPoint = try await locationRecorder.requestCurrentPoint(
+                journeyId: journey.id,
+                segmentId: journey.webSegmentId
+            )
+            let visitPoint = VisitPointRecord(
+                id: UUID(),
+                journeyId: journey.id,
+                segmentId: journey.webSegmentId,
+                timestamp: locationPoint.timestamp,
+                latitude: locationPoint.latitude,
+                longitude: locationPoint.longitude,
+                altitudeMeters: locationPoint.altitudeMeters,
+                horizontalAccuracyMeters: locationPoint.horizontalAccuracyMeters,
+                title: "GPS打卡",
+                note: "使用目前 iPhone GPS 新增",
+                source: "quickGps",
+                sourceId: nil
+            )
+            try await repository.saveVisitPoint(visitPoint)
+            let points = try await repository.visitPoints(journeyId: journey.id)
+            activeVisitPointCount = points.count
+            visitPointStatus = "Added current GPS visit point"
+            enqueueVisitPointsStatus("visitPoint.added", journey: journey, points: [visitPoint])
+            enqueueVisitPointsStatus("visitPoints.sync", journey: journey, points: points)
+            await refreshDiagnostics()
+        } catch {
+            visitPointStatus = "Unable to add GPS visit: \(error.localizedDescription)"
+            diagnostics.append(.error(visitPointStatus))
+        }
+    }
+
+    func importPhotoGPSVisitPoints() async {
+        let authorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if authorization == .notDetermined {
+            await requestPhotoPermission()
+        }
+
+        do {
+            guard let journey = try await targetJourneyForVisitPoint() else {
+                visitPointStatus = "No journey available for photo visits"
+                return
+            }
+            let existing = try await repository.visitPoints(journeyId: journey.id)
+            let existingPhotoIds = Set(existing.compactMap { point in
+                point.source == "photoGps" ? point.sourceId : nil
+            })
+            let imported = photoImporter.visitPoints(
+                for: journey,
+                existingSourceIds: existingPhotoIds
+            )
+            for point in imported {
+                try await repository.saveVisitPoint(point)
+            }
+            let points = try await repository.visitPoints(journeyId: journey.id)
+            activeVisitPointCount = points.count
+            visitPointStatus = imported.isEmpty
+                ? "No new photo GPS visit points"
+                : "Imported \(imported.count) photo GPS visit points"
+            if !imported.isEmpty {
+                enqueueVisitPointsStatus("visitPoints.sync", journey: journey, points: points)
+            }
+            await refreshDiagnostics()
+        } catch {
+            visitPointStatus = "Unable to import photo GPS: \(error.localizedDescription)"
+            diagnostics.append(.error(visitPointStatus))
+        }
+    }
+
     func refreshDiagnostics() async {
         locationPermissionStatus = "Location: \(Self.locationStatusText(CLLocationManager.authorizationStatus()))"
         photoPermissionStatus = "Photos: \(Self.photoStatusText(PHPhotoLibrary.authorizationStatus(for: .readWrite)))"
@@ -106,10 +194,13 @@ final class TravelGlobeAppModel: ObservableObject {
             if let latest = journeys.first {
                 activeJourney = activeJourney ?? latest
                 let pointCount = try await repository.locationPointCount(journeyId: latest.id)
+                let visitCount = try await repository.visitPointCount(journeyId: latest.id)
                 activeLocationPointCount = pointCount
-                latestJourneySummary = "\(latest.status.rawValue) | \(pointCount) GPS points | \(latest.id.uuidString.prefix(8))"
+                activeVisitPointCount = visitCount
+                latestJourneySummary = "\(latest.status.rawValue) | \(pointCount) GPS points | \(visitCount) visits | \(latest.id.uuidString.prefix(8))"
             } else {
                 activeLocationPointCount = 0
+                activeVisitPointCount = 0
                 latestJourneySummary = "No stored journey"
             }
             diagnostics = [
@@ -118,6 +209,7 @@ final class TravelGlobeAppModel: ObservableObject {
                 .info(notificationPermissionStatus),
                 .info(replayEngineStatus),
                 .info("Flight plan: \(recordingPlanStatus)"),
+                .info("Visit points: \(visitPointStatus)"),
                 .info("Stored journeys: \(storedJourneyCount)"),
                 .info("Latest: \(latestJourneySummary)")
             ]
@@ -128,6 +220,17 @@ final class TravelGlobeAppModel: ObservableObject {
 
     func updateReplayEngineStatus(_ status: String) {
         replayEngineStatus = "Replay Engine: \(status)"
+    }
+
+    func selectFlightPlan(_ selectionKey: String) {
+        guard let plan = flightPlans.first(where: { $0.selectionKey == selectionKey }) else {
+            return
+        }
+        selectedFlightPlanKey = plan.selectionKey
+        pendingFlightPlan = plan
+        recordingPlanStatus = "Selected \(plan.flightNumber) \(plan.originIata) -> \(plan.destinationIata)"
+        Self.saveSelectedFlightPlanKey(plan.selectionKey)
+        enqueueBridgeMessage(type: "flightPlan.selected", payload: FlightPlanStatusPayload(plan: plan, status: "selected"))
     }
 
     private func publishLiveLocation(_ point: LocationPointRecord) {
@@ -158,15 +261,47 @@ final class TravelGlobeAppModel: ObservableObject {
             diagnostics.append(.error("Unable to decode flight plan from Replay Engine"))
             return
         }
+        upsertFlightPlan(plan)
         pendingFlightPlan = plan
+        selectedFlightPlanKey = plan.selectionKey
         recordingPlanStatus = "Ready \(plan.flightNumber) \(plan.originIata) -> \(plan.destinationIata)"
-        enqueueBridgeMessage(type: "flightPlan.ready", payload: FlightPlanStatusPayload(plan: plan))
+        Self.saveSelectedFlightPlanKey(plan.selectionKey)
+        enqueueBridgeMessage(type: "flightPlan.ready", payload: FlightPlanStatusPayload(plan: plan, status: "ready"))
+        enqueueBridgeMessage(type: "flightPlan.selected", payload: FlightPlanStatusPayload(plan: plan, status: "selected"))
+    }
+
+    private var selectedFlightPlan: FlightPlanRecord? {
+        flightPlans.first(where: { $0.selectionKey == selectedFlightPlanKey }) ?? pendingFlightPlan
+    }
+
+    private func targetJourneyForVisitPoint() async throws -> JourneyRecord? {
+        if let activeJourney {
+            return activeJourney
+        }
+        let journeys = try await repository.recentJourneys(limit: 1)
+        let latest = journeys.first
+        activeJourney = latest
+        return latest
+    }
+
+    private func upsertFlightPlan(_ plan: FlightPlanRecord) {
+        var updated = flightPlans.filter { $0.selectionKey != plan.selectionKey }
+        updated.insert(plan, at: 0)
+        flightPlans = Array(updated.prefix(20))
+        Self.saveStoredFlightPlans(flightPlans)
     }
 
     private func enqueueRecordingStatus(_ type: String, journey: JourneyRecord, points: [LocationPointRecord]?) {
         enqueueBridgeMessage(
             type: type,
             payload: RecordingStatusPayload(journey: journey, points: points)
+        )
+    }
+
+    private func enqueueVisitPointsStatus(_ type: String, journey: JourneyRecord, points: [VisitPointRecord]) {
+        enqueueBridgeMessage(
+            type: type,
+            payload: VisitPointsStatusPayload(journey: journey, points: points)
         )
     }
 
@@ -249,6 +384,34 @@ final class TravelGlobeAppModel: ObservableObject {
             return "unknown"
         }
     }
+
+    private static let flightPlansDefaultsKey = "travelGlobe.flightPlans"
+    private static let selectedFlightPlanDefaultsKey = "travelGlobe.selectedFlightPlanKey"
+
+    private static func loadStoredFlightPlans() -> [FlightPlanRecord] {
+        guard
+            let data = UserDefaults.standard.data(forKey: flightPlansDefaultsKey),
+            let plans = try? JSONDecoder().decode([FlightPlanRecord].self, from: data)
+        else {
+            return []
+        }
+        return plans
+    }
+
+    private static func saveStoredFlightPlans(_ plans: [FlightPlanRecord]) {
+        guard let data = try? JSONEncoder().encode(plans) else {
+            return
+        }
+        UserDefaults.standard.set(data, forKey: flightPlansDefaultsKey)
+    }
+
+    private static func loadSelectedFlightPlanKey() -> String {
+        UserDefaults.standard.string(forKey: selectedFlightPlanDefaultsKey) ?? ""
+    }
+
+    private static func saveSelectedFlightPlanKey(_ key: String) {
+        UserDefaults.standard.set(key, forKey: selectedFlightPlanDefaultsKey)
+    }
 }
 
 private struct FlightPlanStatusPayload: Encodable {
@@ -259,15 +422,21 @@ private struct FlightPlanStatusPayload: Encodable {
     var destinationIata: String
     var aircraftType: String?
     var status: String
+    var departureTime: String?
+    var durationMinutes: Int?
+    var plannedRoute: [FlightPlanPointRecord]
 
-    init(plan: FlightPlanRecord) {
+    init(plan: FlightPlanRecord, status: String) {
         webJourneyId = plan.webJourneyId
         segmentId = plan.segmentId
         flightNumber = plan.flightNumber
         originIata = plan.originIata
         destinationIata = plan.destinationIata
         aircraftType = plan.aircraftType
-        status = "ready"
+        departureTime = plan.departureTime
+        durationMinutes = plan.durationMinutes
+        plannedRoute = plan.plannedRoute
+        self.status = status
     }
 }
 
@@ -296,6 +465,48 @@ private struct RecordingStatusPayload: Encodable {
         startedAt = LiveLocationPayload.timestampFormatter.string(from: journey.startTime)
         endedAt = journey.endTime.map { LiveLocationPayload.timestampFormatter.string(from: $0) }
         self.points = points?.map(LiveLocationPayload.init(point:))
+    }
+}
+
+private struct VisitPointsStatusPayload: Encodable {
+    var nativeJourneyId: String
+    var webJourneyId: String?
+    var segmentId: String?
+    var status: String
+    var points: [VisitPointPayload]
+
+    init(journey: JourneyRecord, points: [VisitPointRecord]) {
+        nativeJourneyId = journey.id.uuidString
+        webJourneyId = journey.webJourneyId
+        segmentId = journey.webSegmentId
+        status = journey.status.rawValue
+        self.points = points.map(VisitPointPayload.init(point:))
+    }
+}
+
+private struct VisitPointPayload: Encodable {
+    var id: String
+    var timestamp: String
+    var latitude: Double
+    var longitude: Double
+    var altitudeMeters: Double?
+    var horizontalAccuracyMeters: Double?
+    var title: String
+    var note: String?
+    var source: String
+    var sourceId: String?
+
+    init(point: VisitPointRecord) {
+        id = point.id.uuidString
+        timestamp = LiveLocationPayload.timestampFormatter.string(from: point.timestamp)
+        latitude = point.latitude
+        longitude = point.longitude
+        altitudeMeters = point.altitudeMeters
+        horizontalAccuracyMeters = point.horizontalAccuracyMeters
+        title = point.title
+        note = point.note
+        source = point.source
+        sourceId = point.sourceId
     }
 }
 

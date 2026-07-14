@@ -3,8 +3,11 @@ import Foundation
 protocol JourneyRepository {
     func createJourney(title: String, segmentType: JourneySegmentType, flightPlan: FlightPlanRecord?) async throws -> JourneyRecord
     func saveLocationPoint(_ point: LocationPointRecord) async throws
+    func saveVisitPoint(_ point: VisitPointRecord) async throws
     func locationPoints(journeyId: UUID, since: Date?) async throws -> [LocationPointRecord]
+    func visitPoints(journeyId: UUID) async throws -> [VisitPointRecord]
     func locationPointCount(journeyId: UUID) async throws -> Int
+    func visitPointCount(journeyId: UUID) async throws -> Int
     func recentJourneys(limit: Int) async throws -> [JourneyRecord]
     func completeJourney(id: UUID, endedAt: Date) async throws
     func journey(id: UUID) async throws -> JourneyRecord?

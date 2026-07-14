@@ -49,6 +49,27 @@ export interface NativeRecordingPayload {
   }>;
 }
 
+export interface NativeVisitPointPayload {
+  id: string;
+  timestamp: string;
+  latitude: number;
+  longitude: number;
+  altitudeMeters?: number | null;
+  horizontalAccuracyMeters?: number | null;
+  title: string;
+  note?: string | null;
+  source: 'photoGps' | 'quickGps' | 'recordingMarker' | 'manual' | string;
+  sourceId?: string | null;
+}
+
+export interface NativeVisitPointsPayload {
+  nativeJourneyId: string;
+  webJourneyId?: string;
+  segmentId?: string;
+  status: string;
+  points: NativeVisitPointPayload[];
+}
+
 declare global {
   interface Window {
     TravelGlobeNative?: {

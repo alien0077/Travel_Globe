@@ -78,6 +78,40 @@ actor SQLiteJourneyRepository: JourneyRepository {
         try stepDone(statement)
     }
 
+    func saveVisitPoint(_ point: VisitPointRecord) async throws {
+        let db = try database.connection()
+        let statement = try prepare("""
+        INSERT INTO visit_points (
+            id, journey_id, segment_id, timestamp, latitude, longitude,
+            altitude_meters, horizontal_accuracy_meters, title, note, source, source_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(journey_id, source, source_id) WHERE source_id IS NOT NULL DO UPDATE SET
+            timestamp = excluded.timestamp,
+            latitude = excluded.latitude,
+            longitude = excluded.longitude,
+            altitude_meters = excluded.altitude_meters,
+            horizontal_accuracy_meters = excluded.horizontal_accuracy_meters,
+            title = excluded.title,
+            note = excluded.note;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(point.id.uuidString, at: 1, statement: statement)
+        try bindText(point.journeyId.uuidString, at: 2, statement: statement)
+        try bindOptionalText(point.segmentId, at: 3, statement: statement)
+        try bindDouble(point.timestamp.timeIntervalSince1970, at: 4, statement: statement)
+        try bindDouble(point.latitude, at: 5, statement: statement)
+        try bindDouble(point.longitude, at: 6, statement: statement)
+        try bindOptionalDouble(point.altitudeMeters, at: 7, statement: statement)
+        try bindOptionalDouble(point.horizontalAccuracyMeters, at: 8, statement: statement)
+        try bindText(point.title, at: 9, statement: statement)
+        try bindOptionalText(point.note, at: 10, statement: statement)
+        try bindText(point.source, at: 11, statement: statement)
+        try bindOptionalText(point.sourceId, at: 12, statement: statement)
+        try stepDone(statement)
+    }
+
     func locationPoints(journeyId: UUID, since: Date?) async throws -> [LocationPointRecord] {
         let db = try database.connection()
         let sql: String
@@ -120,6 +154,42 @@ actor SQLiteJourneyRepository: JourneyRepository {
         let statement = try prepare("""
         SELECT COUNT(*)
         FROM location_points
+        WHERE journey_id = ?;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(journeyId.uuidString, at: 1, statement: statement)
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            throw DatabaseError.stepFailed(database.errorMessage())
+        }
+        return Int(sqlite3_column_int(statement, 0))
+    }
+
+    func visitPoints(journeyId: UUID) async throws -> [VisitPointRecord] {
+        let db = try database.connection()
+        let statement = try prepare("""
+        SELECT id, journey_id, segment_id, timestamp, latitude, longitude,
+               altitude_meters, horizontal_accuracy_meters, title, note, source, source_id
+        FROM visit_points
+        WHERE journey_id = ?
+        ORDER BY timestamp ASC;
+        """, db: db)
+        defer { sqlite3_finalize(statement) }
+
+        try bindText(journeyId.uuidString, at: 1, statement: statement)
+
+        var points: [VisitPointRecord] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            points.append(try decodeVisitPoint(statement))
+        }
+        return points
+    }
+
+    func visitPointCount(journeyId: UUID) async throws -> Int {
+        let db = try database.connection()
+        let statement = try prepare("""
+        SELECT COUNT(*)
+        FROM visit_points
         WHERE journey_id = ?;
         """, db: db)
         defer { sqlite3_finalize(statement) }
@@ -275,6 +345,29 @@ actor SQLiteJourneyRepository: JourneyRepository {
             horizontalAccuracyMeters: sqlite3_column_double(statement, 9),
             verticalAccuracyMeters: optionalDoubleColumn(10, statement: statement),
             source: try textColumn(11, statement: statement)
+        )
+    }
+
+    private func decodeVisitPoint(_ statement: OpaquePointer) throws -> VisitPointRecord {
+        guard
+            let id = UUID(uuidString: try textColumn(0, statement: statement)),
+            let journeyId = UUID(uuidString: try textColumn(1, statement: statement))
+        else {
+            throw DatabaseError.stepFailed("Unable to decode visit point row")
+        }
+        return VisitPointRecord(
+            id: id,
+            journeyId: journeyId,
+            segmentId: try optionalTextColumn(2, statement: statement),
+            timestamp: Date(timeIntervalSince1970: sqlite3_column_double(statement, 3)),
+            latitude: sqlite3_column_double(statement, 4),
+            longitude: sqlite3_column_double(statement, 5),
+            altitudeMeters: optionalDoubleColumn(6, statement: statement),
+            horizontalAccuracyMeters: optionalDoubleColumn(7, statement: statement),
+            title: try textColumn(8, statement: statement),
+            note: try optionalTextColumn(9, statement: statement),
+            source: try textColumn(10, statement: statement),
+            sourceId: try optionalTextColumn(11, statement: statement)
         )
     }
 

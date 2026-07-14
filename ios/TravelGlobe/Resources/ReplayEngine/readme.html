@@ -344,24 +344,26 @@
             <h2>Live GPS 飛行模式</h2>
             <p>iOS app 可用 iPhone CoreLocation 接收真實 GPS，透過 native bridge 即時送進 Replay Engine。此模式不需要行動網路；飛航模式下 GPS 仍可能可用，但定位品質會受座位、窗邊距離、機身遮蔽與首次定位時間影響。</p>
             <ol>
-              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，在「航班預載」輸入航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。此時只建立待飛行 flight plan，不會建立完成的旅遊紀錄。</li>
-              <li>回到 iOS 主畫面按 <code>Start</code>。若剛才已套用航線，iOS 會把 GPS recording 綁到該航線的 <code>segmentId</code>；若沒有套用航線，則建立 GPS-only recording。</li>
+              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，在「航班預載」輸入航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
+              <li>回到 iOS 主畫面，在 <code>Record Into</code> 選單挑要錄入的行程，再按 <code>Start</code>。iOS 會把 GPS recording 綁到被選到航線的 <code>segmentId</code>；若沒有套用航線，則建立 GPS-only recording。</li>
               <li>按 <code>Open Replay Engine</code> 回到地球畫面。收到第一筆 GPS 後，控制列會進入 <code>LIVE</code>，HUD 會顯示 <code>Live GPS</code> 或 GPS 狀態。</li>
               <li>若需要開飛航模式，開啟後把手機放在靠窗位置，等待 GPS 重新定位。定位恢復後飛機會繼續沿真實位置移動。</li>
               <li>短暫斷訊時，畫面會用最後可信速度與航向最多推算 90 秒，HUD 會顯示 GPS 推算；超過 90 秒會停止外推，飛機停在最後可信位置並顯示 <code>GPS signal lost</code>。</li>
               <li>落地或不需要紀錄時回到 iOS 主畫面按 <code>Stop</code>，旅程會保存成真實 GPS 航跡，並把 completed journey 回寫到 Replay Engine 的旅遊紀錄與 Travel Atlas。</li>
             </ol>
             <p>資料庫只保存品質合格且有意義變化的真實 GPS 點；畫面推算點只留在記憶體，不會寫入 SQLite，也不會污染 GPX/KML 或之後的飛行紀錄。飛行 profile 會丟棄座標無效、水平精度過差或時間倒退的點，並以至少 5 秒、超過 250 公尺、航向或高度明顯變化作為保存門檻。</p>
+            <p>如果只是想在某個小鎮、車站、景點留下「到此一遊」，不用開始整段 GPS recording。回到 iOS 主畫面按 <code>GPS打卡</code> 會抓一次目前 CoreLocation 並新增到目前行程；按 <code>照片打卡</code> 會從該行程時間範圍內含 GPS 的照片匯入打卡點。兩者都寫入 <code>visit_points</code>，不會改動原始飛行 GPS 航跡。</p>
           </section>
 
           <section id="travel-records">
             <h2>旅遊紀錄流程</h2>
             <ol>
-              <li><strong>套用航線</strong>：只建立 planned flight plan，包含航班號、起降機場、機型、預估航線與 <code>segmentId</code>。這一步不算完成旅遊紀錄。</li>
-              <li><strong>開始 GPS</strong>：按 iOS 主畫面的 <code>Start</code> 後，native recording 會使用目前套用的 flight plan；每個真實 GPS 點都會保存同一個 <code>segmentId</code>，用來對回該航段。</li>
+              <li><strong>套用航線</strong>：只建立 planned flight plan，包含航班號、起降機場、機型、預估航線與 <code>segmentId</code>。可先建立多筆；這一步不算完成旅遊紀錄。</li>
+              <li><strong>選擇行程並開始 GPS</strong>：按 iOS 主畫面的 <code>Record Into</code> 選單挑目標 flight plan，再按 <code>Start</code>。native recording 會使用被選到的 flight plan；每個真實 GPS 點都會保存同一個 <code>segmentId</code>，用來對回該航段。</li>
               <li><strong>停止 GPS</strong>：按 <code>Stop</code> 後，app 才把 recording 標記為 completed，產生實際 GPS 航跡、起訖事件、旅遊紀錄與 Travel Atlas 摘要。</li>
+              <li><strong>GPS打卡 / 照片打卡</strong>：在 iOS 主畫面可把目前 GPS 或照片 EXIF GPS 加到目前行程。Replay Engine 收到 native bridge 後會顯示成「GPS打卡」或「照片打卡」旅遊紀錄。</li>
               <li><strong>人工編輯</strong>：在「旅遊紀錄」面板可新增事件、修改目前紀錄、隱藏紀錄，或編輯航線摘要。人工修改只寫入 edit overlay 或 journey metadata，不會改掉原始 GPS 點。</li>
-              <li><strong>資料對應</strong>：GPS record 是原始軌跡；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。刪除/隱藏旅遊事件不會刪除 SQLite 裡的真實 GPS。</li>
+              <li><strong>資料對應</strong>：GPS record 是原始軌跡；Visit Point 是同一行程下的到此一遊點；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。刪除/隱藏旅遊事件不會刪除 SQLite 裡的真實 GPS。</li>
             </ol>
           </section>
 
