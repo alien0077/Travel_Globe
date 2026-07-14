@@ -50,7 +50,9 @@ struct ReplayEngineView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.sendLatestLiveLocation(to: webView)
+    }
 
     static let replayAssetBaseURL = "travelglobe://replay/"
 
@@ -92,6 +94,8 @@ struct ReplayEngineView: UIViewRepresentable {
         private let appModel: TravelGlobeAppModel
         private var hasRuntimeDiagnostic = false
         private var didInjectReplayBundle = false
+        private var isReplayReady = false
+        private var lastSentLiveLocationId: UUID?
 
         init(appModel: TravelGlobeAppModel) {
             self.appModel = appModel
@@ -105,6 +109,9 @@ struct ReplayEngineView: UIViewRepresentable {
                     if (result as? Bool) == true {
                         Task { @MainActor in
                             self.appModel.updateReplayEngineStatus("loaded")
+                        }
+                        Task { @MainActor in
+                            self.markReplayReady(webView)
                         }
                         return
                     }
@@ -170,6 +177,9 @@ struct ReplayEngineView: UIViewRepresentable {
                         Task { @MainActor in
                             self.appModel.updateReplayEngineStatus("injected")
                         }
+                        Task { @MainActor in
+                            self.markReplayReady(webView)
+                        }
                     }
                 }
             } catch {
@@ -177,6 +187,25 @@ struct ReplayEngineView: UIViewRepresentable {
                     appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
                 }
             }
+        }
+
+        @MainActor
+        func sendLatestLiveLocation(to webView: WKWebView) {
+            guard
+                isReplayReady,
+                let message = appModel.latestLiveLocationMessage,
+                message.id != lastSentLiveLocationId
+            else {
+                return
+            }
+            lastSentLiveLocationId = message.id
+            appModel.bridge.send(message, to: webView)
+        }
+
+        @MainActor
+        private func markReplayReady(_ webView: WKWebView) {
+            isReplayReady = true
+            sendLatestLiveLocation(to: webView)
         }
     }
 }

@@ -15,6 +15,7 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var photoPermissionStatus = "Photos: not checked"
     @Published var notificationPermissionStatus = "Notifications: not checked"
     @Published var replayEngineStatus = "Replay Engine: not checked"
+    @Published var latestLiveLocationMessage: NativeBridgeMessage?
 
     let locationRecorder: LocationRecorder
     let bridge = TravelGlobeBridge()
@@ -28,6 +29,11 @@ final class TravelGlobeAppModel: ObservableObject {
     ) {
         self.repository = repository
         self.locationRecorder = LocationRecorder(repository: repository)
+        self.locationRecorder.onLocationUpdate = { [weak self] point in
+            Task { @MainActor in
+                self?.publishLiveLocation(point)
+            }
+        }
         Task { await refreshDiagnostics() }
     }
 
@@ -101,6 +107,16 @@ final class TravelGlobeAppModel: ObservableObject {
         replayEngineStatus = "Replay Engine: \(status)"
     }
 
+    private func publishLiveLocation(_ point: LocationPointRecord) {
+        guard let payload = LiveLocationPayload(point: point).jsonString else { return }
+        latestLiveLocationMessage = NativeBridgeMessage(
+            version: "1.0",
+            requestId: nil,
+            type: "location.update",
+            payload: payload
+        )
+    }
+
     private func refreshNotificationPermissionStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         notificationPermissionStatus = "Notifications: \(Self.notificationStatusText(settings.authorizationStatus))"
@@ -161,4 +177,77 @@ final class TravelGlobeAppModel: ObservableObject {
             return "unknown"
         }
     }
+}
+
+private struct LiveLocationPayload: Encodable {
+    var timestamp: String
+    var latitude: Double
+    var longitude: Double
+    var altitudeMeters: Double?
+    var speedMetersPerSecond: Double?
+    var courseDegrees: Double?
+    var horizontalAccuracyMeters: Double
+    var verticalAccuracyMeters: Double?
+    var source = "gps"
+
+    init(point: LocationPointRecord) {
+        timestamp = Self.timestampFormatter.string(from: point.timestamp)
+        latitude = point.latitude
+        longitude = point.longitude
+        altitudeMeters = point.altitudeMeters
+        speedMetersPerSecond = point.speedMetersPerSecond
+        courseDegrees = point.courseDegrees
+        horizontalAccuracyMeters = point.horizontalAccuracyMeters
+        verticalAccuracyMeters = point.verticalAccuracyMeters
+    }
+
+    var jsonString: String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(self) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case timestamp
+        case latitude
+        case longitude
+        case altitudeMeters
+        case speedMetersPerSecond
+        case courseDegrees
+        case horizontalAccuracyMeters
+        case verticalAccuracyMeters
+        case source
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(latitude, forKey: .latitude)
+        try container.encode(longitude, forKey: .longitude)
+        try encodeNullable(altitudeMeters, forKey: .altitudeMeters, into: &container)
+        try encodeNullable(speedMetersPerSecond, forKey: .speedMetersPerSecond, into: &container)
+        try encodeNullable(courseDegrees, forKey: .courseDegrees, into: &container)
+        try container.encode(horizontalAccuracyMeters, forKey: .horizontalAccuracyMeters)
+        try encodeNullable(verticalAccuracyMeters, forKey: .verticalAccuracyMeters, into: &container)
+        try container.encode(source, forKey: .source)
+    }
+
+    private func encodeNullable(
+        _ value: Double?,
+        forKey key: CodingKeys,
+        into container: inout KeyedEncodingContainer<CodingKeys>
+    ) throws {
+        if let value {
+            try container.encode(value, forKey: key)
+        } else {
+            try container.encodeNil(forKey: key)
+        }
+    }
+
+    private static let timestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 }

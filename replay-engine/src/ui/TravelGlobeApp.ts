@@ -27,6 +27,11 @@ import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
 import { generateOfflineJournal } from '../journal/generateJournal';
+import {
+  LiveGpsTracker,
+  liveGpsPointFromNativeMessage,
+  type LiveGpsStatus
+} from '../live/liveGps';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
@@ -39,7 +44,7 @@ import {
 } from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { ReplayClock } from '../replay/ReplayClock';
-import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
+import { getRouteTimeBounds, sampleReplayAt, type ReplaySample } from '../replay/buildReplayFrames';
 import { summarizeJourney } from '../statistics/journeyStatistics';
 import { buildTimeMachineState } from '../time-machine/timeMachine';
 import {
@@ -68,6 +73,8 @@ export class TravelGlobeApp {
   private travelRecords: TravelRecord[] = [];
   private activeRecordId?: string;
   private activeRegion: TravelRegion | 'all' = 'all';
+  private liveGps = new LiveGpsTracker();
+  private isLiveGpsMode = false;
 
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
@@ -100,6 +107,7 @@ export class TravelGlobeApp {
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
     this.adapter = new BrowserRuntimeAdapter(journey);
+    window.addEventListener('travelglobe:native', this.handleNativeEvent);
   }
 
   async start(): Promise<void> {
@@ -114,6 +122,8 @@ export class TravelGlobeApp {
     this.routeLandmarks = landmarksForSegment(this.segment);
     this.travelRecords = buildTravelRecords(journey);
     this.activeRecordId = this.travelRecords[0]?.id;
+    this.liveGps = new LiveGpsTracker();
+    this.isLiveGpsMode = false;
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
     this.lastFrameMs = undefined;
@@ -347,6 +357,17 @@ export class TravelGlobeApp {
     const deltaSeconds = Math.min(0.08, (timeMs - previous) / 1000);
     this.lastFrameMs = timeMs;
 
+    const liveSample = this.isLiveGpsMode ? this.liveGps.sample(timeMs, this.segment) : undefined;
+    if (liveSample) {
+      this.scene.update(liveSample.point, liveSample.bearingDegrees, this.cameraMode, liveSample.routePoints);
+      this.scrubber.value = String(
+        Math.round(Math.min(1, liveSample.distanceFlownMeters / Math.max(1, this.flightOverlay?.totalDistanceMeters ?? 1)) * 1000)
+      );
+      this.syncPlayButton();
+      this.updateHud(liveSample, liveSample.elapsedSeconds, liveSample.status);
+      return;
+    }
+
     this.clock.update(deltaSeconds);
     const sample = sampleReplayAt(this.segment, this.clock.currentSeconds);
     const actualRoute = getActualRouteThrough(this.segment, this.clock.currentSeconds);
@@ -358,8 +379,9 @@ export class TravelGlobeApp {
   }
 
   private updateHud(
-    sample: ReturnType<typeof sampleReplayAt>,
-    elapsedSeconds: number
+    sample: ReplaySample,
+    elapsedSeconds: number,
+    liveStatus?: LiveGpsStatus
   ): void {
     const point = sample.point;
     if (!this.journey || !this.segment || !this.flightOverlay) {
@@ -380,15 +402,23 @@ export class TravelGlobeApp {
     );
 
     this.hudPoint.textContent = [
+      liveStatus ? liveGpsStatusLabel(liveStatus) : undefined,
       localizePhase(metrics.phaseLabel),
       metrics.verticalSpeedLabel,
       `航向 ${metrics.headingDegrees}`,
       `T+${elapsedMinutes}:${elapsedRemainder}`,
       `偏離 ${formatDistance(deviationMeters)}`
-    ].join(' | ');
+    ].filter(Boolean).join(' | ');
     this.renderPilotHud(metrics);
 
     this.renderBelowMe(sample);
+    if (liveStatus === 'lost') {
+      this.geoNotice.textContent = 'Live GPS：GPS signal lost，已停止外推並停在最後可信位置';
+    } else if (liveStatus === 'estimated') {
+      this.geoNotice.textContent = 'Live GPS：短暫斷訊，畫面以速度與航向暫時推算';
+    } else if (liveStatus === 'live') {
+      this.geoNotice.textContent = `Live GPS：recording | 真實 GPS 軌跡 ${formatDistance(sample.distanceFlownMeters)}`;
+    }
 
     this.autoRecordingContext = reduceAutoRecordingState(
       this.autoRecordingContext ?? {
@@ -405,6 +435,10 @@ export class TravelGlobeApp {
   }
 
   private syncPlayButton(): void {
+    if (this.isLiveGpsMode) {
+      this.playButton.textContent = 'LIVE';
+      return;
+    }
     this.playButton.textContent = this.clock?.isPlaying ? '暫停' : '播放';
   }
 
@@ -805,6 +839,23 @@ export class TravelGlobeApp {
 
     this.productPanel.replaceChildren(list, regionBars, packDescription);
   }
+
+  private readonly handleNativeEvent = (event: Event): void => {
+    if (!this.journey || !this.segment) {
+      return;
+    }
+    const point = liveGpsPointFromNativeMessage(
+      (event as CustomEvent<unknown>).detail,
+      this.journey.id,
+      this.segment.id
+    );
+    if (!point) {
+      return;
+    }
+    this.isLiveGpsMode = true;
+    this.liveGps.ingest(point, performance.now());
+    this.capability.textContent = 'Live GPS recording：已接收 iPhone CoreLocation 真實定位';
+  };
 }
 
 function metricItem(label: string, value: string): HTMLElement {
@@ -882,6 +933,17 @@ function localizePhase(value: string): string {
       return '降落';
     default:
       return value;
+  }
+}
+
+function liveGpsStatusLabel(status: LiveGpsStatus): string {
+  switch (status) {
+    case 'live':
+      return 'Live GPS';
+    case 'estimated':
+      return 'GPS 推算';
+    case 'lost':
+      return 'GPS signal lost';
   }
 }
 
