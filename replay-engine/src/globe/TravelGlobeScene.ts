@@ -21,6 +21,7 @@ interface LabelCandidate {
   width: number;
   height: number;
   distanceMeters: number;
+  opacity: number;
 }
 
 export class TravelGlobeScene {
@@ -235,7 +236,9 @@ export class TravelGlobeScene {
     const height = this.container.clientHeight;
     this.camera.updateMatrixWorld();
     const candidates: LabelCandidate[] = [];
-    const maxPilotDistance = this.currentPoint ? pilotLabelDistanceMeters(this.currentPoint) : 180000;
+    const maxLabelDistance = this.currentPoint
+      ? labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode)
+      : 180000;
 
     for (const label of this.landmarkLabels) {
       label.element.hidden = true;
@@ -253,7 +256,7 @@ export class TravelGlobeScene {
       }
 
       const distanceMeters = this.currentPoint ? haversineDistanceMeters(this.currentPoint, label.feature) : 0;
-      if (this.currentCameraMode === 'pilotView' && distanceMeters > maxPilotDistance) {
+      if (distanceMeters > maxLabelDistance) {
         continue;
       }
 
@@ -263,13 +266,15 @@ export class TravelGlobeScene {
         y: ((-projected.y + 1) / 2) * height,
         width: Math.max(34, label.element.offsetWidth),
         height: Math.max(14, label.element.offsetHeight),
-        distanceMeters
+        distanceMeters,
+        opacity: labelOpacityForDistance(distanceMeters, maxLabelDistance)
       });
     }
 
-    const visibleLabels = selectVisibleLabels(candidates, this.currentCameraMode === 'pilotView' ? 8 : 18);
+    const visibleLabels = selectVisibleLabels(candidates, labelCountLimit(this.currentCameraMode));
     for (const candidate of visibleLabels) {
       candidate.label.element.hidden = false;
+      candidate.label.element.style.opacity = candidate.opacity.toFixed(3);
       candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px)`;
     }
   }
@@ -364,10 +369,51 @@ function isGroundPointVisibleFromCamera(cameraPosition: THREE.Vector3, pointPosi
   return firstHitDistance >= distance - 0.018;
 }
 
-function pilotLabelDistanceMeters(point: LocationPoint): number {
+function labelDistanceLimitMeters(point: LocationPoint, cameraMode: CameraMode): number {
   const altitudeMeters = Math.max(0, point.altitudeMeters ?? 0);
   const horizonMeters = Math.sqrt(2 * EARTH_RADIUS_METERS * altitudeMeters + altitudeMeters * altitudeMeters);
-  return Math.min(420000, Math.max(65000, horizonMeters + 60000));
+  const dynamicLimit = Math.min(520000, Math.max(85000, horizonMeters + 80000));
+  switch (cameraMode) {
+    case 'totalRoute':
+      return Math.min(900000, Math.max(420000, horizonMeters + 260000));
+    case 'overhead':
+    case 'commandCenter':
+      return Math.min(680000, Math.max(180000, horizonMeters + 160000));
+    case 'pilotView':
+    case 'cockpit':
+      return Math.min(420000, Math.max(65000, horizonMeters + 60000));
+    case 'global':
+    case 'orbit':
+      return Math.min(1100000, Math.max(500000, horizonMeters + 320000));
+    default:
+      return dynamicLimit;
+  }
+}
+
+function labelOpacityForDistance(distanceMeters: number, maxDistanceMeters: number): number {
+  const fadeStart = maxDistanceMeters * 0.72;
+  if (distanceMeters <= fadeStart) {
+    return 1;
+  }
+  return 0.18 + 0.82 * (1 - smoothstep(fadeStart, maxDistanceMeters, distanceMeters));
+}
+
+function labelCountLimit(cameraMode: CameraMode): number {
+  switch (cameraMode) {
+    case 'pilotView':
+    case 'cockpit':
+      return 7;
+    case 'flightPreview':
+    case 'midFlight':
+    case 'follow':
+      return 8;
+    case 'totalRoute':
+    case 'global':
+    case 'orbit':
+      return 18;
+    default:
+      return 12;
+  }
 }
 
 function createRouteCityLights(features: GeographicFeature[]): { points: THREE.Points; material: THREE.PointsMaterial } {

@@ -86,6 +86,7 @@ input {
   white-space: nowrap;
   transform: translate(-9999px, -9999px);
   translate: -3px -50%;
+  transition: opacity 180ms ease-out;
 }
 
 .globe-place-label::before {
