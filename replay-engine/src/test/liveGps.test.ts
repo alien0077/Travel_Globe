@@ -3,6 +3,7 @@ import { sampleJourney } from '../data/sampleJourney';
 import { getPrimaryFlightSegment } from '../data/types';
 import { haversineDistanceMeters, initialBearingDegrees } from '../geo/geodesy';
 import { LiveGpsTracker, liveGpsPointFromNativeMessage } from '../live/liveGps';
+import { completeJourneyFromRecording } from '../live/completeJourneyFromRecording';
 
 describe('live GPS native bridge', () => {
   const segment = getPrimaryFlightSegment(sampleJourney);
@@ -115,5 +116,52 @@ describe('live GPS native bridge', () => {
     expect(lost?.point.source).toBe('gps');
     expect(lost?.point.latitude).toBeCloseTo(point!.latitude, 6);
     expect(lost?.point.longitude).toBeCloseTo(point!.longitude, 6);
+  });
+
+  it('turns completed native GPS recording into a completed journey without estimated points', () => {
+    const completed = completeJourneyFromRecording(sampleJourney, {
+      nativeJourneyId: 'native-1',
+      webJourneyId: sampleJourney.id,
+      segmentId: segment.id,
+      flightNumber: 'FD235',
+      originIata: 'NRT',
+      destinationIata: 'KHH',
+      aircraftType: 'A320',
+      status: 'completed',
+      startedAt: '2026-07-14T12:00:00.000Z',
+      endedAt: '2026-07-14T12:00:10.000Z',
+      points: [
+        {
+          timestamp: '2026-07-14T12:00:00.000Z',
+          latitude: 35.77,
+          longitude: 140.38,
+          altitudeMeters: 300,
+          speedMetersPerSecond: 90,
+          courseDegrees: 220,
+          horizontalAccuracyMeters: 20,
+          verticalAccuracyMeters: 25,
+          source: 'gps'
+        },
+        {
+          timestamp: '2026-07-14T12:00:10.000Z',
+          latitude: 35.6,
+          longitude: 140.1,
+          altitudeMeters: 1800,
+          speedMetersPerSecond: 160,
+          courseDegrees: 222,
+          horizontalAccuracyMeters: 20,
+          verticalAccuracyMeters: 25,
+          source: 'gps'
+        }
+      ]
+    });
+
+    const completedSegment = getPrimaryFlightSegment(completed);
+
+    expect(completed.status).toBe('completed');
+    expect(completed.metadata.nativeJourneyId).toBe('native-1');
+    expect(completedSegment.derivedReplayRoute.points).toHaveLength(2);
+    expect(completedSegment.derivedReplayRoute.points.every((point) => point.source === 'gps')).toBe(true);
+    expect(completed.events.some((event) => event.id === `event-${segment.id}-gps-stop`)).toBe(true);
   });
 });

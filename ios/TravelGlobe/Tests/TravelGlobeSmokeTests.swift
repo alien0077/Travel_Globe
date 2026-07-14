@@ -20,10 +20,22 @@ final class TravelGlobeSmokeTests: XCTestCase {
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("sqlite")
         let repository = SQLiteJourneyRepository(database: TravelGlobeDatabase(url: url))
-        let journey = try await repository.createJourney(title: "Persistence", segmentType: .flight)
+        let plan = FlightPlanRecord(
+            webJourneyId: "journey-fd235",
+            segmentId: "segment-fd235-2026-07-15",
+            flightNumber: "FD235",
+            originIata: "NRT",
+            destinationIata: "KHH",
+            departureTime: "2026-07-15T11:15:00.000Z",
+            durationMinutes: 235,
+            aircraftType: "A320",
+            plannedRoute: []
+        )
+        let journey = try await repository.createJourney(title: "Persistence", segmentType: .flight, flightPlan: plan)
         let firstPoint = LocationPointRecord(
             id: UUID(),
             journeyId: journey.id,
+            segmentId: plan.segmentId,
             timestamp: Date(timeIntervalSince1970: 100),
             latitude: 25.0797,
             longitude: 121.2342,
@@ -37,6 +49,7 @@ final class TravelGlobeSmokeTests: XCTestCase {
         let secondPoint = LocationPointRecord(
             id: UUID(),
             journeyId: journey.id,
+            segmentId: plan.segmentId,
             timestamp: Date(timeIntervalSince1970: 200),
             latitude: 35.5494,
             longitude: 139.7798,
@@ -63,6 +76,10 @@ final class TravelGlobeSmokeTests: XCTestCase {
 
         XCTAssertEqual(savedJourney?.status, .completed)
         XCTAssertEqual(savedJourney?.endTime, Date(timeIntervalSince1970: 300))
+        XCTAssertEqual(savedJourney?.webJourneyId, plan.webJourneyId)
+        XCTAssertEqual(savedJourney?.webSegmentId, plan.segmentId)
+        XCTAssertEqual(savedJourney?.flightNumber, "FD235")
+        XCTAssertEqual(points.map(\.segmentId), [plan.segmentId, plan.segmentId])
         XCTAssertEqual(pointCount, 2)
         XCTAssertEqual(points.map(\.id), [firstPoint.id, secondPoint.id])
         XCTAssertEqual(recentPoints.map(\.id), [secondPoint.id])

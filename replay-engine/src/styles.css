@@ -776,7 +776,68 @@ select.preload-input {
 }
 
 .record-preview {
-  display: none;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid rgb(126 220 230 / 12%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 6%);
+  color: #f5fbff;
+}
+
+.record-photo {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--record-accent, #84e29f) 28%, transparent);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.record-preview-content {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.record-preview-content h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.18;
+}
+
+.record-preview-content p,
+.record-preview-meta {
+  margin: 0;
+  color: #a7c7c8;
+  font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.record-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.record-action-button {
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 7px;
+  border: 1px solid rgb(126 220 230 / 18%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 8%);
+  color: #effcff;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .record-tags {

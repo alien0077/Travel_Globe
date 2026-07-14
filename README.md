@@ -51,6 +51,9 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 - Route filtering: globe labels and HUD nearby places are filtered to landmarks/cities near the active route so an Alaska/Europe route does not pull unrelated East Asia labels.
 - Flight numbers: the offline schedule seed currently resolves `CI100` (`TPE -> NRT`), `BR190` (`TPE -> HND`), `FD234` (`KHH -> NRT`), and `FD235` (`NRT -> KHH`). Wider airline schedule lookup still requires an imported/licensed schedule source or a flight API.
 - Day/night rendering: the globe lighting now changes by replay time and local longitude, and route-nearby cities glow at night as simulated city lights. This is a procedural route-city effect, not a full NASA Black Marble night-lights texture.
+- Live GPS to Travel Records: in the iOS app, apply a flight preload in Replay Engine first, then press Start on the native recorder. Start binds the current flight plan to native GPS recording through the shared `segmentId`; Stop marks the journey completed and sends the true GPS track back into Travel Records and Travel Atlas. Pressing Apply alone only creates a planned flight plan.
+- Editable Travel Records: completed journeys support a metadata/edit overlay for adding manual events, editing record title/subtitle, hiding records, and correcting flight summary fields. Original SQLite GPS points remain read-only and are not changed by manual edits.
+- Aircraft model attribution: bundled A320, A321, A350, A380, B737, B767, B777, and B787 GLB models are marked CC BY via Sketchfab in per-aircraft `license.json` files and are copied into the iOS app bundle with the Replay Engine assets.
 
 ## Deployment
 

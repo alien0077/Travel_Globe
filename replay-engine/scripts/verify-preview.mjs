@@ -67,7 +67,7 @@ for (const viewport of [
     const centerShowsGlobe = centerElement?.tagName === 'CANVAS' || Boolean(centerElement?.closest('.globe-viewport'));
     const pageHasNoVerticalScroll = document.documentElement.scrollHeight <= window.innerHeight + 2;
     const openDockPanels = document.querySelectorAll('.dock-panel[open]').length;
-    const atlasLayoutVisible = Boolean(document.querySelector('.record-preview')) && filterText.includes('All');
+    const recordPreviewVisible = Boolean(document.querySelector('.record-preview')) && filterText.includes('All');
 
     if (
       !(canvas instanceof HTMLCanvasElement) ||
@@ -151,7 +151,11 @@ for (const viewport of [
         (preloadText.includes('CI100') || preloadFlightNumber === 'CI100') &&
         productText.includes('East Asia') &&
         filterText.includes('All') &&
-        !atlasLayoutVisible &&
+        recordPreviewVisible &&
+        previewText.includes('新增事件') &&
+        previewText.includes('修改紀錄') &&
+        previewText.includes('隱藏紀錄') &&
+        previewText.includes('編輯航線摘要') &&
         productText.includes('0 B') &&
         (window.innerWidth <= 640 || centerShowsGlobe) &&
         (window.innerWidth <= 640 || pageHasNoVerticalScroll),

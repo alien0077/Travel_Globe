@@ -16,6 +16,9 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var notificationPermissionStatus = "Notifications: not checked"
     @Published var replayEngineStatus = "Replay Engine: not checked"
     @Published var latestLiveLocationMessage: NativeBridgeMessage?
+    @Published var outboundBridgeMessages: [NativeBridgeMessage] = []
+    @Published var pendingFlightPlan: FlightPlanRecord?
+    @Published var recordingPlanStatus = "No flight plan applied"
 
     let locationRecorder: LocationRecorder
     let bridge = TravelGlobeBridge()
@@ -34,16 +37,26 @@ final class TravelGlobeAppModel: ObservableObject {
                 self?.publishLiveLocation(point)
             }
         }
+        self.bridge.onMessage = { [weak self] message in
+            self?.handleWebMessage(message)
+        }
         Task { await refreshDiagnostics() }
     }
 
     func startFlightRecording() async {
         do {
-            let journey = try await repository.createJourney(title: "New Flight Recording", segmentType: .flight)
+            let journey = try await repository.createJourney(
+                title: "New Flight Recording",
+                segmentType: .flight,
+                flightPlan: pendingFlightPlan
+            )
             activeJourney = journey
             recordingState = .recording
             activeLocationPointCount = 0
-            try await locationRecorder.start(journeyId: journey.id, profile: .flight)
+            try await locationRecorder.start(journeyId: journey.id, segmentId: journey.webSegmentId, profile: .flight)
+            recordingPlanStatus = journey.flightNumber.map { "Recording \($0) \(journey.originIata ?? "") -> \(journey.destinationIata ?? "")" }
+                ?? "Recording GPS-only flight"
+            enqueueRecordingStatus("recording.started", journey: journey, points: nil)
             await refreshDiagnostics()
         } catch {
             diagnostics.append(.error("Unable to start recording: \(error.localizedDescription)"))
@@ -53,6 +66,15 @@ final class TravelGlobeAppModel: ObservableObject {
     func stopRecording() async {
         await locationRecorder.stop()
         recordingState = .completed
+        if let activeJourney {
+            let completedJourney = (try? await repository.journey(id: activeJourney.id)) ?? activeJourney
+            let points = (try? await repository.locationPoints(journeyId: activeJourney.id, since: nil)) ?? []
+            self.activeJourney = completedJourney
+            activeLocationPointCount = points.count
+            recordingPlanStatus = completedJourney.flightNumber.map { "Completed \($0) \(completedJourney.originIata ?? "") -> \(completedJourney.destinationIata ?? "")" }
+                ?? "Completed GPS-only flight"
+            enqueueRecordingStatus("recording.completed", journey: completedJourney, points: points)
+        }
         await refreshDiagnostics()
     }
 
@@ -95,6 +117,7 @@ final class TravelGlobeAppModel: ObservableObject {
                 .info(photoPermissionStatus),
                 .info(notificationPermissionStatus),
                 .info(replayEngineStatus),
+                .info("Flight plan: \(recordingPlanStatus)"),
                 .info("Stored journeys: \(storedJourneyCount)"),
                 .info("Latest: \(latestJourneySummary)")
             ]
@@ -114,6 +137,55 @@ final class TravelGlobeAppModel: ObservableObject {
             requestId: nil,
             type: "location.update",
             payload: payload
+        )
+        outboundBridgeMessages.append(latestLiveLocationMessage!)
+    }
+
+    private func handleWebMessage(_ message: NativeBridgeMessage) {
+        switch message.type {
+        case "flightPlan.apply":
+            applyFlightPlanMessage(message)
+        default:
+            break
+        }
+    }
+
+    private func applyFlightPlanMessage(_ message: NativeBridgeMessage) {
+        guard
+            let data = message.payload.data(using: .utf8),
+            let plan = try? JSONDecoder().decode(FlightPlanRecord.self, from: data)
+        else {
+            diagnostics.append(.error("Unable to decode flight plan from Replay Engine"))
+            return
+        }
+        pendingFlightPlan = plan
+        recordingPlanStatus = "Ready \(plan.flightNumber) \(plan.originIata) -> \(plan.destinationIata)"
+        enqueueBridgeMessage(type: "flightPlan.ready", payload: FlightPlanStatusPayload(plan: plan))
+    }
+
+    private func enqueueRecordingStatus(_ type: String, journey: JourneyRecord, points: [LocationPointRecord]?) {
+        enqueueBridgeMessage(
+            type: type,
+            payload: RecordingStatusPayload(journey: journey, points: points)
+        )
+    }
+
+    private func enqueueBridgeMessage<T: Encodable>(type: String, payload: T) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard
+            let data = try? encoder.encode(payload),
+            let json = String(data: data, encoding: .utf8)
+        else {
+            return
+        }
+        outboundBridgeMessages.append(
+            NativeBridgeMessage(
+                version: "1.0",
+                requestId: nil,
+                type: type,
+                payload: json
+            )
         )
     }
 
@@ -176,6 +248,54 @@ final class TravelGlobeAppModel: ObservableObject {
         @unknown default:
             return "unknown"
         }
+    }
+}
+
+private struct FlightPlanStatusPayload: Encodable {
+    var webJourneyId: String
+    var segmentId: String
+    var flightNumber: String
+    var originIata: String
+    var destinationIata: String
+    var aircraftType: String?
+    var status: String
+
+    init(plan: FlightPlanRecord) {
+        webJourneyId = plan.webJourneyId
+        segmentId = plan.segmentId
+        flightNumber = plan.flightNumber
+        originIata = plan.originIata
+        destinationIata = plan.destinationIata
+        aircraftType = plan.aircraftType
+        status = "ready"
+    }
+}
+
+private struct RecordingStatusPayload: Encodable {
+    var nativeJourneyId: String
+    var webJourneyId: String?
+    var segmentId: String?
+    var flightNumber: String?
+    var originIata: String?
+    var destinationIata: String?
+    var aircraftType: String?
+    var status: String
+    var startedAt: String
+    var endedAt: String?
+    var points: [LiveLocationPayload]?
+
+    init(journey: JourneyRecord, points: [LocationPointRecord]?) {
+        nativeJourneyId = journey.id.uuidString
+        webJourneyId = journey.webJourneyId
+        segmentId = journey.webSegmentId
+        flightNumber = journey.flightNumber
+        originIata = journey.originIata
+        destinationIata = journey.destinationIata
+        aircraftType = journey.aircraftType
+        status = journey.status.rawValue
+        startedAt = LiveLocationPayload.timestampFormatter.string(from: journey.startTime)
+        endedAt = journey.endTime.map { LiveLocationPayload.timestampFormatter.string(from: $0) }
+        self.points = points?.map(LiveLocationPayload.init(point:))
     }
 }
 
@@ -245,7 +365,7 @@ private struct LiveLocationPayload: Encodable {
         }
     }
 
-    private static let timestampFormatter: ISO8601DateFormatter = {
+    static let timestampFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter

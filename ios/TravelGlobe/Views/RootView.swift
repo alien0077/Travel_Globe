@@ -56,6 +56,8 @@ struct RootView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
 
+                StatusPill(text: appModel.recordingPlanStatus)
+
                 HStack(spacing: 10) {
                     ActionButton(title: "Start") {
                         Task { await appModel.startFlightRecording() }

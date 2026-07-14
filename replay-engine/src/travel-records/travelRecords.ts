@@ -18,6 +18,18 @@ export interface TravelRecord {
 
 export type TravelRegion = 'east-asia' | 'se-asia' | 'europe' | 'americas' | 'south-asia' | 'oceania' | 'world';
 
+export interface TravelRecordEdit {
+  title?: string;
+  subtitle?: string;
+  timestamp?: string;
+  note?: string;
+  hidden?: boolean;
+}
+
+export interface TravelRecordEdits {
+  records: Record<string, TravelRecordEdit>;
+}
+
 export interface TravelRecordSummary {
   totalTrips: number;
   countries: string[];
@@ -46,17 +58,20 @@ const regionAccents: Record<TravelRegion, string> = {
 };
 
 export function buildTravelRecords(journey: Journey): TravelRecord[] {
+  const edits = readTravelRecordEdits(journey);
   const events = getSortedTimelineEvents(journey).filter((event) => event.location);
-  const records = events.map((event) => createRecordFromEvent(event));
+  const records = events.map((event) => applyRecordEdit(createRecordFromEvent(event), edits));
 
   if (records.length > 0) {
-    return records;
+    return records.filter((record) => !edits.records[record.id]?.hidden);
   }
 
-  return journey.segments.flatMap((segment) => [
-    createFallbackRecord(`${segment.id}-origin`, segment.origin.name, segment.startTime, segment.origin),
-    createFallbackRecord(`${segment.id}-destination`, segment.destination.name, segment.endTime, segment.destination)
-  ]);
+  return journey.segments
+    .flatMap((segment) => [
+      applyRecordEdit(createFallbackRecord(`${segment.id}-origin`, segment.origin.name, segment.startTime, segment.origin), edits),
+      applyRecordEdit(createFallbackRecord(`${segment.id}-destination`, segment.destination.name, segment.endTime, segment.destination), edits)
+    ])
+    .filter((record) => !edits.records[record.id]?.hidden);
 }
 
 export function summarizeTravelRecords(journey: Journey, records: TravelRecord[]): TravelRecordSummary {
@@ -93,6 +108,41 @@ export function getRegionLabel(region: TravelRegion): string {
   return regionLabels[region];
 }
 
+export function readTravelRecordEdits(journey: Journey): TravelRecordEdits {
+  const raw = journey.metadata.travelRecordEdits;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { records: {} };
+  }
+  const records = (raw as { records?: unknown }).records;
+  if (!records || typeof records !== 'object' || Array.isArray(records)) {
+    return { records: {} };
+  }
+  return { records: records as Record<string, TravelRecordEdit> };
+}
+
+export function writeTravelRecordEdit(
+  journey: Journey,
+  recordId: string,
+  edit: TravelRecordEdit
+): Journey {
+  const edits = readTravelRecordEdits(journey);
+  return {
+    ...journey,
+    metadata: {
+      ...journey.metadata,
+      travelRecordEdits: {
+        records: {
+          ...edits.records,
+          [recordId]: {
+            ...edits.records[recordId],
+            ...edit
+          }
+        }
+      }
+    }
+  };
+}
+
 function createRecordFromEvent(event: TimelineEvent): TravelRecord {
   const location = event.location as GeographicPoint;
   const region = classifyRegion(location);
@@ -109,6 +159,21 @@ function createRecordFromEvent(event: TimelineEvent): TravelRecord {
     coordinateLabel: formatCoordinate(location),
     accent: regionAccents[region],
     tags: [regionLabels[region], event.type.replace(/([A-Z])/g, ' $1').trim()]
+  };
+}
+
+function applyRecordEdit(record: TravelRecord, edits: TravelRecordEdits): TravelRecord {
+  const edit = edits.records[record.id];
+  if (!edit) {
+    return record;
+  }
+  return {
+    ...record,
+    title: edit.title?.trim() || record.title,
+    subtitle: edit.subtitle?.trim() || record.subtitle,
+    timestamp: edit.timestamp && Number.isFinite(Date.parse(edit.timestamp)) ? edit.timestamp : record.timestamp,
+    dateLabel: edit.timestamp && Number.isFinite(Date.parse(edit.timestamp)) ? formatRecordDate(edit.timestamp) : record.dateLabel,
+    tags: edit.note?.trim() ? [...record.tags, 'Edited'] : record.tags
   };
 }
 

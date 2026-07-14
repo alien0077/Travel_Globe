@@ -56,9 +56,24 @@ final class TravelGlobeDatabase {
             start_time REAL NOT NULL,
             end_time REAL,
             status TEXT NOT NULL,
-            segment_type TEXT NOT NULL
+            segment_type TEXT NOT NULL,
+            web_journey_id TEXT,
+            web_segment_id TEXT,
+            flight_number TEXT,
+            origin_iata TEXT,
+            destination_iata TEXT,
+            aircraft_type TEXT,
+            metadata_json TEXT
         );
         """)
+
+        try? execute("ALTER TABLE journeys ADD COLUMN web_journey_id TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN web_segment_id TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN flight_number TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN origin_iata TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN destination_iata TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN aircraft_type TEXT;")
+        try? execute("ALTER TABLE journeys ADD COLUMN metadata_json TEXT;")
 
         try execute("""
         CREATE TABLE IF NOT EXISTS location_points (

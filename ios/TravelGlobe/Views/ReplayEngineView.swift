@@ -96,6 +96,7 @@ struct ReplayEngineView: UIViewRepresentable {
         private var didInjectReplayBundle = false
         private var isReplayReady = false
         private var lastSentLiveLocationId: UUID?
+        private var sentBridgeMessageIds = Set<UUID>()
 
         init(appModel: TravelGlobeAppModel) {
             self.appModel = appModel
@@ -191,15 +192,25 @@ struct ReplayEngineView: UIViewRepresentable {
 
         @MainActor
         func sendLatestLiveLocation(to webView: WKWebView) {
-            guard
-                isReplayReady,
-                let message = appModel.latestLiveLocationMessage,
-                message.id != lastSentLiveLocationId
-            else {
+            guard isReplayReady else {
                 return
             }
-            lastSentLiveLocationId = message.id
-            appModel.bridge.send(message, to: webView)
+            for message in appModel.outboundBridgeMessages where !sentBridgeMessageIds.contains(message.id) {
+                sentBridgeMessageIds.insert(message.id)
+                if message.type == "location.update" {
+                    lastSentLiveLocationId = message.id
+                }
+                appModel.bridge.send(message, to: webView)
+            }
+            if
+                let message = appModel.latestLiveLocationMessage,
+                message.id != lastSentLiveLocationId,
+                !sentBridgeMessageIds.contains(message.id)
+            {
+                lastSentLiveLocationId = message.id
+                sentBridgeMessageIds.insert(message.id)
+                appModel.bridge.send(message, to: webView)
+            }
         }
 
         @MainActor

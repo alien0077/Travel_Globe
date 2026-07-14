@@ -7,6 +7,13 @@ struct JourneyRecord: Identifiable, Codable, Equatable {
     var endTime: Date?
     var status: JourneyStatus
     var segmentType: JourneySegmentType
+    var webJourneyId: String? = nil
+    var webSegmentId: String? = nil
+    var flightNumber: String? = nil
+    var originIata: String? = nil
+    var destinationIata: String? = nil
+    var aircraftType: String? = nil
+    var metadataJSON: String? = nil
 }
 
 enum JourneyStatus: String, Codable {
@@ -28,7 +35,7 @@ enum JourneySegmentType: String, Codable {
 struct LocationPointRecord: Identifiable, Codable, Equatable {
     var id: UUID
     var journeyId: UUID
-    var segmentId: UUID?
+    var segmentId: String? = nil
     var timestamp: Date
     var latitude: Double
     var longitude: Double
@@ -38,4 +45,27 @@ struct LocationPointRecord: Identifiable, Codable, Equatable {
     var horizontalAccuracyMeters: Double
     var verticalAccuracyMeters: Double?
     var source: String
+}
+
+struct FlightPlanRecord: Codable, Equatable {
+    var webJourneyId: String
+    var segmentId: String
+    var flightNumber: String
+    var originIata: String
+    var destinationIata: String
+    var departureTime: String?
+    var durationMinutes: Int?
+    var aircraftType: String?
+    var plannedRoute: [FlightPlanPointRecord]
+
+    var displayTitle: String {
+        "\(flightNumber) \(originIata) -> \(destinationIata)"
+    }
+}
+
+struct FlightPlanPointRecord: Codable, Equatable {
+    var timestamp: String
+    var latitude: Double
+    var longitude: Double
+    var altitudeMeters: Double?
 }

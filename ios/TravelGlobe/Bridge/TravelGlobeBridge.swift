@@ -4,6 +4,7 @@ import WebKit
 @MainActor
 final class TravelGlobeBridge: NSObject, WKScriptMessageHandler, ObservableObject {
     @Published var receivedMessages: [NativeBridgeMessage] = []
+    var onMessage: ((NativeBridgeMessage) -> Void)?
 
     func configure(_ webView: WKWebView) {
         let controller = webView.configuration.userContentController
@@ -33,14 +34,28 @@ final class TravelGlobeBridge: NSObject, WKScriptMessageHandler, ObservableObjec
 
     nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         Task { @MainActor in
-            let bridgeMessage = NativeBridgeMessage(
-                version: "1.0",
-                requestId: (message.body as? [String: Any])?["requestId"] as? String,
-                type: "web.message",
-                payload: Self.stringifyPayload(message.body)
-            )
+            let bridgeMessage = Self.decodeBridgeMessage(message.body)
             receivedMessages.append(bridgeMessage)
+            onMessage?(bridgeMessage)
         }
+    }
+
+    private static func decodeBridgeMessage(_ body: Any) -> NativeBridgeMessage {
+        guard let dictionary = body as? [String: Any] else {
+            return NativeBridgeMessage(
+                version: "1.0",
+                requestId: nil,
+                type: "web.message",
+                payload: stringifyPayload(body)
+            )
+        }
+        let payload = dictionary["payload"] ?? body
+        return NativeBridgeMessage(
+            version: dictionary["version"] as? String ?? "1.0",
+            requestId: dictionary["requestId"] as? String,
+            type: dictionary["type"] as? String ?? "web.message",
+            payload: stringifyPayload(payload)
+        )
     }
 
     private static func stringifyPayload(_ body: Any) -> String {

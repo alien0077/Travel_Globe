@@ -1,6 +1,12 @@
 import type { CameraMode } from '../camera/CameraController';
+import {
+  flightPlanPayloadFromJourney,
+  parseNativePayload,
+  postNativeMessage,
+  type NativeRecordingPayload
+} from '../bridge/nativeBridge';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
-import type { Journey, JourneySegment } from '../data/types';
+import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
 import { downloadBlob } from '../export/travelglobePackage';
@@ -32,6 +38,7 @@ import {
   liveGpsPointFromNativeMessage,
   type LiveGpsStatus
 } from '../live/liveGps';
+import { completeJourneyFromRecording } from '../live/completeJourneyFromRecording';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
@@ -51,6 +58,7 @@ import {
   buildTravelRecords,
   getRegionLabel,
   summarizeTravelRecords,
+  writeTravelRecordEdit,
   type TravelRecord,
   type TravelRegion
 } from '../travel-records/travelRecords';
@@ -199,7 +207,8 @@ export class TravelGlobeApp {
     timelineTitle.textContent = '旅遊紀錄';
     this.recordFilterBar.className = 'record-filters';
     this.timelineList.className = 'timeline-list';
-    timeline.append(timelineTitle, this.recordFilterBar, this.timelineList);
+    this.recordPreview.className = 'record-preview';
+    timeline.append(timelineTitle, this.recordFilterBar, this.timelineList, this.recordPreview);
 
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
@@ -332,7 +341,6 @@ export class TravelGlobeApp {
 
     controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
     dock.append(systemDrawer);
-    this.recordPreview.className = 'record-preview';
     overlay.append(hud, this.viewRail, dock, this.pilotHud, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput);
 
@@ -574,9 +582,13 @@ export class TravelGlobeApp {
       this.preloadStatus.textContent = '正在建立預載航線...';
       const result = await this.flightPreloadProvider.preloadFlight(request);
       await this.loadJourney(result.journey);
+      const sentToNative = postNativeMessage('flightPlan.apply', flightPlanPayloadFromJourney(result.journey));
       const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
-      this.preloadStatus.textContent = message;
-      this.capability.textContent = message;
+      const nativeHint = sentToNative
+        ? '已送至 iOS，按 Start recording 會綁定這條航線。'
+        : '瀏覽器模式只會預載航線；iOS GPS 綁定需在 app 內使用。';
+      this.preloadStatus.textContent = `${message} ${nativeHint}`;
+      this.capability.textContent = `${message} ${nativeHint}`;
     } catch (error) {
       this.preloadStatus.textContent = error instanceof Error ? error.message : '航班預載失敗';
     }
@@ -680,9 +692,131 @@ export class TravelGlobeApp {
     const tags = document.createElement('div');
     tags.className = 'record-tags';
     tags.replaceChildren(...record.tags.map((tag) => tagPill(tag)));
-    content.append(meta, title, subtitle, tags);
+    const actions = document.createElement('div');
+    actions.className = 'record-actions';
+    actions.replaceChildren(
+      recordActionButton('新增事件', () => void this.addManualTravelRecord()),
+      recordActionButton('修改紀錄', () => void this.editActiveTravelRecord(record)),
+      recordActionButton('隱藏紀錄', () => void this.hideActiveTravelRecord(record)),
+      recordActionButton('編輯航線摘要', () => void this.editFlightSummary())
+    );
+    content.append(meta, title, subtitle, tags, actions);
 
     this.recordPreview.replaceChildren(image, content);
+  }
+
+  private async addManualTravelRecord(): Promise<void> {
+    if (!this.journey || !this.segment || !this.clock) {
+      return;
+    }
+    const title = window.prompt('新增旅遊紀錄標題', '旅遊事件');
+    if (!title?.trim()) {
+      return;
+    }
+    const subtitle = window.prompt('備註', '手動新增') ?? '手動新增';
+    const point = this.currentDisplayPoint();
+    const event: TimelineEvent = {
+      id: `event-${this.segment.id}-manual-${Date.now()}`,
+      journeyId: this.journey.id,
+      segmentId: this.segment.id,
+      timestamp: point.timestamp,
+      type: 'manualTravelRecord',
+      title: title.trim(),
+      subtitle: subtitle.trim(),
+      location: {
+        latitude: point.latitude,
+        longitude: point.longitude,
+        altitudeMeters: point.altitudeMeters
+      },
+      mediaIds: [],
+      importance: 0.8,
+      source: 'manual',
+      metadata: {
+        editable: true
+      }
+    };
+    await this.loadJourney({
+      ...this.journey,
+      events: [...this.journey.events, event],
+      segments: this.journey.segments.map((segment) =>
+        segment.id === this.segment?.id
+          ? { ...segment, events: [...segment.events, event.id] }
+          : segment
+      )
+    });
+    this.activeRecordId = event.id;
+    this.renderTimeline();
+    this.renderRecordPreview();
+  }
+
+  private async editActiveTravelRecord(record: TravelRecord): Promise<void> {
+    if (!this.journey) {
+      return;
+    }
+    const title = window.prompt('旅遊紀錄標題', record.title);
+    if (title === null) {
+      return;
+    }
+    const subtitle = window.prompt('備註/副標題', record.subtitle) ?? record.subtitle;
+    const edited = writeTravelRecordEdit(this.journey, record.id, {
+      title,
+      subtitle,
+      note: 'manual edit'
+    });
+    await this.loadJourney(edited);
+    this.activeRecordId = record.id;
+    this.renderTimeline();
+    this.renderRecordPreview();
+  }
+
+  private async hideActiveTravelRecord(record: TravelRecord): Promise<void> {
+    if (!this.journey) {
+      return;
+    }
+    if (!window.confirm(`隱藏「${record.title}」？原始 GPS 與事件資料仍會保留。`)) {
+      return;
+    }
+    await this.loadJourney(writeTravelRecordEdit(this.journey, record.id, { hidden: true }));
+  }
+
+  private async editFlightSummary(): Promise<void> {
+    if (!this.journey || !this.segment) {
+      return;
+    }
+    const currentFlight = stringValue(this.segment.metadata.flightNumber, '');
+    const currentAircraft = stringValue(this.segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE);
+    const flightNumber = window.prompt('航班號', currentFlight) ?? currentFlight;
+    const aircraftType = window.prompt('機型', currentAircraft) ?? currentAircraft;
+    const originIata = window.prompt('起飛機場 IATA', this.segment.origin.iataCode ?? '') ?? this.segment.origin.iataCode ?? '';
+    const destinationIata = window.prompt('抵達機場 IATA', this.segment.destination.iataCode ?? '') ?? this.segment.destination.iataCode ?? '';
+    const updatedSegment: JourneySegment = {
+      ...this.segment,
+      origin: { ...this.segment.origin, iataCode: originIata.trim().toUpperCase() || this.segment.origin.iataCode },
+      destination: { ...this.segment.destination, iataCode: destinationIata.trim().toUpperCase() || this.segment.destination.iataCode },
+      metadata: {
+        ...this.segment.metadata,
+        flightNumber: flightNumber.trim() || currentFlight,
+        aircraftType: aircraftType.trim() || currentAircraft,
+        summaryEditedAt: new Date().toISOString()
+      }
+    };
+    await this.loadJourney({
+      ...this.journey,
+      title: `${updatedSegment.metadata.flightNumber} ${updatedSegment.origin.iataCode ?? updatedSegment.origin.name} to ${updatedSegment.destination.iataCode ?? updatedSegment.destination.name}`,
+      segments: this.journey.segments.map((segment) => segment.id === updatedSegment.id ? updatedSegment : segment),
+      metadata: {
+        ...this.journey.metadata,
+        summaryEditedAt: new Date().toISOString()
+      }
+    });
+  }
+
+  private currentDisplayPoint(): ReturnType<typeof sampleReplayAt>['point'] {
+    if (!this.segment || !this.clock) {
+      throw new Error('No active segment');
+    }
+    const liveSample = this.isLiveGpsMode ? this.liveGps.sample(performance.now(), this.segment) : undefined;
+    return liveSample?.point ?? sampleReplayAt(this.segment, this.clock.currentSeconds).point;
   }
 
   private seekToTimestamp(timestamp: string): void {
@@ -844,8 +978,29 @@ export class TravelGlobeApp {
     if (!this.journey || !this.segment) {
       return;
     }
+    const nativeMessage = (event as CustomEvent<unknown>).detail;
+    const completed = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.completed');
+    if (completed) {
+      const completedJourney = completeJourneyFromRecording(this.journey, completed);
+      void this.loadJourney(completedJourney);
+      this.capability.textContent = 'Live GPS recording：已完成並寫入旅遊紀錄';
+      return;
+    }
+    const started = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.started');
+    if (started) {
+      this.capability.textContent = `Live GPS recording：${started.flightNumber ?? 'GPS'} 已開始`;
+      return;
+    }
+    const ready = parseNativePayload<{ flightNumber?: string; originIata?: string; destinationIata?: string }>(
+      nativeMessage,
+      'flightPlan.ready'
+    );
+    if (ready) {
+      this.capability.textContent = `iOS flight plan ready：${ready.flightNumber ?? ''} ${ready.originIata ?? ''} -> ${ready.destinationIata ?? ''}`;
+      return;
+    }
     const point = liveGpsPointFromNativeMessage(
-      (event as CustomEvent<unknown>).detail,
+      nativeMessage,
       this.journey.id,
       this.segment.id
     );
@@ -913,6 +1068,15 @@ function tagPill(value: string): HTMLElement {
   const tag = document.createElement('span');
   tag.textContent = value;
   return tag;
+}
+
+function recordActionButton(label: string, onClick: () => void): HTMLElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'record-action-button';
+  button.textContent = label;
+  button.addEventListener('click', onClick);
+  return button;
 }
 
 function localizePhase(value: string): string {

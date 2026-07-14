@@ -9,18 +9,29 @@ actor SQLiteJourneyRepository: JourneyRepository {
         self.database = database
     }
 
-    func createJourney(title: String, segmentType: JourneySegmentType) async throws -> JourneyRecord {
+    func createJourney(title: String, segmentType: JourneySegmentType, flightPlan: FlightPlanRecord?) async throws -> JourneyRecord {
         let journey = JourneyRecord(
             id: UUID(),
-            title: title,
+            title: flightPlan?.displayTitle ?? title,
             startTime: Date(),
             status: .recording,
-            segmentType: segmentType
+            segmentType: segmentType,
+            webJourneyId: flightPlan?.webJourneyId,
+            webSegmentId: flightPlan?.segmentId,
+            flightNumber: flightPlan?.flightNumber,
+            originIata: flightPlan?.originIata,
+            destinationIata: flightPlan?.destinationIata,
+            aircraftType: flightPlan?.aircraftType,
+            metadataJSON: flightPlan.flatMap(Self.encodeMetadataJSON)
         )
         let db = try database.connection()
         let statement = try prepare("""
-        INSERT INTO journeys (id, title, start_time, end_time, status, segment_type)
-        VALUES (?, ?, ?, NULL, ?, ?);
+        INSERT INTO journeys (
+            id, title, start_time, end_time, status, segment_type,
+            web_journey_id, web_segment_id, flight_number, origin_iata,
+            destination_iata, aircraft_type, metadata_json
+        )
+        VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, db: db)
         defer { sqlite3_finalize(statement) }
 
@@ -29,6 +40,13 @@ actor SQLiteJourneyRepository: JourneyRepository {
         try bindDouble(journey.startTime.timeIntervalSince1970, at: 3, statement: statement)
         try bindText(journey.status.rawValue, at: 4, statement: statement)
         try bindText(journey.segmentType.rawValue, at: 5, statement: statement)
+        try bindOptionalText(journey.webJourneyId, at: 6, statement: statement)
+        try bindOptionalText(journey.webSegmentId, at: 7, statement: statement)
+        try bindOptionalText(journey.flightNumber, at: 8, statement: statement)
+        try bindOptionalText(journey.originIata, at: 9, statement: statement)
+        try bindOptionalText(journey.destinationIata, at: 10, statement: statement)
+        try bindOptionalText(journey.aircraftType, at: 11, statement: statement)
+        try bindOptionalText(journey.metadataJSON, at: 12, statement: statement)
         try stepDone(statement)
         return journey
     }
@@ -47,7 +65,7 @@ actor SQLiteJourneyRepository: JourneyRepository {
 
         try bindText(point.id.uuidString, at: 1, statement: statement)
         try bindText(point.journeyId.uuidString, at: 2, statement: statement)
-        try bindOptionalText(point.segmentId?.uuidString, at: 3, statement: statement)
+        try bindOptionalText(point.segmentId, at: 3, statement: statement)
         try bindDouble(point.timestamp.timeIntervalSince1970, at: 4, statement: statement)
         try bindDouble(point.latitude, at: 5, statement: statement)
         try bindDouble(point.longitude, at: 6, statement: statement)
@@ -116,7 +134,9 @@ actor SQLiteJourneyRepository: JourneyRepository {
     func recentJourneys(limit: Int) async throws -> [JourneyRecord] {
         let db = try database.connection()
         let statement = try prepare("""
-        SELECT id, title, start_time, end_time, status, segment_type
+        SELECT id, title, start_time, end_time, status, segment_type,
+               web_journey_id, web_segment_id, flight_number, origin_iata,
+               destination_iata, aircraft_type, metadata_json
         FROM journeys
         ORDER BY start_time DESC
         LIMIT ?;
@@ -150,7 +170,9 @@ actor SQLiteJourneyRepository: JourneyRepository {
     func journey(id: UUID) async throws -> JourneyRecord? {
         let db = try database.connection()
         let statement = try prepare("""
-        SELECT id, title, start_time, end_time, status, segment_type
+        SELECT id, title, start_time, end_time, status, segment_type,
+               web_journey_id, web_segment_id, flight_number, origin_iata,
+               destination_iata, aircraft_type, metadata_json
         FROM journeys
         WHERE id = ?;
         """, db: db)
@@ -222,7 +244,14 @@ actor SQLiteJourneyRepository: JourneyRepository {
             startTime: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2)),
             endTime: endTime,
             status: status,
-            segmentType: segmentType
+            segmentType: segmentType,
+            webJourneyId: try optionalTextColumn(6, statement: statement),
+            webSegmentId: try optionalTextColumn(7, statement: statement),
+            flightNumber: try optionalTextColumn(8, statement: statement),
+            originIata: try optionalTextColumn(9, statement: statement),
+            destinationIata: try optionalTextColumn(10, statement: statement),
+            aircraftType: try optionalTextColumn(11, statement: statement),
+            metadataJSON: try optionalTextColumn(12, statement: statement)
         )
     }
 
@@ -236,7 +265,7 @@ actor SQLiteJourneyRepository: JourneyRepository {
         return LocationPointRecord(
             id: id,
             journeyId: journeyId,
-            segmentId: try optionalUUIDColumn(2, statement: statement),
+            segmentId: try optionalTextColumn(2, statement: statement),
             timestamp: Date(timeIntervalSince1970: sqlite3_column_double(statement, 3)),
             latitude: sqlite3_column_double(statement, 4),
             longitude: sqlite3_column_double(statement, 5),
@@ -256,14 +285,26 @@ actor SQLiteJourneyRepository: JourneyRepository {
         return String(cString: value)
     }
 
-    private func optionalUUIDColumn(_ index: Int32, statement: OpaquePointer) throws -> UUID? {
+    private func optionalTextColumn(_ index: Int32, statement: OpaquePointer) throws -> String? {
         guard sqlite3_column_type(statement, index) != SQLITE_NULL else {
             return nil
         }
-        return UUID(uuidString: try textColumn(index, statement: statement))
+        return try textColumn(index, statement: statement)
     }
 
     private func optionalDoubleColumn(_ index: Int32, statement: OpaquePointer) -> Double? {
         sqlite3_column_type(statement, index) == SQLITE_NULL ? nil : sqlite3_column_double(statement, index)
+    }
+
+    private static func encodeMetadataJSON(_ flightPlan: FlightPlanRecord) -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard
+            let data = try? encoder.encode(flightPlan),
+            let json = String(data: data, encoding: .utf8)
+        else {
+            return nil
+        }
+        return json
     }
 }

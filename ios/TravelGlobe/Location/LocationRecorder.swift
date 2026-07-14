@@ -5,6 +5,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let repository: JourneyRepository
     private var activeJourneyId: UUID?
+    private var activeSegmentId: String?
     private var profile: RecordingProfile = .balanced
     private var lastAcceptedPoint: LocationPointRecord?
     private var lastSavedPoint: LocationPointRecord?
@@ -17,8 +18,9 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         manager.delegate = self
     }
 
-    func start(journeyId: UUID, profile: RecordingProfile) async throws {
+    func start(journeyId: UUID, segmentId: String?, profile: RecordingProfile) async throws {
         activeJourneyId = journeyId
+        activeSegmentId = segmentId
         self.profile = profile
         lastAcceptedPoint = nil
         lastSavedPoint = nil
@@ -34,6 +36,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
             try? await repository.completeJourney(id: activeJourneyId, endedAt: Date())
         }
         activeJourneyId = nil
+        activeSegmentId = nil
         lastAcceptedPoint = nil
         lastSavedPoint = nil
     }
@@ -75,6 +78,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         return LocationPointRecord(
                 id: UUID(),
                 journeyId: journeyId,
+                segmentId: activeSegmentId,
                 timestamp: location.timestamp,
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,

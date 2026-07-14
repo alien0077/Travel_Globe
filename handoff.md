@@ -9,6 +9,7 @@ Travel Globe is moving from a pure replay globe toward a Travel Atlas experience
 - planned flight route before departure
 - actual GPS track during flight
 - travel records generated from flight events and future media/GPS context
+- editable travel record overlay that does not mutate raw GPS points
 - offline-first data packs with explicit source attribution
 
 ## Flight Data Plan
@@ -98,6 +99,10 @@ npm --prefix replay-engine run build
 - Preview verification for `CI100` preload without manually entering origin/destination.
 - GitHub Actions drift check for OurAirports source/index changes.
 - GitHub Actions iOS workflow now creates a named simulator before resolving the test destination.
+- iOS flight plan bridge: `套用航線` sends the current Web flight plan to native as pending recording metadata.
+- Native GPS recording now persists Web `segmentId` on real GPS points and sends completed recording payloads back to Replay Engine.
+- Travel Records can be manually added, edited, hidden, and have flight summary metadata corrected through an overlay; raw SQLite GPS remains read-only.
+- App manual now documents the full flight-plan-to-GPS-to-Travel-Records workflow and bundled aircraft model attribution.
 
 ## Still Partial
 
@@ -111,10 +116,10 @@ These are the main half-finished areas to continue next:
 - Geographic borders: Natural Earth 110m coastlines/country boundaries now render on the globe; higher-detail packs and label ranking remain future work.
 - Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks with Natural Earth 110m populated places. This covers global major city names but not a complete global landmark database. Missing work: add a reviewed regional/global landmark fixture pipeline, source attribution, per-region offline packs, richer categories such as mountains/islands/bays/cultural landmarks, higher-detail populated-place packs, and viewport-aware label collision/ranking so labels do not become a wall of text on mobile.
 - Night lighting coverage: current night mode uses replay time/local longitude plus route-nearby city points as procedural lights. Missing work: full global night-light texture, weather/cloud darkness variation, seasonal sun position/terminator accuracy, and per-city light intensity calibrated from real night-lights data.
-- Runtime adapter split: browser export is behind the adapter; import and native recording handoff are still not fully abstracted behind one runtime-capability layer.
+- Runtime adapter split: browser export is behind the adapter; native recording handoff now works through bridge messages, but there is still no full native runtime adapter for loading historical SQLite journeys into WebView after app relaunch.
 - Photo matching and journal media: iOS/photo matcher pieces exist, but Travel Atlas cards still use generated placeholders.
 - Notifications: rules exist, but native notification scheduling is not wired to replay/recording events.
-- Native recording to replay handoff: iOS recording/export and Web replay share concepts, but not a seamless recorded-journey-to-WebView payload flow yet.
+- Travel record editing: v1 is prompt/overlay based. Missing work: polished list editor, undo, media attachments, richer event categories, and cross-device sync.
 - iOS CI: workflow has been patched to create `Travel Globe CI` simulator before destination resolution; needs confirmation on GitHub Actions after push.
 
 See `docs/unfinished-features-audit.md` for the longer audit.
