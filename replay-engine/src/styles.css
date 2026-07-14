@@ -85,7 +85,7 @@ input {
     0 0 5px rgb(0 0 0 / 74%);
   white-space: nowrap;
   transform: translate(-9999px, -9999px);
-  translate: 7px -11px;
+  translate: -3px -50%;
 }
 
 .globe-place-label::before {

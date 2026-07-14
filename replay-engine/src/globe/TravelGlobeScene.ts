@@ -3,14 +3,24 @@ import { CameraController, type CameraMode } from '../camera/CameraController';
 import type { JourneySegment, LocationPoint } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
 import { landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
-import { geographicToVector3 } from '../geo/geodesy';
+import { EARTH_RADIUS_METERS, geographicToVector3, haversineDistanceMeters } from '../geo/geodesy';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
 import { createGlobe, createStarField, shouldRenderGlobeLabel } from './createGlobe';
 
 interface GlobeDomLabel {
   element: HTMLSpanElement;
+  feature: GeographicFeature;
   position: THREE.Vector3;
+}
+
+interface LabelCandidate {
+  label: GlobeDomLabel;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  distanceMeters: number;
 }
 
 export class TravelGlobeScene {
@@ -30,6 +40,8 @@ export class TravelGlobeScene {
   private readonly routeTrack: RouteTrack;
   private readonly resizeObserver: ResizeObserver;
   private readonly activePointers = new Map<number, PointerEvent>();
+  private currentCameraMode: CameraMode = 'flightPreview';
+  private currentPoint?: LocationPoint;
   private previousPinchDistance?: number;
 
   constructor(
@@ -84,6 +96,8 @@ export class TravelGlobeScene {
   }
 
   update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode, actualRoutePoints: LocationPoint[]): void {
+    this.currentPoint = point;
+    this.currentCameraMode = cameraMode;
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.aircraft.visible = cameraMode !== 'pilotView';
     updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
@@ -219,20 +233,44 @@ export class TravelGlobeScene {
   private updateLabelOverlay(): void {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-    const cameraDirection = this.camera.position.clone().normalize();
     this.camera.updateMatrixWorld();
+    const candidates: LabelCandidate[] = [];
+    const maxPilotDistance = this.currentPoint ? pilotLabelDistanceMeters(this.currentPoint) : 180000;
 
     for (const label of this.landmarkLabels) {
-      const normal = label.position.clone().normalize();
+      label.element.hidden = true;
       const projected = label.position.clone().project(this.camera);
-      const isVisible = normal.dot(cameraDirection) > -0.08 && projected.z > -1 && projected.z < 1;
-      if (!isVisible) {
-        label.element.hidden = true;
+      if (
+        projected.z <= -1 ||
+        projected.z >= 1 ||
+        projected.x < -1.12 ||
+        projected.x > 1.12 ||
+        projected.y < -1.12 ||
+        projected.y > 1.12 ||
+        !isGroundPointVisibleFromCamera(this.camera.position, label.position)
+      ) {
         continue;
       }
 
-      label.element.hidden = false;
-      label.element.style.transform = `translate(${((projected.x + 1) / 2) * width}px, ${((-projected.y + 1) / 2) * height}px)`;
+      const distanceMeters = this.currentPoint ? haversineDistanceMeters(this.currentPoint, label.feature) : 0;
+      if (this.currentCameraMode === 'pilotView' && distanceMeters > maxPilotDistance) {
+        continue;
+      }
+
+      candidates.push({
+        label,
+        x: ((projected.x + 1) / 2) * width,
+        y: ((-projected.y + 1) / 2) * height,
+        width: Math.max(34, label.element.offsetWidth),
+        height: Math.max(14, label.element.offsetHeight),
+        distanceMeters
+      });
+    }
+
+    const visibleLabels = selectVisibleLabels(candidates, this.currentCameraMode === 'pilotView' ? 8 : 18);
+    for (const candidate of visibleLabels) {
+      candidate.label.element.hidden = false;
+      candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px)`;
     }
   }
 }
@@ -249,13 +287,87 @@ function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeat
     element.textContent = landmarkDisplayName(feature);
     layer.appendChild(element);
 
-    const vector = geographicToVector3(feature, 2.04, 900000);
+    const vector = geographicToVector3(feature, 2.006, 900000);
     labels.push({
       element,
+      feature,
       position: new THREE.Vector3(vector.x, vector.y, vector.z)
     });
   }
   return labels;
+}
+
+function selectVisibleLabels(candidates: LabelCandidate[], maxCount: number): LabelCandidate[] {
+  const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+  const selected: LabelCandidate[] = [];
+  const sorted = [...candidates].sort((a, b) => labelPriority(b) - labelPriority(a));
+
+  for (const candidate of sorted) {
+    const box = labelCollisionBox(candidate);
+    if (occupied.some((existing) => boxesOverlap(existing, box))) {
+      continue;
+    }
+    occupied.push(box);
+    selected.push(candidate);
+    if (selected.length >= maxCount) {
+      break;
+    }
+  }
+
+  return selected;
+}
+
+function labelPriority(candidate: LabelCandidate): number {
+  const typeBoost = candidate.label.feature.type === 'landmark' ? 1.15 : 1;
+  const distancePenalty = Math.min(1.8, candidate.distanceMeters / 450000);
+  return candidate.label.feature.importance * typeBoost - distancePenalty;
+}
+
+function labelCollisionBox(candidate: LabelCandidate): { left: number; right: number; top: number; bottom: number } {
+  const padding = 8;
+  return {
+    left: candidate.x - 8 - padding,
+    right: candidate.x + candidate.width + padding,
+    top: candidate.y - candidate.height * 0.65 - padding,
+    bottom: candidate.y + candidate.height * 0.65 + padding
+  };
+}
+
+function boxesOverlap(
+  a: { left: number; right: number; top: number; bottom: number },
+  b: { left: number; right: number; top: number; bottom: number }
+): boolean {
+  return Math.max(a.left, b.left) < Math.min(a.right, b.right) && Math.max(a.top, b.top) < Math.min(a.bottom, b.bottom);
+}
+
+function isGroundPointVisibleFromCamera(cameraPosition: THREE.Vector3, pointPosition: THREE.Vector3): boolean {
+  const toPoint = pointPosition.clone().sub(cameraPosition);
+  const distance = toPoint.length();
+  if (distance <= 0.0001) {
+    return true;
+  }
+
+  const direction = toPoint.divideScalar(distance);
+  const cameraRadius = cameraPosition.length();
+  const surfaceRadius = 2.0;
+  if (cameraRadius <= surfaceRadius + 0.004) {
+    return cameraPosition.clone().normalize().dot(pointPosition.clone().normalize()) > 0.04;
+  }
+
+  const closest = cameraPosition.dot(direction);
+  const discriminant = closest * closest - (cameraRadius * cameraRadius - surfaceRadius * surfaceRadius);
+  if (discriminant < 0) {
+    return true;
+  }
+
+  const firstHitDistance = -closest - Math.sqrt(discriminant);
+  return firstHitDistance >= distance - 0.018;
+}
+
+function pilotLabelDistanceMeters(point: LocationPoint): number {
+  const altitudeMeters = Math.max(0, point.altitudeMeters ?? 0);
+  const horizonMeters = Math.sqrt(2 * EARTH_RADIUS_METERS * altitudeMeters + altitudeMeters * altitudeMeters);
+  return Math.min(420000, Math.max(65000, horizonMeters + 60000));
 }
 
 function createRouteCityLights(features: GeographicFeature[]): { points: THREE.Points; material: THREE.PointsMaterial } {
