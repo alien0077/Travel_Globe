@@ -33,6 +33,7 @@ scripts/copy-replay-to-ios.sh
 scripts/deploy-web-static.sh
 scripts/serve-web-static.sh
 ./deploy.sh
+./deploy.sh ios-device
 /Users/alien/Desktop/xcodegen/bin/xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build-for-testing -quiet -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO
@@ -43,8 +44,8 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 
 ## Deployment
 
-- iOS app: `./deploy.sh` mirrors the TWStockTracker deployment flow with XcodeGen, automatic signing, physical-device build, `xctrace` device detection, and `ios-deploy` launch.
-- Web static hosting: GitHub Pages is the current primary deployment target at `https://alien0077.github.io/Travel_Globe/`, published by `.github/workflows/web-static.yml`.
+- Web static hosting: `./deploy.sh` verifies the Replay Engine, pushes `main`, watches the GitHub Pages workflow, and checks `https://alien0077.github.io/Travel_Globe/`.
+- iOS app: `./deploy.sh ios-device` mirrors the TWStockTracker deployment flow with XcodeGen, automatic signing, physical-device build, `xctrace` device detection, and `ios-deploy` or `devicectl` launch.
 - Field testing: use `docs/field-test.md` for the short route, permission, and long background recording checks.
 - App Store: not in scope for this project phase. Use local physical-device deployment and web static hosting.
 - Custom domain: optional. Netlify is not the primary verification target while the `alien0077` Netlify team credits are exhausted; use GitHub Pages checks unless Netlify billing is explicitly being handled.
