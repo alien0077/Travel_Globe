@@ -40,6 +40,22 @@ describe('flight preload', () => {
     expect(segment.metadata.aircraftType).toBe('B787');
   });
 
+  it('resolves FD235 without replacing the selected departure time', () => {
+    const result = buildPreloadedFlightJourney({
+      flightNumber: 'FD235',
+      departureDate: '2026-07-11',
+      departureTime: '10:15'
+    });
+    const segment = getPrimaryFlightSegment(result.journey);
+
+    expect(result.source).toBe('offline-schedule-index');
+    expect(segment.origin.iataCode).toBe('NRT');
+    expect(segment.destination.iataCode).toBe('KHH');
+    expect(segment.startTime).toBe(new Date('2026-07-11T10:15').toISOString());
+    expect(segment.statistics?.durationSeconds).toBe(235 * 60);
+    expect(segment.metadata.aircraftType).toBe('A320');
+  });
+
   it('builds a valid planned journey from flight form input', () => {
     const result = buildPreloadedFlightJourney({
       flightNumber: 'XX901',

@@ -518,6 +518,7 @@ a {
 .preload-input {
   width: 100%;
   padding: 0 9px;
+  font-size: 16px;
   text-transform: uppercase;
 }
 
@@ -907,10 +908,14 @@ a {
   }
 
   .control-button,
-  .control-select,
-  .preload-input {
+  .control-select {
     min-height: 30px;
     font-size: 12px;
+  }
+
+  .preload-input {
+    min-height: 34px;
+    font-size: 16px;
   }
 
   .hud-stats {

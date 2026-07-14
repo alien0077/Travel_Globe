@@ -470,10 +470,20 @@ export class TravelGlobeApp {
       }
       this.originInput.value = schedule.originIata;
       this.destinationInput.value = schedule.destinationIata;
-      this.departureTimeInput.value = schedule.defaultDepartureTime;
-      this.durationInput.value = String(schedule.defaultDurationMinutes);
-      this.aircraftTypeSelect.value = schedule.defaultAircraftType;
-      this.preloadStatus.textContent = `${schedule.flightNumber} 已帶入 ${schedule.originIata} -> ${schedule.destinationIata}、${schedule.defaultDepartureTime}、${schedule.defaultAircraftType}。請按「套用航線」更新地球與航跡。`;
+      const details = [`${schedule.originIata} -> ${schedule.destinationIata}`];
+      if (schedule.defaultDepartureTime) {
+        this.departureTimeInput.value = schedule.defaultDepartureTime;
+        details.push(schedule.defaultDepartureTime);
+      }
+      if (schedule.defaultDurationMinutes) {
+        this.durationInput.value = String(schedule.defaultDurationMinutes);
+        details.push(`${schedule.defaultDurationMinutes} 分鐘`);
+      }
+      if (schedule.defaultAircraftType) {
+        this.aircraftTypeSelect.value = schedule.defaultAircraftType;
+        details.push(schedule.defaultAircraftType);
+      }
+      this.preloadStatus.textContent = `${schedule.flightNumber} 已帶入 ${details.join('、')}。請按「套用航線」更新地球與航跡。`;
     };
     for (const input of [
       this.flightNumberInput,
@@ -938,15 +948,36 @@ function airportField(
   onSelect: () => void,
   options: { placeholder?: string; list?: string } = {}
 ): HTMLElement {
-  const wrapper = field(label, input, { placeholder: options.placeholder, list: options.list, required: false });
-  wrapper.classList.add('airport-picker');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'preload-field airport-picker';
+  const text = document.createElement('span');
+  text.textContent = label;
+  input.type = 'text';
+  input.placeholder = options.placeholder ?? '';
+  input.autocomplete = 'off';
+  input.required = false;
+  input.className = 'preload-input';
+  input.setAttribute('aria-label', label);
+  if (options.list) {
+    input.setAttribute('list', options.list);
+  }
 
   const menu = document.createElement('div');
   menu.className = 'airport-picker-menu';
   menu.hidden = true;
-  wrapper.append(menu);
+  wrapper.append(text, input, menu);
+
+  let suppressMenuUntil = 0;
+  const closeMenu = (): void => {
+    suppressMenuUntil = performance.now() + 220;
+    menu.hidden = true;
+    menu.replaceChildren();
+  };
 
   const showMatches = (): void => {
+    if (performance.now() < suppressMenuUntil) {
+      return;
+    }
     const query = input.value.trim().toUpperCase();
     const matches = matchAirportSuggestions(airports, query, AIRPORT_MATCH_LIMIT);
 
@@ -965,10 +996,14 @@ function airportField(
         event.preventDefault();
         event.stopPropagation();
         input.value = airportDisplayCode(airport);
-        menu.hidden = true;
-        input.blur();
+        closeMenu();
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
         onSelect();
       };
+      button.addEventListener('touchstart', selectAirport, { passive: false });
+      button.addEventListener('mousedown', selectAirport);
       button.addEventListener('pointerdown', selectAirport);
       button.addEventListener('click', selectAirport);
       return button;
@@ -982,7 +1017,7 @@ function airportField(
   input.addEventListener('input', showMatches);
   input.addEventListener('blur', () => {
     window.setTimeout(() => {
-      menu.hidden = true;
+      closeMenu();
     }, 120);
   });
 
@@ -1071,9 +1106,25 @@ function stringValue(value: unknown, fallback: string): string {
 }
 
 function toInputDate(timestamp: string): string {
-  return new Date(timestamp).toISOString().slice(0, 10);
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate())
+  ].join('-');
 }
 
 function toInputTime(timestamp: string): string {
-  return new Date(timestamp).toISOString().slice(11, 16);
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+}
+
+function padDatePart(value: number): string {
+  return String(value).padStart(2, '0');
 }
