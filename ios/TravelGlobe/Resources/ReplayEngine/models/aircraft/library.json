@@ -46,7 +46,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 42429
+        "actual": 42265
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -63,14 +63,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 42429,
+      "actualTriangles": 42265,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -95,7 +92,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 59486
+        "actual": 59322
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -112,14 +109,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 59486,
+      "actualTriangles": 59322,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -146,7 +140,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 2160118
+        "actual": 2159954
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -163,14 +157,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 2160118,
+      "actualTriangles": 2159954,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -198,7 +189,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 9636
+        "actual": 9472
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -215,14 +206,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 9636,
+      "actualTriangles": 9472,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -250,7 +238,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 474564
+        "actual": 474400
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -267,14 +255,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 474564,
+      "actualTriangles": 474400,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -299,7 +284,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 93127
+        "actual": 92963
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -316,14 +301,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 93127,
+      "actualTriangles": 92963,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -350,7 +332,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 5421
+        "actual": 5257
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -367,14 +349,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 5421,
+      "actualTriangles": 5257,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     },
     {
@@ -399,7 +378,7 @@
       "polygonBudget": {
         "min": 500,
         "max": 3000000,
-        "actual": 6942
+        "actual": 6778
       },
       "license": "CC BY",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
@@ -416,14 +395,11 @@
       "derivativesAllowed": true,
       "editorialOnly": false,
       "neutralizeLivery": false,
-      "actualTriangles": 6942,
+      "actualTriangles": 6778,
       "modifications": [
-        "Removed original airline livery",
-        "Preserved complete mesh geometry to avoid fragmented fuselages",
-        "Repainted as Alien Air black and white livery",
-        "Retracted landing gear for in-flight display",
-        "Preserved original window, cockpit, and door meshes where available",
-        "Embedded flat white Alien Air lettering into both fuselage sides"
+        "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+        "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+        "Prepared for offline runtime bundle"
       ]
     }
   ]

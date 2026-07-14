@@ -6,18 +6,8 @@
   "license": "CC BY 4.0",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
   "modifications": [
-    "Pending manual download",
-    "Original airline livery must be removed before ready status",
-    "Converted to GLB if needed",
-    "Reduced polygon count if needed",
-    "Generated LOD models if needed",
-    "Compressed textures if needed",
-    "Removed original airline livery",
-    "Preserved complete mesh geometry to avoid fragmented fuselages",
-    "Added raised white fuselage lettering without rectangular backing panels",
-    "Repainted as Alien Air black and white livery",
-    "Retracted landing gear for in-flight display",
-    "Preserved original window, cockpit, and door meshes where available",
-    "Embedded flat white Alien Air lettering into both fuselage sides"
+    "Restored original downloaded GLB to preserve source model windows, cockpit glass, doors, and material details",
+    "Kept source model geometry and materials; no generated repaint or synthetic window/door overlays",
+    "Prepared for offline runtime bundle"
   ]
 }

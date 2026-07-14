@@ -45,13 +45,11 @@ Sketchfab downloadable Creative Commons models can be downloaded from the logged
 
 4. Save a screenshot or note of the page showing author, source URL, and license.
 5. Download the GLB from Sketchfab.
-6. Import the GLB into the offline asset library, or run the Alien Air livery script when using the approved first-fleet source filenames in `~/Downloads`:
+6. Import the GLB into the offline asset library. Keep the source model materials intact unless a future task explicitly asks for a repaint:
 
    `npm --prefix replay-engine run import:aircraft-model -- --aircraft a350-900 --file /path/to/a350-900.glb`
 
-   `npm --prefix replay-engine run apply:alien-air-livery -- --all`
-
-   The import script copies the GLB to the correct aircraft folder and marks the manifest entry as `ready` when it is within budget. The Alien Air script removes original airline paint, applies a red-and-white `ALIEN AIR` style, writes fuselage/wing/tail markings, and keeps the generated LOD0 under the active runtime budget.
+   The import script copies the GLB to the correct aircraft folder and marks the manifest entry as `ready` when it is within budget. Do not run the Alien Air repaint script for the current fleet unless the user explicitly asks for a generated livery; repainting can remove source-model window, cockpit glass, and door detail when those details live in the original material slots.
 
 7. If adding a model manually without the import script, store it in this folder, for example:
 
@@ -78,10 +76,10 @@ Sketchfab downloadable Creative Commons models can be downloaded from the logged
 
    `npm --prefix replay-engine run test`
 
-## Alien Air First Fleet Status
+## First Fleet Status
 
-The first downloaded Sketchfab fleet has been repainted as Alien Air with a red base, white lettering, wing branding, and tail `AA` marking. All eight first-fleet entries are runtime-ready and safe for fallback selection.
+The first downloaded Sketchfab fleet uses the original GLB geometry and materials so the source model windows, cockpit glass, doors, and other aircraft details remain visible. All eight first-fleet entries are runtime-ready and safe for fallback selection.
 
 - Ready: `a320-200`, `a321neo`, `a350-900`, `a380-800`, `b737-800`, `b767-300`, `b777-300er`, `b787-9`
 
-When `neutralizeLivery` is true, Replay Engine replaces the bundled model's material maps at runtime with the Travel Globe neutral livery. Alien Air models set `neutralizeLivery` to false because the GLB already contains the approved project livery.
+When `neutralizeLivery` is true, Replay Engine replaces the bundled model's material maps at runtime with the Travel Globe neutral livery. Current first-fleet models set `neutralizeLivery` to false because the GLB should render its original bundled materials.
