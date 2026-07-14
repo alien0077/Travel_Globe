@@ -68,13 +68,13 @@ export class CameraController {
       this.desired
         .copy(this.target)
         .add(forward.clone().multiplyScalar(0.025))
-        .add(normal.clone().multiplyScalar(0.06));
+        .add(normal.clone().multiplyScalar(0.045));
       this.camera.position.lerp(this.desired, 0.18);
       this.camera.up.copy(normal);
       const horizonLookTarget = this.camera.position
         .clone()
-        .add(forward.clone().multiplyScalar(3.6))
-        .add(normal.clone().multiplyScalar(-0.24));
+        .add(forward.clone().multiplyScalar(2.0))
+        .add(normal.clone().multiplyScalar(-1.05));
       this.camera.lookAt(horizonLookTarget);
       return;
     }

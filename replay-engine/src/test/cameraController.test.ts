@@ -67,7 +67,7 @@ describe('camera controller interaction', () => {
     expect(distances.get('totalRoute')).toBeGreaterThan(distances.get('flightPreview') ?? 0);
   });
 
-  it('keeps pilot view slightly below the horizon so terrain stays visible', () => {
+  it('tilts pilot view low enough for terrain to stay above the controls', () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const controller = new CameraController(camera);
     const point = { latitude: 25.1, longitude: 121.6, altitudeMeters: 4_000 };
@@ -82,7 +82,7 @@ describe('camera controller interaction', () => {
     camera.getWorldDirection(direction);
     const horizonBias = direction.dot(normal);
 
-    expect(horizonBias).toBeGreaterThan(-0.12);
-    expect(horizonBias).toBeLessThan(-0.015);
+    expect(horizonBias).toBeGreaterThan(-0.58);
+    expect(horizonBias).toBeLessThan(-0.38);
   });
 });
