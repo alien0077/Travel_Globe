@@ -233,26 +233,26 @@ export class TravelGlobeScene {
     const nightFactor = nightFactorAt(point, sunVector);
     const dayFactor = 1 - nightFactor;
     const daySky = new THREE.Color(0xd7e5e1);
-    const nightSky = new THREE.Color(0x07111d);
+    const nightSky = new THREE.Color(0x10233a);
     const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
     this.scene.background = sky;
     if (this.scene.fog) {
       this.scene.fog.color.copy(sky);
     }
 
-    this.ambient.intensity = lerp(0.72, 3.2, dayFactor);
-    this.sun.intensity = lerp(0.28, 4.2, dayFactor);
+    this.ambient.intensity = lerp(1.42, 3.2, dayFactor);
+    this.sun.intensity = lerp(0.68, 4.2, dayFactor);
     const earthMaterial = this.earth.material;
     if (earthMaterial instanceof THREE.MeshStandardMaterial) {
-      earthMaterial.emissiveIntensity = lerp(0.1, 0.38, dayFactor);
+      earthMaterial.emissiveIntensity = lerp(0.28, 0.42, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
-      this.clouds.material.opacity = lerp(0.18, 0.32, dayFactor);
+      this.clouds.material.opacity = lerp(0.24, 0.34, dayFactor);
     }
     if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
-      this.nightLights.material.opacity = lerp(0.02, 0.9, nightFactor);
+      this.nightLights.material.opacity = lerp(0.06, 0.95, nightFactor);
     }
-    this.cityLightMaterial.opacity = lerp(0.02, 0.92, nightFactor);
+    this.cityLightMaterial.opacity = lerp(0.08, 0.96, nightFactor);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
   }
 

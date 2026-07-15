@@ -157,9 +157,9 @@ const cameraProfiles: Record<
     lookUp: number;
   }
 > = {
-  flightPreview: { forward: -0.82, right: 0, up: 0.32, distance: 1.02, lookAhead: 0.2, lookUp: 0.03 },
-  midFlight: { forward: -0.82, right: -0.48, up: 0.34, distance: 1.18, lookAhead: 0.28, lookUp: 0.04 },
-  commandCenter: { forward: -1.05, right: 0.76, up: 0.68, distance: 1.42, lookAhead: 0.52, lookUp: 0.04 },
+  flightPreview: { forward: -0.95, right: 0, up: 0.52, distance: 1.36, lookAhead: 0.38, lookUp: 0.1 },
+  midFlight: { forward: -0.95, right: -0.5, up: 0.52, distance: 1.42, lookAhead: 0.42, lookUp: 0.1 },
+  commandCenter: { forward: -1.12, right: 0.82, up: 0.82, distance: 1.58, lookAhead: 0.62, lookUp: 0.08 },
   follow: { forward: -0.9, right: 0, up: 0.48, distance: 1.15, lookAhead: 0.35, lookUp: 0.1 },
   cockpit: { forward: 0.18, right: 0, up: 0.16, distance: 0.56, lookAhead: 1.2, lookUp: 0.05 },
   leftWindow: { forward: -0.08, right: -0.7, up: 0.2, distance: 0.9, lookAhead: 0.28, lookUp: 0.04 },

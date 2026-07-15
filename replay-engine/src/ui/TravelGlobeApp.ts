@@ -204,10 +204,19 @@ export class TravelGlobeApp {
         button.title = label;
         button.setAttribute('aria-label', label);
         button.textContent = icon;
-        button.addEventListener('click', () => {
+        const activateViewMode = (event?: Event): void => {
+          event?.preventDefault();
+          event?.stopPropagation();
           this.cameraMode = mode;
+          this.scene?.prepareForTimelineJump();
           this.syncViewRail();
+        };
+        button.addEventListener('pointerdown', (event) => {
+          event.stopPropagation();
         });
+        button.addEventListener('pointerup', activateViewMode);
+        button.addEventListener('touchend', activateViewMode, { passive: false });
+        button.addEventListener('click', activateViewMode);
         return button;
       })
     );
