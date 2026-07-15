@@ -12,6 +12,7 @@ export interface CameraUpdateOptions {
   snap?: boolean;
   focusPoint?: GeographicPoint;
   focusStrength?: number;
+  nearGroundStrength?: number;
 }
 
 export class CameraController {
@@ -42,6 +43,7 @@ export class CameraController {
     const aircraftPosition = geographicToVector3(point, 2, CAMERA_ALTITUDE_SCALE_METERS);
     this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z);
     const focusStrength = THREE.MathUtils.clamp(options.focusStrength ?? 0, 0, 1);
+    const nearGroundStrength = THREE.MathUtils.clamp(options.nearGroundStrength ?? focusStrength, 0, 1);
     if (options.focusPoint && focusStrength > 0) {
       const focusPosition = geographicToVector3(options.focusPoint, 2, CAMERA_ALTITUDE_SCALE_METERS);
       this.target.lerp(new THREE.Vector3(focusPosition.x, focusPosition.y, focusPosition.z), focusStrength);
@@ -70,12 +72,12 @@ export class CameraController {
 
     if (this.mode === 'overhead') {
       const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
-      const airportZoom = THREE.MathUtils.lerp(1.18, 0.72, focusStrength) * this.zoom;
+      const airportZoom = THREE.MathUtils.lerp(1.18, 0.38, nearGroundStrength) * this.zoom;
       this.desired
         .copy(this.target)
         .add(normal.clone().multiplyScalar(airportZoom))
-        .add(right.multiplyScalar(THREE.MathUtils.lerp(0.09, 0.025, focusStrength)))
-        .add(forward.clone().multiplyScalar(THREE.MathUtils.lerp(-0.08, -0.02, focusStrength)));
+        .add(right.multiplyScalar(THREE.MathUtils.lerp(0.09, 0.018, nearGroundStrength)))
+        .add(forward.clone().multiplyScalar(THREE.MathUtils.lerp(-0.08, -0.012, nearGroundStrength)));
       this.camera.position.lerp(this.desired, lerpAmount ?? 0.12);
       this.camera.up.copy(forward);
       this.camera.lookAt(this.target);
@@ -131,8 +133,10 @@ export class CameraController {
     const profile = cameraProfiles[this.mode];
     const yawedForward = forward.clone().applyAxisAngle(normal, this.orbitYaw);
     const yawedRight = new THREE.Vector3().crossVectors(yawedForward, normal).normalize();
-    const pitchedUp = normal.clone().multiplyScalar(profile.up + this.orbitPitch * 0.35);
-    const distance = profile.distance * this.zoom;
+    const nearGroundZoom = THREE.MathUtils.lerp(1, 0.42, nearGroundStrength);
+    const nearGroundLook = THREE.MathUtils.lerp(1, 0.72, nearGroundStrength);
+    const pitchedUp = normal.clone().multiplyScalar(profile.up * nearGroundZoom + this.orbitPitch * 0.35);
+    const distance = profile.distance * this.zoom * nearGroundZoom;
 
     this.desired
       .copy(this.target)
@@ -144,8 +148,8 @@ export class CameraController {
 
     const lookAhead = this.target
       .clone()
-      .add(forward.multiplyScalar(profile.lookAhead))
-      .add(normal.multiplyScalar(profile.lookUp));
+      .add(forward.multiplyScalar(profile.lookAhead * nearGroundLook))
+      .add(normal.multiplyScalar(profile.lookUp * nearGroundZoom));
     this.camera.up.copy(normal);
     this.camera.lookAt(lookAhead);
   }

@@ -1144,7 +1144,7 @@ select.preload-input {
     position: fixed;
     top: calc(10px + env(safe-area-inset-top));
     right: calc(10px + env(safe-area-inset-right));
-    bottom: calc(198px + env(safe-area-inset-bottom));
+    bottom: calc(154px + env(safe-area-inset-bottom));
     left: calc(10px + env(safe-area-inset-left));
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
@@ -1174,6 +1174,29 @@ select.preload-input {
   .drawer-body {
     min-height: 0;
     max-height: none;
+    padding-bottom: 18px;
+    overflow-y: auto;
+  }
+
+  .product-panel-shell[open],
+  .timeline-panel[open] {
+    min-height: 0;
+  }
+
+  .product-panel-shell[open] .product-panel {
+    max-height: min(260px, calc(100svh - 584px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .timeline-panel[open] .timeline-list {
+    max-height: min(160px, calc(100svh - 674px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .info-dock.has-open-preload .drawer-body {

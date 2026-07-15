@@ -359,14 +359,20 @@ async function verifyMobileFd234Regression(page) {
     actionStatuses: [],
     preloadVisible: {},
     drawerMetrics: {},
+    cardMetrics: {},
+    takeoffFocus: {},
+    approachFocus: {},
     arrivalFocus: {},
     brightness: {},
     daylightBrightness: {},
     nightRegression: {},
     screenshotPath,
     daylightScreenshotPath,
+    approachScreenshotPath: path.join(screenshotDir, 'mobile-fd234-approach-airport.png'),
     arrivalScreenshotPath: path.join(screenshotDir, 'mobile-fd234-arrival-airport.png'),
     nightScreenshotPath: path.join(screenshotDir, 'mobile-fd234-night-regression.png'),
+    travelAtlasScreenshotPath: path.join(screenshotDir, 'mobile-travel-atlas-expanded.png'),
+    timelineScreenshotPath: path.join(screenshotDir, 'mobile-travel-record-expanded.png'),
     preloadScreenshotPath,
     failure: ''
   };
@@ -450,12 +456,33 @@ async function verifyMobileFd234Regression(page) {
     assert(report.drawerMetrics.preloadBottom <= report.drawerMetrics.drawerBottom + 1, `preload panel overflowed drawer: ${JSON.stringify(report.drawerMetrics)}`);
     assert(report.drawerMetrics.drawerBottom < report.drawerMetrics.controlsTop, `drawer overlaps controls: ${JSON.stringify(report.drawerMetrics)}`);
 
+    await page.getByText('航班預載', { exact: true }).click();
+    await page.waitForTimeout(200);
+    await page.getByText('Travel Atlas', { exact: true }).click();
+    await page.waitForTimeout(200);
+    report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
+    await page.screenshot({ path: report.travelAtlasScreenshotPath, fullPage: false });
+    assert(report.cardMetrics.travelAtlas.visible, `Travel Atlas panel is not visible: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
+    assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
+    assert(report.cardMetrics.travelAtlas.reachedBottom, `Travel Atlas panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
+    await page.getByText('Travel Atlas', { exact: true }).click();
+    await page.waitForTimeout(150);
+    await page.getByText('旅遊紀錄', { exact: true }).click();
+    await page.waitForTimeout(200);
+    report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-list');
+    await page.screenshot({ path: report.timelineScreenshotPath, fullPage: false });
+    assert(report.cardMetrics.timeline.visible, `Travel record panel is not visible: ${JSON.stringify(report.cardMetrics.timeline)}`);
+    assert(report.cardMetrics.timeline.bottom <= report.cardMetrics.timeline.drawerBottom + 1, `Travel record panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.timeline)}`);
+    assert(report.cardMetrics.timeline.reachedBottom, `Travel record panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.timeline)}`);
+
     await page.click('.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 0, 'system drawer did not close while preload card was open');
     await page.click('.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 1, 'system drawer did not reopen after preload close check');
+    await page.getByText('航班預載', { exact: true }).click();
+    await page.waitForTimeout(200);
 
     await page.locator('.preload-field:nth-child(2) input').fill('FD234');
     await page.waitForTimeout(250);
@@ -477,6 +504,17 @@ async function verifyMobileFd234Regression(page) {
     });
     await page.waitForTimeout(900);
     await page.screenshot({ path: daylightScreenshotPath, fullPage: false });
+    report.takeoffFocus = await page.evaluate(() => ({
+      airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
+      nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
+      airportMarkerScale: Number(document.querySelector('.globe-viewport')?.dataset.airportMarkerScale ?? '1'),
+      hudStats: document.querySelector('.hud-stats')?.textContent ?? '',
+      labels: [...document.querySelectorAll('.globe-place-label:not(.is-hidden)')].map((label) => label.textContent?.trim() ?? '')
+    }));
+    assert(report.takeoffFocus.airportFocus >= 0.82, `FD234 takeoff did not focus the airport: ${JSON.stringify(report.takeoffFocus)}`);
+    assert(report.takeoffFocus.nearGroundFocus >= 0.8, `FD234 takeoff did not use near-ground zoom: ${JSON.stringify(report.takeoffFocus)}`);
+    assert(report.takeoffFocus.airportMarkerScale <= 0.42, `FD234 takeoff airport marker remains too large: ${JSON.stringify(report.takeoffFocus)}`);
+    assert(report.takeoffFocus.labels.some((label) => label.includes('KHH') || label.includes('Kaohsiung')), `FD234 takeoff airport label is not visible: ${JSON.stringify(report.takeoffFocus)}`);
 
     const daylightViewportSize = page.viewportSize() ?? { width: 390, height: 844 };
     report.daylightBrightness = readPngBrightness(daylightScreenshotPath, {
@@ -489,6 +527,27 @@ async function verifyMobileFd234Regression(page) {
     assert(report.daylightBrightness.bright >= 120000, `FD234 daytime takeoff scene lacks visible daylight pixels: ${JSON.stringify(report.daylightBrightness)}`);
 
     await clickViewMode(page, 'overhead');
+    await page.evaluate(() => {
+      const scrubber = document.querySelector('.timeline-scrubber');
+      if (scrubber instanceof HTMLInputElement) {
+        scrubber.value = '996';
+        scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: report.approachScreenshotPath, fullPage: false });
+    report.approachFocus = await page.evaluate(() => ({
+      airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
+      nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
+      airportMarkerScale: Number(document.querySelector('.globe-viewport')?.dataset.airportMarkerScale ?? '1'),
+      hudStats: document.querySelector('.hud-stats')?.textContent ?? '',
+      labels: [...document.querySelectorAll('.globe-place-label:not(.is-hidden)')].map((label) => label.textContent?.trim() ?? '')
+    }));
+    assert(report.approachFocus.airportFocus >= 0.82, `FD234 approach did not focus the airport: ${JSON.stringify(report.approachFocus)}`);
+    assert(report.approachFocus.nearGroundFocus >= 0.8, `FD234 low approach did not enter near-ground zoom: ${JSON.stringify(report.approachFocus)}`);
+    assert(report.approachFocus.airportMarkerScale <= 0.42, `FD234 airport marker remains too large on approach: ${JSON.stringify(report.approachFocus)}`);
+    assert(report.approachFocus.labels.some((label) => label.includes('NRT') || label.includes('Narita')), `FD234 approach airport label is not visible: ${JSON.stringify(report.approachFocus)}`);
+
     await page.evaluate(() => {
       const scrubber = document.querySelector('.timeline-scrubber');
       if (scrubber instanceof HTMLInputElement) {
@@ -546,11 +605,18 @@ async function verifyMobileFd234Regression(page) {
         width: nightViewportSize.width,
         height: Math.min(440, nightViewportSize.height - 430)
       }),
+      ...readPngColorStats(report.nightScreenshotPath, {
+        x: 0,
+        y: 220,
+        width: nightViewportSize.width,
+        height: Math.min(440, nightViewportSize.height - 430)
+      }),
       dayFactor: await page.evaluate(() => Number(document.querySelector('.globe-viewport')?.dataset.dayFactor ?? '1')),
       localSolarHour: await page.evaluate(() => Number(document.querySelector('.globe-viewport')?.dataset.localSolarHour ?? '0'))
     };
     assert(report.nightRegression.dayFactor <= 0.35, `FD234 night scene is still using daylight: ${JSON.stringify(report.nightRegression)}`);
     assert(report.nightRegression.average <= 105, `FD234 night scene is too bright: ${JSON.stringify(report.nightRegression)}`);
+    assert(report.nightRegression.orangePixels >= 55, `FD234 night city lights are not orange enough: ${JSON.stringify(report.nightRegression)}`);
 
     await page.evaluate(() => {
       const timeInput = document.querySelector('.preload-field:nth-child(6) input');
@@ -610,7 +676,33 @@ function actionButton(page, label) {
   return page.locator('.action-grid button, .action-grid a').filter({ hasText: label }).first();
 }
 
-function readPngBrightness(filePath, crop) {
+async function scrollPanelToBottom(page, selector) {
+  return page.evaluate((panelSelector) => {
+    const panel = document.querySelector(panelSelector);
+    const drawer = document.querySelector('.system-drawer')?.getBoundingClientRect();
+    const controls = document.querySelector('.controls')?.getBoundingClientRect();
+    if (!(panel instanceof HTMLElement) || !drawer || !controls) {
+      return { visible: false, reachedBottom: false };
+    }
+    panel.scrollTop = panel.scrollHeight;
+    const rect = panel.getBoundingClientRect();
+    const reachedBottom = Math.ceil(panel.scrollTop + panel.clientHeight) >= panel.scrollHeight;
+    return {
+      visible: rect.width > 0 && rect.height > 0,
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      height: Math.round(rect.height),
+      scrollHeight: panel.scrollHeight,
+      clientHeight: panel.clientHeight,
+      scrollTop: panel.scrollTop,
+      reachedBottom,
+      drawerBottom: Math.round(drawer.bottom),
+      controlsTop: Math.round(controls.top)
+    };
+  }, selector);
+}
+
+function decodePng(filePath) {
   const bytes = fs.readFileSync(filePath);
   assert(bytes.subarray(0, 8).toString('hex') === '89504e470d0a1a0a', 'screenshot is not a PNG');
   let offset = 8;
@@ -663,6 +755,11 @@ function readPngBrightness(filePath, crop) {
     previousRow = recon;
   }
 
+  return { width, height, channels, pixels };
+}
+
+function readPngBrightness(filePath, crop) {
+  const { width, height, channels, pixels } = decodePng(filePath);
   const xStart = Math.max(0, Math.floor(crop.x));
   const yStart = Math.max(0, Math.floor(crop.y));
   const xEnd = Math.min(width, xStart + Math.floor(crop.width));
@@ -688,6 +785,33 @@ function readPngBrightness(filePath, crop) {
     bright,
     samplePixels: count
   };
+}
+
+function readPngColorStats(filePath, crop) {
+  const { width, height, channels, pixels } = decodePng(filePath);
+  const xStart = Math.max(0, Math.floor(crop.x));
+  const yStart = Math.max(0, Math.floor(crop.y));
+  const xEnd = Math.min(width, xStart + Math.floor(crop.width));
+  const yEnd = Math.min(height, yStart + Math.floor(crop.height));
+  let orangePixels = 0;
+  let coolWhitePixels = 0;
+
+  for (let y = yStart; y < yEnd; y += 1) {
+    for (let x = xStart; x < xEnd; x += 1) {
+      const index = (y * width + x) * channels;
+      const red = pixels[index];
+      const green = pixels[index + 1];
+      const blue = pixels[index + 2];
+      if (red >= 78 && green >= 38 && blue <= 72 && red > green * 1.12 && green > blue * 1.18) {
+        orangePixels += 1;
+      }
+      if (red >= 150 && green >= 150 && blue >= 145 && Math.abs(red - green) < 34 && Math.abs(green - blue) < 44) {
+        coolWhitePixels += 1;
+      }
+    }
+  }
+
+  return { orangePixels, coolWhitePixels };
 }
 
 function pngFilterValue(filter, left, up, upLeft) {
