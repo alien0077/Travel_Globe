@@ -89,7 +89,7 @@ export function geographicToVector3(
   const lat = toRadians(point.latitude);
   const lon = toRadians(point.longitude);
   const altitude = point.altitudeMeters ?? 0;
-  const displayRadius = radius + altitude / altitudeScaleMeters;
+  const displayRadius = altitudeScaleMeters === 0 ? radius : radius + altitude / altitudeScaleMeters;
 
   return {
     x: displayRadius * Math.cos(lat) * Math.sin(lon),

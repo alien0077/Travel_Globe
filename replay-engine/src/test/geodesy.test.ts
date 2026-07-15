@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   haversineDistanceMeters,
+  geographicToVector3,
   initialBearingDegrees,
   interpolateGreatCircle
 } from '../geo/geodesy';
@@ -27,5 +28,13 @@ describe('geodesy', () => {
     expect(midpoint.latitude).toBeLessThan(32);
     expect(midpoint.longitude).toBeGreaterThan(129);
     expect(midpoint.longitude).toBeLessThan(132);
+  });
+
+  it('projects surface points without NaN when altitude scaling is disabled', () => {
+    const vector = geographicToVector3(taipei, 1, 0);
+    expect(Number.isFinite(vector.x)).toBe(true);
+    expect(Number.isFinite(vector.y)).toBe(true);
+    expect(Number.isFinite(vector.z)).toBe(true);
+    expect(Math.hypot(vector.x, vector.y, vector.z)).toBeCloseTo(1, 5);
   });
 });

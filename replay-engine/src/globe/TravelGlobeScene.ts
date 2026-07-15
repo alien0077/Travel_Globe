@@ -69,6 +69,7 @@ export class TravelGlobeScene {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(0x2a4d68, 1);
     this.container.appendChild(this.renderer.domElement);
     this.labelLayer = document.createElement('div');
@@ -101,8 +102,8 @@ export class TravelGlobeScene {
     this.scene.add(this.routeTrack);
     this.scene.add(this.aircraft);
 
-    this.ambient = new THREE.AmbientLight(0xf5fbff, 3.2);
-    this.sun = new THREE.DirectionalLight(0xffffff, 4.2);
+    this.ambient = new THREE.AmbientLight(0xf5fbff, 3.6);
+    this.sun = new THREE.DirectionalLight(0xffffff, 5.6);
     this.sun.position.set(-3, 4, 7);
     this.scene.add(this.ambient, this.sun);
 
@@ -238,8 +239,14 @@ export class TravelGlobeScene {
     const sunVector = sunVectorAt(point.timestamp);
     this.sun.position.copy(sunVector.clone().multiplyScalar(8));
     const nightFactor = nightFactorAt(point, sunVector);
-    const dayFactor = 1 - nightFactor;
-    const daySky = new THREE.Color(0xd7e5e1);
+    const solarDay = localSolarDay(point);
+    const dayFactor = Math.max(1 - nightFactor, solarDay.factor);
+    this.container.dataset.dayFactor = dayFactor.toFixed(3);
+    this.container.dataset.localSolarHour = solarDay.hour.toFixed(2);
+    this.container.classList.toggle('is-daylight', dayFactor >= 0.55);
+    this.container.parentElement?.classList.toggle('is-daylight-scene', dayFactor >= 0.55);
+    this.renderer.toneMappingExposure = lerp(1.0, 1.36, dayFactor);
+    const daySky = new THREE.Color(0xbfdff4);
     const nightSky = new THREE.Color(0x2a4d68);
     const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
     this.scene.background = sky;
@@ -249,13 +256,13 @@ export class TravelGlobeScene {
       this.scene.fog.color.copy(sky);
     }
 
-    this.ambient.intensity = lerp(2.9, 3.2, dayFactor);
-    this.sun.intensity = lerp(1.35, 4.2, dayFactor);
+    this.ambient.intensity = lerp(2.8, 4.05, dayFactor);
+    this.sun.intensity = lerp(1.2, 5.8, dayFactor);
     const earthMaterial = this.earth.material;
     if (earthMaterial instanceof THREE.MeshStandardMaterial) {
       earthMaterial.color.lerpColors(new THREE.Color(0xa8c9dc), new THREE.Color(0xffffff), dayFactor);
-      earthMaterial.emissive.lerpColors(new THREE.Color(0x4e7d98), new THREE.Color(0x172939), dayFactor);
-      earthMaterial.emissiveIntensity = lerp(0.86, 0.52, dayFactor);
+      earthMaterial.emissive.lerpColors(new THREE.Color(0x4e7d98), new THREE.Color(0x10202c), dayFactor);
+      earthMaterial.emissiveIntensity = lerp(0.86, 0.16, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
       this.clouds.material.opacity = lerp(0.36, 0.38, dayFactor);
@@ -263,7 +270,7 @@ export class TravelGlobeScene {
     if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
       this.nightLights.material.opacity = lerp(0.18, 0.98, nightFactor);
     }
-    this.nightSurfaceWash.material.opacity = lerp(0.34, 0.05, dayFactor);
+    this.nightSurfaceWash.material.opacity = lerp(0.34, 0.0, dayFactor);
     this.cityLightMaterial.opacity = lerp(0.2, 0.98, nightFactor);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
   }
@@ -623,6 +630,22 @@ function nightFactorAt(point: LocationPoint, sunVector: THREE.Vector3): number {
   return 1 - smoothstep(-0.1, 0.18, sunScore);
 }
 
+function localSolarDay(point: LocationPoint): { factor: number; hour: number } {
+  const date = new Date(point.timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return { factor: 0, hour: 0 };
+  }
+  const utcHour =
+    date.getUTCHours() +
+    date.getUTCMinutes() / 60 +
+    date.getUTCSeconds() / 3600;
+  const localSolarHour = positiveModulo(utcHour + point.longitude / 15, 24);
+  return {
+    factor: smoothstep(5.5, 7.5, localSolarHour) * (1 - smoothstep(18.25, 20.25, localSolarHour)),
+    hour: localSolarHour
+  };
+}
+
 function sunVectorAt(timestamp: string): THREE.Vector3 {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
@@ -635,9 +658,13 @@ function sunVectorAt(timestamp: string): THREE.Vector3 {
     date.getUTCMinutes() / 60 +
     date.getUTCSeconds() / 3600;
   const declination = 23.44 * Math.sin(THREE.MathUtils.degToRad((360 / 365) * (dayOfYear - 81)));
-  const subsolarLongitude = positiveModulo((12 - utcHour) * 15 + 180, 360) - 180;
+  const subsolarLongitude = normalizeLongitude((12 - utcHour) * 15);
   const vector = geographicToVector3({ latitude: declination, longitude: subsolarLongitude }, 1, 0);
   return new THREE.Vector3(vector.x, vector.y, vector.z).normalize();
+}
+
+function normalizeLongitude(longitude: number): number {
+  return positiveModulo(longitude + 180, 360) - 180;
 }
 
 function positiveModulo(value: number, divisor: number): number {

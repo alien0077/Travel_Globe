@@ -1,8 +1,10 @@
 import type { CameraMode } from '../camera/CameraController';
 import {
   flightPlanPayloadFromJourney,
+  exportBlob,
   parseNativePayload,
   postNativeMessage,
+  type NativeExportDelivery,
   type NativeFlightPlanPayload,
   type NativeNotificationSchedulePayload,
   type NativeRecordingPayload,
@@ -14,7 +16,6 @@ import type { SavedJourneySummary } from '../bridge/RuntimeAdapter';
 import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
-import { downloadBlob } from '../export/travelglobePackage';
 import {
   buildFlightHudMetrics,
   buildFlightOverlay,
@@ -1057,47 +1058,57 @@ export class TravelGlobeApp {
     }
   }
 
-  private exportTravelGlobe(): void {
+  private async exportTravelGlobe(): Promise<void> {
     if (!this.journey) {
       return;
     }
-    this.capability.textContent = `正在匯出 ${this.journey.id}.travelglobe...`;
-    void this.adapter.exportJourney(this.journey);
-    this.capability.textContent = `${this.journey.id}.travelglobe 已送出匯出。`;
+    const filename = `${this.journey.id}.travelglobe`;
+    await this.runExport(filename, () => this.adapter.exportJourney(this.journey!));
   }
 
-  private exportShareSafeJson(): void {
+  private async exportShareSafeJson(): Promise<void> {
     if (!this.journey) {
       return;
     }
-    this.capability.textContent = `正在建立 ${this.journey.id}.share-safe.json...`;
-    void this.adapter.exportShareSafeJourney(this.journey);
-    this.capability.textContent = `${this.journey.id}.share-safe.json 已送出匯出。`;
+    const filename = `${this.journey.id}.share-safe.json`;
+    await this.runExport(filename, () => this.adapter.exportShareSafeJourney(this.journey!));
   }
 
-  private exportJournalMarkdown(): void {
+  private async exportJournalMarkdown(): Promise<void> {
     if (!this.journey) {
       return;
     }
+    const filename = `${this.journey.id}.journal.md`;
     const journal = generateOfflineJournal(this.journey);
-    downloadBlob(new Blob([journal.markdown], { type: 'text/markdown' }), `${this.journey.id}.journal.md`);
-    this.capability.textContent = `${this.journey.id}.journal.md 已送出匯出。`;
+    await this.runExport(filename, () => exportBlob(new Blob([journal.markdown], { type: 'text/markdown' }), filename, 'text/markdown'));
   }
 
-  private exportGpx(): void {
+  private async exportGpx(): Promise<void> {
     if (!this.journey) {
       return;
     }
-    downloadBlob(new Blob([createGpx(this.journey)], { type: 'application/gpx+xml' }), `${this.journey.id}.gpx`);
-    this.capability.textContent = `${this.journey.id}.gpx 已送出匯出。`;
+    const filename = `${this.journey.id}.gpx`;
+    await this.runExport(filename, () => exportBlob(new Blob([createGpx(this.journey!)], { type: 'application/gpx+xml' }), filename, 'application/gpx+xml'));
   }
 
-  private exportKml(): void {
+  private async exportKml(): Promise<void> {
     if (!this.journey) {
       return;
     }
-    downloadBlob(new Blob([createKml(this.journey)], { type: 'application/vnd.google-earth.kml+xml' }), `${this.journey.id}.kml`);
-    this.capability.textContent = `${this.journey.id}.kml 已送出匯出。`;
+    const filename = `${this.journey.id}.kml`;
+    await this.runExport(filename, () => exportBlob(new Blob([createKml(this.journey!)], { type: 'application/vnd.google-earth.kml+xml' }), filename, 'application/vnd.google-earth.kml+xml'));
+  }
+
+  private async runExport(filename: string, exporter: () => Promise<NativeExportDelivery>): Promise<void> {
+    this.capability.textContent = `正在準備 ${filename}...`;
+    try {
+      const delivery = await exporter();
+      this.capability.textContent = delivery === 'native-share'
+        ? `${filename} 已開啟 iOS 分享/儲存，並暫存到 App Documents/Exports。`
+        : `${filename} 已下載到瀏覽器下載資料夾。`;
+    } catch (error) {
+      this.capability.textContent = error instanceof Error ? `匯出失敗：${error.message}` : '匯出失敗。';
+    }
   }
 
   private renderBelowMe(sample: ReturnType<typeof sampleReplayAt>): void {
@@ -1881,7 +1892,7 @@ function stringValue(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 }
 
-function bindTouchAction(element: HTMLElement, action: (event: Event) => void): void {
+function bindTouchAction(element: HTMLElement, action: (event: Event) => void | Promise<void>): void {
   let lastActivationMs = 0;
   const activate = (event: Event): void => {
     event.preventDefault();
@@ -1891,7 +1902,7 @@ function bindTouchAction(element: HTMLElement, action: (event: Event) => void): 
       return;
     }
     lastActivationMs = now;
-    action(event);
+    void action(event);
   };
   element.addEventListener('pointerdown', (event) => {
     event.stopPropagation();

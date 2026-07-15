@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 import Photos
+import UIKit
 import UserNotifications
 
 @MainActor
@@ -271,6 +272,8 @@ final class TravelGlobeAppModel: ObservableObject {
             applyFlightPlanMessage(message)
         case "notification.schedule":
             scheduleNotificationMessage(message)
+        case "file.export":
+            exportFileMessage(message)
         default:
             break
         }
@@ -306,6 +309,63 @@ final class TravelGlobeAppModel: ObservableObject {
             body: notification.body,
             identifier: notification.identifier
         )
+    }
+
+    private func exportFileMessage(_ message: NativeBridgeMessage) {
+        guard
+            let data = message.payload.data(using: .utf8),
+            let payload = try? JSONDecoder().decode(FileExportPayload.self, from: data),
+            let fileData = Data(base64Encoded: payload.base64)
+        else {
+            diagnostics.append(.error("Unable to decode export file from Replay Engine"))
+            return
+        }
+
+        do {
+            let url = try saveExportFile(data: fileData, filename: payload.filename)
+            diagnostics.append(.info("Export ready: \(url.lastPathComponent)"))
+            presentExportShareSheet(url: url)
+        } catch {
+            diagnostics.append(.error("Unable to save export: \(error.localizedDescription)"))
+        }
+    }
+
+    private func saveExportFile(data: Data, filename: String) throws -> URL {
+        let rawName = URL(fileURLWithPath: filename).lastPathComponent
+        let safeName = rawName.isEmpty ? "travel-globe-export.dat" : rawName.replacingOccurrences(of: ":", with: "-")
+        let documents = try FileManager.default.url(
+            for: .documentDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        let exports = documents.appendingPathComponent("Exports", isDirectory: true)
+        try FileManager.default.createDirectory(at: exports, withIntermediateDirectories: true)
+        let url = exports.appendingPathComponent(safeName, isDirectory: false)
+        try data.write(to: url, options: [.atomic])
+        return url
+    }
+
+    private func presentExportShareSheet(url: URL) {
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        guard
+            let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive }),
+            let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else {
+            diagnostics.append(.info("Export saved to Documents/Exports: \(url.lastPathComponent)"))
+            return
+        }
+
+        var presenter = root
+        while let presented = presenter.presentedViewController {
+            presenter = presented
+        }
+        if let popover = activity.popoverPresentationController {
+            popover.sourceView = presenter.view
+            popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1)
+            popover.permittedArrowDirections = []
+        }
+        presenter.present(activity, animated: true)
     }
 
     private var selectedFlightPlan: FlightPlanRecord? {
@@ -482,6 +542,12 @@ private struct NotificationSchedulePayload: Decodable {
     var identifier: String
     var title: String
     var body: String
+}
+
+private struct FileExportPayload: Decodable {
+    var filename: String
+    var mimeType: String
+    var base64: String
 }
 
 private struct RecordingStatusPayload: Encodable {

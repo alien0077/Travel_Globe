@@ -1,5 +1,6 @@
 import type { Journey, LocationPoint } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
+import { downloadBlob } from '../export/travelglobePackage';
 
 export interface NativeBridgeEnvelope<TPayload = unknown> {
   version: '1.0';
@@ -76,6 +77,14 @@ export interface NativeNotificationSchedulePayload {
   body: string;
 }
 
+export interface NativeFileExportPayload {
+  filename: string;
+  mimeType: string;
+  base64: string;
+}
+
+export type NativeExportDelivery = 'native-share' | 'browser-download';
+
 declare global {
   interface Window {
     TravelGlobeNative?: {
@@ -96,6 +105,21 @@ export function postNativeMessage<TPayload>(type: string, payload: TPayload): bo
     payload
   });
   return true;
+}
+
+export async function exportBlob(blob: Blob, filename: string, mimeType = blob.type || 'application/octet-stream'): Promise<NativeExportDelivery> {
+  if (window.TravelGlobeNative?.post) {
+    try {
+      const base64 = arrayBufferToBase64(await blob.arrayBuffer());
+      if (postNativeMessage<NativeFileExportPayload>('file.export', { filename, mimeType, base64 })) {
+        return 'native-share';
+      }
+    } catch {
+      // Fall through to browser download if native export bridge is unavailable or rejects the payload.
+    }
+  }
+  downloadBlob(blob, filename);
+  return 'browser-download';
 }
 
 export function flightPlanPayloadFromJourney(journey: Journey): NativeFlightPlanPayload {
@@ -168,4 +192,14 @@ function stringMetadata(value: unknown, fallback = ''): string {
 
 function finiteOrUndefined(value: number | null): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
 }

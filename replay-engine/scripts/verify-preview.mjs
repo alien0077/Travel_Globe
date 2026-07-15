@@ -342,6 +342,7 @@ async function clickViewMode(page, mode) {
 
 async function verifyMobileFd234Regression(page) {
   const screenshotPath = path.join(screenshotDir, 'mobile-fd234-regression.png');
+  const daylightScreenshotPath = path.join(screenshotDir, 'mobile-fd234-takeoff-daylight.png');
   const preloadScreenshotPath = path.join(screenshotDir, 'mobile-preload-regression.png');
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForSelector('.hud-title', { state: 'visible' });
@@ -354,7 +355,9 @@ async function verifyMobileFd234Regression(page) {
     preloadVisible: {},
     drawerMetrics: {},
     brightness: {},
+    daylightBrightness: {},
     screenshotPath,
+    daylightScreenshotPath,
     preloadScreenshotPath,
     failure: ''
   };
@@ -397,11 +400,11 @@ async function verifyMobileFd234Regression(page) {
     }
 
     for (const [label, expectedText] of [
-      ['Export', '.travelglobe 已送出匯出'],
-      ['Share', '.share-safe.json 已送出匯出'],
-      ['GPX', '.gpx 已送出匯出'],
-      ['KML', '.kml 已送出匯出'],
-      ['Journal', '.journal.md 已送出匯出']
+      ['Export', '.travelglobe 已下載到瀏覽器下載資料夾'],
+      ['Share', '.share-safe.json 已下載到瀏覽器下載資料夾'],
+      ['GPX', '.gpx 已下載到瀏覽器下載資料夾'],
+      ['KML', '.kml 已下載到瀏覽器下載資料夾'],
+      ['Journal', '.journal.md 已下載到瀏覽器下載資料夾']
     ]) {
       await actionButton(page, label).click();
       await page.waitForTimeout(150);
@@ -450,6 +453,27 @@ async function verifyMobileFd234Regression(page) {
     await page.click('.preload-submit');
     await page.waitForTimeout(1200);
     assert((await page.locator('.hud-title').innerText()).includes('FD234'), 'FD234 was not applied');
+    await clickViewMode(page, 'flightPreview');
+    await page.evaluate(() => {
+      const scrubber = document.querySelector('.timeline-scrubber');
+      if (scrubber instanceof HTMLInputElement) {
+        scrubber.value = '1';
+        scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: daylightScreenshotPath, fullPage: false });
+
+    const daylightViewportSize = page.viewportSize() ?? { width: 390, height: 844 };
+    report.daylightBrightness = readPngBrightness(daylightScreenshotPath, {
+      x: 0,
+      y: 250,
+      width: daylightViewportSize.width,
+      height: Math.min(360, daylightViewportSize.height - 470)
+    });
+    assert(report.daylightBrightness.average >= 110, `FD234 daytime takeoff scene still too dark: ${JSON.stringify(report.daylightBrightness)}`);
+    assert(report.daylightBrightness.bright >= 120000, `FD234 daytime takeoff scene lacks visible daylight pixels: ${JSON.stringify(report.daylightBrightness)}`);
+
     await clickViewMode(page, 'commandCenter');
     await page.evaluate(() => {
       const scrubber = document.querySelector('.timeline-scrubber');
@@ -468,8 +492,8 @@ async function verifyMobileFd234Regression(page) {
       width: viewportSize.width,
       height: Math.min(520, viewportSize.height - 260)
     });
-    assert(report.brightness.average >= 12, `FD234 tower scene still too dark: ${JSON.stringify(report.brightness)}`);
-    assert(report.brightness.bright >= 12000, `FD234 tower scene lacks visible bright pixels: ${JSON.stringify(report.brightness)}`);
+    assert(report.brightness.average >= 110, `FD234 tower scene still too dark: ${JSON.stringify(report.brightness)}`);
+    assert(report.brightness.bright >= 180000, `FD234 tower scene lacks visible bright pixels: ${JSON.stringify(report.brightness)}`);
 
     if ((await page.locator('.system-drawer.is-open').count()) > 0) {
       await page.click('.system-drawer > .panel-summary');

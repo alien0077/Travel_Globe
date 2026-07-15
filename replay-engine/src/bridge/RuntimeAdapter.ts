@@ -1,5 +1,6 @@
 import type { Journey } from '../data/types';
-import { createJsonBlob, createTravelGlobePackage, downloadBlob } from '../export/travelglobePackage';
+import { exportBlob, type NativeExportDelivery } from './nativeBridge';
+import { createJsonBlob, createTravelGlobePackage } from '../export/travelglobePackage';
 import { createShareSafeJourney } from '../privacy/redactJourney';
 
 export interface RuntimeAdapter {
@@ -8,8 +9,8 @@ export interface RuntimeAdapter {
   listSavedJourneys(): Promise<SavedJourneySummary[]>;
   saveJourney(journey: Journey): Promise<void>;
   deleteJourney(journeyId: string): Promise<void>;
-  exportJourney(journey: Journey): Promise<void>;
-  exportShareSafeJourney(journey: Journey): Promise<void>;
+  exportJourney(journey: Journey): Promise<NativeExportDelivery>;
+  exportShareSafeJourney(journey: Journey): Promise<NativeExportDelivery>;
   getLocationCapability(): LocationCapability;
 }
 
@@ -94,12 +95,12 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
     }
   }
 
-  async exportJourney(journey: Journey): Promise<void> {
-    downloadBlob(createTravelGlobePackage(journey), `${journey.id}.travelglobe`);
+  async exportJourney(journey: Journey): Promise<NativeExportDelivery> {
+    return exportBlob(createTravelGlobePackage(journey), `${journey.id}.travelglobe`, 'application/x-travelglobe');
   }
 
-  async exportShareSafeJourney(journey: Journey): Promise<void> {
-    downloadBlob(createJsonBlob(createShareSafeJourney(journey)), `${journey.id}.share-safe.json`);
+  async exportShareSafeJourney(journey: Journey): Promise<NativeExportDelivery> {
+    return exportBlob(createJsonBlob(createShareSafeJourney(journey)), `${journey.id}.share-safe.json`, 'application/json');
   }
 
   getLocationCapability(): LocationCapability {
