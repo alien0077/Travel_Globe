@@ -47,15 +47,28 @@ input {
 .globe-viewport {
   position: absolute;
   inset: 0;
+  overflow: hidden;
 }
 
 .globe-viewport canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   cursor: grab;
   touch-action: none;
   user-select: none;
+}
+
+.globe-viewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 48% 38%, rgb(76 132 158 / 24%) 0 22%, rgb(76 132 158 / 10%) 42%, rgb(76 132 158 / 0%) 70%),
+    linear-gradient(180deg, rgb(40 82 110 / 30%) 0%, rgb(16 43 62 / 16%) 45%, rgb(29 70 94 / 20%) 100%);
 }
 
 .globe-viewport canvas:active {
@@ -65,6 +78,7 @@ input {
 .globe-label-layer {
   position: absolute;
   inset: 0;
+  z-index: 2;
   overflow: hidden;
   pointer-events: none;
 }
@@ -427,7 +441,10 @@ input {
   gap: 10px;
   max-height: calc(100svh - 220px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 10px 10px;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .system-drawer:not(.is-open) .drawer-body {
@@ -1141,6 +1158,22 @@ select.preload-input {
 
   .info-dock.has-open-preload .drawer-body {
     max-height: none;
+  }
+
+  .info-dock.has-open-preload .action-grid,
+  .info-dock.has-open-preload .capability,
+  .info-dock.has-open-preload .below-me,
+  .info-dock.has-open-preload .product-panel-shell,
+  .info-dock.has-open-preload .timeline-panel {
+    display: none;
+  }
+
+  .info-dock.has-open-preload .preload-panel-shell {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .controls {

@@ -34,6 +34,8 @@ export class TravelGlobeScene {
   private readonly earth: THREE.Mesh;
   private readonly clouds: THREE.Mesh;
   private readonly nightLights: THREE.Mesh;
+  private readonly skyDome: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  private readonly nightSurfaceWash: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly ambient: THREE.AmbientLight;
   private readonly sun: THREE.DirectionalLight;
   private readonly cityLights: THREE.Points;
@@ -62,11 +64,12 @@ export class TravelGlobeScene {
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true,
+      alpha: false,
       preserveDrawingBuffer: true
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.setClearColor(0x2a4d68, 1);
     this.container.appendChild(this.renderer.domElement);
     this.labelLayer = document.createElement('div');
     this.labelLayer.className = 'globe-label-layer';
@@ -77,8 +80,10 @@ export class TravelGlobeScene {
     this.container.appendChild(this.labelLayer);
     this.bindInteraction();
 
-    this.scene.background = new THREE.Color(0xd7e5e1);
-    this.scene.fog = new THREE.Fog(0xd7e5e1, 9, 18);
+    this.skyDome = createSkyDome();
+    this.scene.background = new THREE.Color(0x2a4d68);
+    this.scene.fog = new THREE.Fog(0x2a4d68, 9, 18);
+    this.scene.add(this.skyDome);
     this.scene.add(createStarField(360, 46));
 
     const { globe, earth, clouds, nightLights } = createGlobe();
@@ -86,6 +91,8 @@ export class TravelGlobeScene {
     this.clouds = clouds;
     this.nightLights = nightLights;
     this.scene.add(globe);
+    this.nightSurfaceWash = createNightSurfaceWash();
+    this.scene.add(this.nightSurfaceWash);
     const cityLights = createRouteCityLights(routeLandmarks);
     this.cityLights = cityLights.points;
     this.cityLightMaterial = cityLights.material;
@@ -233,18 +240,22 @@ export class TravelGlobeScene {
     const nightFactor = nightFactorAt(point, sunVector);
     const dayFactor = 1 - nightFactor;
     const daySky = new THREE.Color(0xd7e5e1);
-    const nightSky = new THREE.Color(0x244260);
+    const nightSky = new THREE.Color(0x2a4d68);
     const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
     this.scene.background = sky;
+    this.renderer.setClearColor(sky, 1);
+    this.skyDome.material.color.copy(sky);
     if (this.scene.fog) {
       this.scene.fog.color.copy(sky);
     }
 
-    this.ambient.intensity = lerp(2.35, 3.2, dayFactor);
-    this.sun.intensity = lerp(1.15, 4.2, dayFactor);
+    this.ambient.intensity = lerp(2.9, 3.2, dayFactor);
+    this.sun.intensity = lerp(1.35, 4.2, dayFactor);
     const earthMaterial = this.earth.material;
     if (earthMaterial instanceof THREE.MeshStandardMaterial) {
-      earthMaterial.emissiveIntensity = lerp(0.62, 0.52, dayFactor);
+      earthMaterial.color.lerpColors(new THREE.Color(0xa8c9dc), new THREE.Color(0xffffff), dayFactor);
+      earthMaterial.emissive.lerpColors(new THREE.Color(0x4e7d98), new THREE.Color(0x172939), dayFactor);
+      earthMaterial.emissiveIntensity = lerp(0.86, 0.52, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
       this.clouds.material.opacity = lerp(0.36, 0.38, dayFactor);
@@ -252,6 +263,7 @@ export class TravelGlobeScene {
     if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
       this.nightLights.material.opacity = lerp(0.18, 0.98, nightFactor);
     }
+    this.nightSurfaceWash.material.opacity = lerp(0.34, 0.05, dayFactor);
     this.cityLightMaterial.opacity = lerp(0.2, 0.98, nightFactor);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
   }
@@ -315,6 +327,30 @@ export class TravelGlobeScene {
       hideLabel(label.element);
     }
   }
+}
+
+function createSkyDome(): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {
+  const geometry = new THREE.SphereGeometry(58, 48, 24);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x2a4d68,
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false
+  });
+  return new THREE.Mesh(geometry, material);
+}
+
+function createNightSurfaceWash(): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x4f7f9a,
+    transparent: true,
+    opacity: 0.34,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.018, 96, 64), material);
+  mesh.renderOrder = 1;
+  return mesh;
 }
 
 function hideLabel(element: HTMLSpanElement): void {

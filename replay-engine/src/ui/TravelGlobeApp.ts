@@ -1061,14 +1061,18 @@ export class TravelGlobeApp {
     if (!this.journey) {
       return;
     }
+    this.capability.textContent = `正在匯出 ${this.journey.id}.travelglobe...`;
     void this.adapter.exportJourney(this.journey);
+    this.capability.textContent = `${this.journey.id}.travelglobe 已送出匯出。`;
   }
 
   private exportShareSafeJson(): void {
     if (!this.journey) {
       return;
     }
+    this.capability.textContent = `正在建立 ${this.journey.id}.share-safe.json...`;
     void this.adapter.exportShareSafeJourney(this.journey);
+    this.capability.textContent = `${this.journey.id}.share-safe.json 已送出匯出。`;
   }
 
   private exportJournalMarkdown(): void {
@@ -1077,6 +1081,7 @@ export class TravelGlobeApp {
     }
     const journal = generateOfflineJournal(this.journey);
     downloadBlob(new Blob([journal.markdown], { type: 'text/markdown' }), `${this.journey.id}.journal.md`);
+    this.capability.textContent = `${this.journey.id}.journal.md 已送出匯出。`;
   }
 
   private exportGpx(): void {
@@ -1084,6 +1089,7 @@ export class TravelGlobeApp {
       return;
     }
     downloadBlob(new Blob([createGpx(this.journey)], { type: 'application/gpx+xml' }), `${this.journey.id}.gpx`);
+    this.capability.textContent = `${this.journey.id}.gpx 已送出匯出。`;
   }
 
   private exportKml(): void {
@@ -1091,6 +1097,7 @@ export class TravelGlobeApp {
       return;
     }
     downloadBlob(new Blob([createKml(this.journey)], { type: 'application/vnd.google-earth.kml+xml' }), `${this.journey.id}.kml`);
+    this.capability.textContent = `${this.journey.id}.kml 已送出匯出。`;
   }
 
   private renderBelowMe(sample: ReturnType<typeof sampleReplayAt>): void {
