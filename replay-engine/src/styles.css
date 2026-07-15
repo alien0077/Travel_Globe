@@ -1107,10 +1107,13 @@ select.preload-input {
     position: fixed;
     top: calc(10px + env(safe-area-inset-top));
     right: calc(10px + env(safe-area-inset-right));
+    bottom: calc(198px + env(safe-area-inset-bottom));
     left: calc(10px + env(safe-area-inset-left));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     z-index: 12;
     width: auto;
-    max-height: calc(100svh - 92px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: none;
   }
 
   .system-drawer:not(.is-open) .panel-summary {
@@ -1132,11 +1135,12 @@ select.preload-input {
   }
 
   .drawer-body {
-    max-height: calc(100svh - 154px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 0;
+    max-height: none;
   }
 
   .info-dock.has-open-preload .drawer-body {
-    max-height: calc(100svh - 204px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: none;
   }
 
   .controls {

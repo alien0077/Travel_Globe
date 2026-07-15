@@ -232,6 +232,9 @@ export class TravelGlobeApp {
     const timelineTitle = document.createElement('summary');
     timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = '旅遊紀錄';
+    bindTouchAction(timelineTitle, () => {
+      timeline.open = !timeline.open;
+    });
     this.recordFilterBar.className = 'record-filters';
     this.timelineList.className = 'timeline-list';
     this.recordPreview.className = 'record-preview';
@@ -244,6 +247,9 @@ export class TravelGlobeApp {
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
+    bindTouchAction(productSummary, () => {
+      productShell.open = !productShell.open;
+    });
     productShell.append(productSummary, this.productPanel);
 
     this.preloadPanel.className = 'preload-panel';
@@ -253,6 +259,10 @@ export class TravelGlobeApp {
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載';
+    bindTouchAction(preloadSummary, () => {
+      preloadShell.open = !preloadShell.open;
+      dock.classList.toggle('has-open-preload', preloadShell.open);
+    });
     preloadShell.append(preloadSummary, this.preloadPanel);
     preloadShell.addEventListener('toggle', () => {
       dock.classList.toggle('has-open-preload', preloadShell.open);
@@ -294,48 +304,51 @@ export class TravelGlobeApp {
     importButton.type = 'button';
     importButton.className = 'control-button secondary-action';
     importButton.textContent = 'Import';
-    importButton.addEventListener('click', () => this.fileInput.click());
+    bindTouchAction(importButton, () => this.fileInput.click());
 
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'control-button secondary-action';
     exportButton.textContent = 'Export';
-    exportButton.addEventListener('click', () => this.exportTravelGlobe());
+    bindTouchAction(exportButton, () => this.exportTravelGlobe());
 
     const shareButton = document.createElement('button');
     shareButton.type = 'button';
     shareButton.className = 'control-button secondary-action';
     shareButton.textContent = 'Share';
-    shareButton.addEventListener('click', () => this.exportShareSafeJson());
+    bindTouchAction(shareButton, () => this.exportShareSafeJson());
 
     const manualLink = document.createElement('a');
     manualLink.className = 'control-button control-link secondary-action';
     manualLink.href = './readme.html';
     manualLink.textContent = '使用手冊';
+    bindTouchAction(manualLink, () => {
+      window.location.href = manualLink.href;
+    });
 
     const gpxButton = document.createElement('button');
     gpxButton.type = 'button';
     gpxButton.className = 'control-button secondary-action';
     gpxButton.textContent = 'GPX';
-    gpxButton.addEventListener('click', () => this.exportGpx());
+    bindTouchAction(gpxButton, () => this.exportGpx());
 
     const kmlButton = document.createElement('button');
     kmlButton.type = 'button';
     kmlButton.className = 'control-button secondary-action';
     kmlButton.textContent = 'KML';
-    kmlButton.addEventListener('click', () => this.exportKml());
+    bindTouchAction(kmlButton, () => this.exportKml());
 
     const journalButton = document.createElement('button');
     journalButton.type = 'button';
     journalButton.className = 'control-button secondary-action';
     journalButton.textContent = 'Journal';
-    journalButton.addEventListener('click', () => this.exportJournalMarkdown());
+    bindTouchAction(journalButton, () => this.exportJournalMarkdown());
 
     const packButton = document.createElement('button');
     packButton.type = 'button';
     packButton.className = 'control-button secondary-action';
     packButton.textContent = 'Pack';
-    packButton.addEventListener('click', () => {
+    bindTouchAction(packButton, () => {
       this.installOfflinePack(coreOfflinePacks[0].id);
       this.renderProductPanel();
     });
@@ -1859,6 +1872,26 @@ function airportDisplayCode(airport: AirportRecord): string {
 
 function stringValue(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+}
+
+function bindTouchAction(element: HTMLElement, action: (event: Event) => void): void {
+  let lastActivationMs = 0;
+  const activate = (event: Event): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    const now = performance.now();
+    if (now - lastActivationMs < 280) {
+      return;
+    }
+    lastActivationMs = now;
+    action(event);
+  };
+  element.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+  });
+  element.addEventListener('pointerup', activate);
+  element.addEventListener('touchend', activate, { passive: false });
+  element.addEventListener('click', activate);
 }
 
 function toInputDate(timestamp: string): string {
