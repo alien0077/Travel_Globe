@@ -38,8 +38,8 @@ export class TravelGlobeScene {
   private readonly nightSurfaceWash: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly ambient: THREE.AmbientLight;
   private readonly sun: THREE.DirectionalLight;
-  private readonly cityLights: THREE.Points;
-  private readonly cityLightMaterial: THREE.PointsMaterial;
+  private readonly cityLights: THREE.InstancedMesh;
+  private readonly cityLightMaterial: THREE.MeshBasicMaterial;
   private readonly airportMarkers: THREE.Group;
   private readonly labelLayer: HTMLDivElement;
   private readonly focusedAirportLabel: HTMLSpanElement;
@@ -102,7 +102,7 @@ export class TravelGlobeScene {
     this.airportMarkers = createAirportSurfaceMarkers(segment.origin, segment.destination);
     this.scene.add(this.airportMarkers);
     const cityLights = createRouteCityLights(routeLandmarks);
-    this.cityLights = cityLights.points;
+    this.cityLights = cityLights.mesh;
     this.cityLightMaterial = cityLights.material;
     this.scene.add(this.cityLights);
     this.routeTrack = createRouteTrack(segment.derivedReplayRoute.points, [segment.derivedReplayRoute.points[0]], 180000);
@@ -132,6 +132,8 @@ export class TravelGlobeScene {
     const nearGroundStrength = nearGroundAirportStrength(point, airportFocus.strength);
     this.container.dataset.airportFocus = airportFocus.strength.toFixed(3);
     this.container.dataset.nearGroundFocus = nearGroundStrength.toFixed(3);
+    this.container.dataset.airportMarkerPlacement = 'surface-plane';
+    this.container.dataset.cityLightPlacement = this.cityLights.userData.surfaceLocked === true ? 'surface-plane' : 'floating';
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.aircraft.scale.setScalar(lerp(1, 0.095, nearGroundStrength));
     this.aircraft.visible = cameraMode !== 'pilotView';
@@ -362,11 +364,11 @@ export class TravelGlobeScene {
     const nearScale = lerp(1, 0.34, nearGroundStrength);
     this.container.dataset.airportMarkerScale = nearScale.toFixed(3);
     for (const marker of this.airportMarkers.children) {
-      if (!(marker instanceof THREE.Sprite)) {
+      if (!(marker instanceof THREE.Mesh)) {
         continue;
       }
       const baseScale = typeof marker.userData.baseScale === 'number' ? marker.userData.baseScale : 0.05;
-      marker.scale.setScalar(baseScale * nearScale);
+      marker.scale.set(baseScale * nearScale, baseScale * nearScale, 1);
     }
   }
 
@@ -386,7 +388,7 @@ export class TravelGlobeScene {
         hideLabel(label.element);
       }
     }
-    const vector = geographicToVector3(airportFocus.point, 2.07, 900000);
+    const vector = geographicToVector3(airportFocus.point, 2.008, 900000);
     const projected = new THREE.Vector3(vector.x, vector.y, vector.z).project(this.camera);
     if (projected.z <= -1 || projected.z >= 1 || projected.x < -1.2 || projected.x > 1.2 || projected.y < -1.2 || projected.y > 1.2) {
       return;
@@ -427,16 +429,17 @@ function createNightSurfaceWash(): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBa
 function createAirportSurfaceMarkers(origin: PlaceReference, destination: PlaceReference): THREE.Group {
   const group = new THREE.Group();
   for (const [index, place] of [origin, destination].entries()) {
-    const marker = new THREE.Sprite(new THREE.SpriteMaterial({
+    const marker = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
       map: createAirportMarkerTexture(index === 1),
       transparent: true,
-      depthTest: false,
+      depthTest: true,
       depthWrite: false
     }));
-    const vector = geographicToVector3(place, 2.04, 900000);
+    const vector = geographicToVector3(place, 2.006, 900000);
     marker.position.set(vector.x, vector.y, vector.z);
-    marker.userData.baseScale = index === 1 ? 0.078 : 0.064;
-    marker.scale.setScalar(marker.userData.baseScale);
+    orientSurfacePlane(marker);
+    marker.userData.baseScale = index === 1 ? 0.082 : 0.068;
+    marker.scale.set(marker.userData.baseScale, marker.userData.baseScale, 1);
     marker.renderOrder = 8;
     group.add(marker);
   }
@@ -703,9 +706,8 @@ function shouldSnapCamera(
   return haversineDistanceMeters(previousPoint, currentPoint) > 15000;
 }
 
-function createRouteCityLights(features: GeographicFeature[]): { points: THREE.Points; material: THREE.PointsMaterial } {
-  const positions: number[] = [];
-  const colors: number[] = [];
+function createRouteCityLights(features: GeographicFeature[]): { mesh: THREE.InstancedMesh; material: THREE.MeshBasicMaterial } {
+  const points: Array<{ position: THREE.Vector3; size: number; color: THREE.Color }> = [];
   const lightFeatures = features
     .filter((feature) => feature.type === 'majorCity' && feature.importance >= 0.76)
     .sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
@@ -725,32 +727,54 @@ function createRouteCityLights(features: GeographicFeature[]): { points: THREE.P
         ...feature,
         latitude: feature.latitude + latitudeOffset,
         longitude: feature.longitude + longitudeOffset
-      }, 2.021, 900000);
-      positions.push(vector.x, vector.y, vector.z);
+      }, 2.004, 900000);
       const amber = 0.36 + random() * 0.16;
       const brightness = 0.72 + random() * 0.3;
-      colors.push(brightness, brightness * amber, brightness * (0.04 + random() * 0.04));
+      const size = 0.006 + random() * 0.006;
+      const color = new THREE.Color(brightness, brightness * amber, brightness * (0.04 + random() * 0.04));
+      points.push({ position: new THREE.Vector3(vector.x, vector.y, vector.z), size, color });
     }
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  const material = new THREE.PointsMaterial({
-    size: 0.015,
+  const geometry = new THREE.CircleGeometry(1, 18);
+  const material = new THREE.MeshBasicMaterial({
     map: createCityLightSpriteTexture(),
-    vertexColors: true,
     transparent: true,
     opacity: 0,
     blending: THREE.AdditiveBlending,
+    depthTest: true,
     depthWrite: false,
-    alphaTest: 0.04
+    alphaTest: 0.04,
+    side: THREE.DoubleSide
   });
+  const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, points.length));
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  for (const [index, point] of points.entries()) {
+    const matrix = surfacePlaneMatrix(point.position, point.size);
+    mesh.setMatrixAt(index, matrix);
+    mesh.setColorAt(index, point.color);
+  }
+  mesh.count = points.length;
+  mesh.renderOrder = 3;
+  mesh.userData.surfaceLocked = true;
 
   return {
-    points: new THREE.Points(geometry, material),
+    mesh,
     material
   };
+}
+
+function orientSurfacePlane(mesh: THREE.Mesh): void {
+  const normal = mesh.position.clone().normalize();
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+}
+
+function surfacePlaneMatrix(position: THREE.Vector3, size: number): THREE.Matrix4 {
+  const matrix = new THREE.Matrix4();
+  const normal = position.clone().normalize();
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+  matrix.compose(position, quaternion, new THREE.Vector3(size, size, 1));
+  return matrix;
 }
 
 function createCityLightSpriteTexture(): THREE.CanvasTexture {

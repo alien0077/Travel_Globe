@@ -233,13 +233,12 @@ export class TravelGlobeApp {
     const timelineTitle = document.createElement('summary');
     timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = '旅遊紀錄';
-    bindTouchAction(timelineTitle, () => {
-      timeline.open = !timeline.open;
-    });
+    bindDetailsSummaryToggle(timelineTitle, timeline);
     this.recordFilterBar.className = 'record-filters';
     this.timelineList.className = 'timeline-list';
     this.recordPreview.className = 'record-preview';
     timeline.append(timelineTitle, this.recordFilterBar, this.timelineList, this.recordPreview);
+    keepDetailsOpenDuringContentGestures(this.recordFilterBar, this.timelineList, this.recordPreview);
 
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
@@ -248,10 +247,9 @@ export class TravelGlobeApp {
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
-    bindTouchAction(productSummary, () => {
-      productShell.open = !productShell.open;
-    });
+    bindDetailsSummaryToggle(productSummary, productShell);
     productShell.append(productSummary, this.productPanel);
+    keepDetailsOpenDuringContentGestures(this.productPanel);
 
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
@@ -260,8 +258,7 @@ export class TravelGlobeApp {
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載';
-    bindTouchAction(preloadSummary, () => {
-      preloadShell.open = !preloadShell.open;
+    bindDetailsSummaryToggle(preloadSummary, preloadShell, () => {
       dock.classList.toggle('has-open-preload', preloadShell.open);
     });
     preloadShell.append(preloadSummary, this.preloadPanel);
@@ -1910,6 +1907,70 @@ function bindTouchAction(element: HTMLElement, action: (event: Event) => void | 
   element.addEventListener('pointerup', activate);
   element.addEventListener('touchend', activate, { passive: false });
   element.addEventListener('click', activate);
+}
+
+function bindDetailsSummaryToggle(
+  summary: HTMLElement,
+  details: HTMLDetailsElement,
+  onToggle?: () => void
+): void {
+  let pointerStart: { x: number; y: number; timeMs: number } | undefined;
+
+  const toggle = (): void => {
+    details.open = !details.open;
+    onToggle?.();
+  };
+
+  summary.addEventListener('pointerdown', (event) => {
+    pointerStart = {
+      x: event.clientX,
+      y: event.clientY,
+      timeMs: performance.now()
+    };
+    event.stopPropagation();
+  });
+  summary.addEventListener('pointercancel', () => {
+    pointerStart = undefined;
+  });
+  summary.addEventListener('pointerup', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!pointerStart) {
+      return;
+    }
+    const travel = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
+    const durationMs = performance.now() - pointerStart.timeMs;
+    pointerStart = undefined;
+    if (travel <= 12 && durationMs <= 700) {
+      toggle();
+    }
+  });
+  summary.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  summary.addEventListener('touchend', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, { passive: false });
+  summary.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    toggle();
+  });
+}
+
+function keepDetailsOpenDuringContentGestures(...elements: HTMLElement[]): void {
+  for (const element of elements) {
+    element.addEventListener('pointerdown', (event) => event.stopPropagation());
+    element.addEventListener('pointerup', (event) => event.stopPropagation());
+    element.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
+    element.addEventListener('touchend', (event) => event.stopPropagation(), { passive: true });
+    element.addEventListener('click', (event) => event.stopPropagation());
+  }
 }
 
 function toInputDate(timestamp: string): string {

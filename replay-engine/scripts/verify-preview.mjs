@@ -461,19 +461,23 @@ async function verifyMobileFd234Regression(page) {
     await page.getByText('Travel Atlas', { exact: true }).click();
     await page.waitForTimeout(200);
     report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
+    report.cardMetrics.travelAtlasGesture = await dragInsidePanelWithoutClosing(page, '.product-panel', '.product-panel-shell');
     await page.screenshot({ path: report.travelAtlasScreenshotPath, fullPage: false });
     assert(report.cardMetrics.travelAtlas.visible, `Travel Atlas panel is not visible: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.reachedBottom, `Travel Atlas panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
+    assert(report.cardMetrics.travelAtlasGesture.open, `Travel Atlas collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.travelAtlasGesture)}`);
     await page.getByText('Travel Atlas', { exact: true }).click();
     await page.waitForTimeout(150);
     await page.getByText('旅遊紀錄', { exact: true }).click();
     await page.waitForTimeout(200);
     report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-list');
+    report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-list', '.timeline-panel');
     await page.screenshot({ path: report.timelineScreenshotPath, fullPage: false });
     assert(report.cardMetrics.timeline.visible, `Travel record panel is not visible: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.bottom <= report.cardMetrics.timeline.drawerBottom + 1, `Travel record panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.reachedBottom, `Travel record panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.timeline)}`);
+    assert(report.cardMetrics.timelineGesture.open, `Travel record collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.timelineGesture)}`);
 
     await page.click('.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
@@ -508,12 +512,16 @@ async function verifyMobileFd234Regression(page) {
       airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
       nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
       airportMarkerScale: Number(document.querySelector('.globe-viewport')?.dataset.airportMarkerScale ?? '1'),
+      airportMarkerPlacement: document.querySelector('.globe-viewport')?.dataset.airportMarkerPlacement ?? '',
+      cityLightPlacement: document.querySelector('.globe-viewport')?.dataset.cityLightPlacement ?? '',
       hudStats: document.querySelector('.hud-stats')?.textContent ?? '',
       labels: [...document.querySelectorAll('.globe-place-label:not(.is-hidden)')].map((label) => label.textContent?.trim() ?? '')
     }));
     assert(report.takeoffFocus.airportFocus >= 0.82, `FD234 takeoff did not focus the airport: ${JSON.stringify(report.takeoffFocus)}`);
     assert(report.takeoffFocus.nearGroundFocus >= 0.8, `FD234 takeoff did not use near-ground zoom: ${JSON.stringify(report.takeoffFocus)}`);
     assert(report.takeoffFocus.airportMarkerScale <= 0.42, `FD234 takeoff airport marker remains too large: ${JSON.stringify(report.takeoffFocus)}`);
+    assert(report.takeoffFocus.airportMarkerPlacement === 'surface-plane', `FD234 takeoff airport marker is not surface-locked: ${JSON.stringify(report.takeoffFocus)}`);
+    assert(report.takeoffFocus.cityLightPlacement === 'surface-plane', `FD234 takeoff city lights are not surface-locked: ${JSON.stringify(report.takeoffFocus)}`);
     assert(report.takeoffFocus.labels.some((label) => label.includes('KHH') || label.includes('Kaohsiung')), `FD234 takeoff airport label is not visible: ${JSON.stringify(report.takeoffFocus)}`);
 
     const daylightViewportSize = page.viewportSize() ?? { width: 390, height: 844 };
@@ -540,12 +548,16 @@ async function verifyMobileFd234Regression(page) {
       airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
       nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
       airportMarkerScale: Number(document.querySelector('.globe-viewport')?.dataset.airportMarkerScale ?? '1'),
+      airportMarkerPlacement: document.querySelector('.globe-viewport')?.dataset.airportMarkerPlacement ?? '',
+      cityLightPlacement: document.querySelector('.globe-viewport')?.dataset.cityLightPlacement ?? '',
       hudStats: document.querySelector('.hud-stats')?.textContent ?? '',
       labels: [...document.querySelectorAll('.globe-place-label:not(.is-hidden)')].map((label) => label.textContent?.trim() ?? '')
     }));
     assert(report.approachFocus.airportFocus >= 0.82, `FD234 approach did not focus the airport: ${JSON.stringify(report.approachFocus)}`);
     assert(report.approachFocus.nearGroundFocus >= 0.8, `FD234 low approach did not enter near-ground zoom: ${JSON.stringify(report.approachFocus)}`);
     assert(report.approachFocus.airportMarkerScale <= 0.42, `FD234 airport marker remains too large on approach: ${JSON.stringify(report.approachFocus)}`);
+    assert(report.approachFocus.airportMarkerPlacement === 'surface-plane', `FD234 approach airport marker is not surface-locked: ${JSON.stringify(report.approachFocus)}`);
+    assert(report.approachFocus.cityLightPlacement === 'surface-plane', `FD234 approach city lights are not surface-locked: ${JSON.stringify(report.approachFocus)}`);
     assert(report.approachFocus.labels.some((label) => label.includes('NRT') || label.includes('Narita')), `FD234 approach airport label is not visible: ${JSON.stringify(report.approachFocus)}`);
 
     await page.evaluate(() => {
@@ -700,6 +712,25 @@ async function scrollPanelToBottom(page, selector) {
       controlsTop: Math.round(controls.top)
     };
   }, selector);
+}
+
+async function dragInsidePanelWithoutClosing(page, panelSelector, shellSelector) {
+  const panel = page.locator(panelSelector).first();
+  const box = await panel.boundingBox();
+  assert(box, `panel box missing for ${panelSelector}`);
+  const startX = box.x + box.width / 2;
+  const startY = box.y + Math.min(box.height - 8, Math.max(18, box.height * 0.68));
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.waitForTimeout(820);
+  await page.mouse.move(startX, Math.max(box.y + 12, startY - 58), { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(180);
+  return {
+    open: (await page.locator(`${shellSelector}[open]`).count()) === 1,
+    panelSelector,
+    shellSelector
+  };
 }
 
 function decodePng(filePath) {
