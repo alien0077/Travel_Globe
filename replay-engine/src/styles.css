@@ -145,6 +145,14 @@ input {
     0 0 14px rgb(255 213 122 / 82%);
 }
 
+.globe-place-label.is-focused-airport {
+  max-width: min(285px, calc(100vw - 128px));
+  overflow: hidden;
+  color: #fff7cf;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
 .overlay {
   position: absolute;
   inset: 0;

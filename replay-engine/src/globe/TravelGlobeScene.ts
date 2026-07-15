@@ -40,7 +40,9 @@ export class TravelGlobeScene {
   private readonly sun: THREE.DirectionalLight;
   private readonly cityLights: THREE.Points;
   private readonly cityLightMaterial: THREE.PointsMaterial;
+  private readonly airportMarkers: THREE.Group;
   private readonly labelLayer: HTMLDivElement;
+  private readonly focusedAirportLabel: HTMLSpanElement;
   private readonly landmarkLabels: GlobeDomLabel[];
   private readonly routeTrack: RouteTrack;
   private readonly resizeObserver: ResizeObserver;
@@ -74,10 +76,13 @@ export class TravelGlobeScene {
     this.container.appendChild(this.renderer.domElement);
     this.labelLayer = document.createElement('div');
     this.labelLayer.className = 'globe-label-layer';
+    this.focusedAirportLabel = document.createElement('span');
+    this.focusedAirportLabel.className = 'globe-place-label is-airport is-focused-airport is-hidden';
     this.landmarkLabels = createDomLandmarkLabels(this.labelLayer, [
       ...createAirportFeatures(segment.origin, segment.destination),
       ...routeLandmarks
     ]);
+    this.labelLayer.appendChild(this.focusedAirportLabel);
     this.container.appendChild(this.labelLayer);
     this.bindInteraction();
 
@@ -94,6 +99,8 @@ export class TravelGlobeScene {
     this.scene.add(globe);
     this.nightSurfaceWash = createNightSurfaceWash();
     this.scene.add(this.nightSurfaceWash);
+    this.airportMarkers = createAirportSurfaceMarkers(segment.origin, segment.destination);
+    this.scene.add(this.airportMarkers);
     const cityLights = createRouteCityLights(routeLandmarks);
     this.cityLights = cityLights.points;
     this.cityLightMaterial = cityLights.material;
@@ -121,12 +128,19 @@ export class TravelGlobeScene {
     this.currentPoint = point;
     this.currentCameraMode = cameraMode;
     this.previousCameraMode = cameraMode;
+    const airportFocus = airportFocusForPoint(point, this.segment);
+    this.container.dataset.airportFocus = airportFocus.strength.toFixed(3);
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
+    this.aircraft.scale.setScalar(lerp(1, 0.18, airportFocus.strength));
     this.aircraft.visible = cameraMode !== 'pilotView';
     updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
     this.updateDayNight(point);
     this.cameraController.setMode(cameraMode);
-    this.cameraController.update(point, bearingDegrees, { snap: snapCamera });
+    this.cameraController.update(point, bearingDegrees, {
+      snap: snapCamera,
+      focusPoint: airportFocus.point,
+      focusStrength: airportFocus.strength
+    });
   }
 
   start(onFrame: (timeMs: number) => void): void {
@@ -240,14 +254,16 @@ export class TravelGlobeScene {
     this.sun.position.copy(sunVector.clone().multiplyScalar(8));
     const nightFactor = nightFactorAt(point, sunVector);
     const solarDay = localSolarDay(point);
-    const dayFactor = Math.max(1 - nightFactor, solarDay.factor);
+    const sunDayFactor = 1 - nightFactor;
+    const dayFactor = Number.isFinite(sunDayFactor) ? sunDayFactor : solarDay.factor;
+    const nightAmount = 1 - dayFactor;
     this.container.dataset.dayFactor = dayFactor.toFixed(3);
     this.container.dataset.localSolarHour = solarDay.hour.toFixed(2);
     this.container.classList.toggle('is-daylight', dayFactor >= 0.55);
     this.container.parentElement?.classList.toggle('is-daylight-scene', dayFactor >= 0.55);
     this.renderer.toneMappingExposure = lerp(1.0, 1.36, dayFactor);
     const daySky = new THREE.Color(0xbfdff4);
-    const nightSky = new THREE.Color(0x2a4d68);
+    const nightSky = new THREE.Color(0x07111d);
     const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
     this.scene.background = sky;
     this.renderer.setClearColor(sky, 1);
@@ -256,22 +272,22 @@ export class TravelGlobeScene {
       this.scene.fog.color.copy(sky);
     }
 
-    this.ambient.intensity = lerp(2.8, 4.05, dayFactor);
-    this.sun.intensity = lerp(1.2, 5.8, dayFactor);
+    this.ambient.intensity = lerp(0.95, 4.05, dayFactor);
+    this.sun.intensity = lerp(0.1, 5.8, dayFactor);
     const earthMaterial = this.earth.material;
     if (earthMaterial instanceof THREE.MeshStandardMaterial) {
-      earthMaterial.color.lerpColors(new THREE.Color(0xa8c9dc), new THREE.Color(0xffffff), dayFactor);
-      earthMaterial.emissive.lerpColors(new THREE.Color(0x4e7d98), new THREE.Color(0x10202c), dayFactor);
-      earthMaterial.emissiveIntensity = lerp(0.86, 0.16, dayFactor);
+      earthMaterial.color.lerpColors(new THREE.Color(0x8aa5b8), new THREE.Color(0xffffff), dayFactor);
+      earthMaterial.emissive.lerpColors(new THREE.Color(0x06131f), new THREE.Color(0x10202c), dayFactor);
+      earthMaterial.emissiveIntensity = lerp(0.18, 0.16, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
       this.clouds.material.opacity = lerp(0.36, 0.38, dayFactor);
     }
     if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
-      this.nightLights.material.opacity = lerp(0.18, 0.98, nightFactor);
+      this.nightLights.material.opacity = lerp(0.0, 0.62, nightAmount);
     }
-    this.nightSurfaceWash.material.opacity = lerp(0.34, 0.0, dayFactor);
-    this.cityLightMaterial.opacity = lerp(0.2, 0.98, nightFactor);
+    this.nightSurfaceWash.material.opacity = lerp(0.18, 0.0, dayFactor);
+    this.cityLightMaterial.opacity = lerp(0.0, 0.72, nightAmount);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
   }
 
@@ -327,12 +343,43 @@ export class TravelGlobeScene {
       candidate.label.element.style.opacity = candidate.opacity.toFixed(3);
       candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px) scale(${candidate.scale.toFixed(3)})`;
     }
+    this.showFocusedAirportLabel(width, height);
   }
 
   private hideAllLabels(): void {
     for (const label of this.landmarkLabels) {
       hideLabel(label.element);
     }
+    hideLabel(this.focusedAirportLabel);
+  }
+
+  private showFocusedAirportLabel(width: number, height: number): void {
+    if (!this.currentPoint) {
+      return;
+    }
+    const airportFocus = airportFocusForPoint(this.currentPoint, this.segment);
+    if (!airportFocus.point || airportFocus.strength < 0.68) {
+      return;
+    }
+    for (const label of this.landmarkLabels) {
+      if (
+        label.feature.type === 'airport' &&
+        haversineDistanceMeters(label.feature, airportFocus.point) < 1200
+      ) {
+        hideLabel(label.element);
+      }
+    }
+    const vector = geographicToVector3(airportFocus.point, 2.07, 900000);
+    const projected = new THREE.Vector3(vector.x, vector.y, vector.z).project(this.camera);
+    if (projected.z <= -1 || projected.z >= 1 || projected.x < -1.2 || projected.x > 1.2 || projected.y < -1.2 || projected.y > 1.2) {
+      return;
+    }
+    this.focusedAirportLabel.textContent = airportFocusLabel(airportFocus.point);
+    const x = THREE.MathUtils.clamp(((projected.x + 1) / 2) * width + 22, 8, Math.max(8, width - this.focusedAirportLabel.offsetWidth - 10));
+    const y = THREE.MathUtils.clamp(((-projected.y + 1) / 2) * height - 18, 98, Math.max(98, height - 210));
+    this.focusedAirportLabel.classList.remove('is-hidden');
+    this.focusedAirportLabel.style.opacity = '1';
+    this.focusedAirportLabel.style.transform = `translate(${x}px, ${y}px) scale(${(1.16 + airportFocus.strength * 0.2).toFixed(3)})`;
   }
 }
 
@@ -358,6 +405,72 @@ function createNightSurfaceWash(): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBa
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.018, 96, 64), material);
   mesh.renderOrder = 1;
   return mesh;
+}
+
+function createAirportSurfaceMarkers(origin: PlaceReference, destination: PlaceReference): THREE.Group {
+  const group = new THREE.Group();
+  for (const [index, place] of [origin, destination].entries()) {
+    const marker = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: createAirportMarkerTexture(index === 1),
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    }));
+    const vector = geographicToVector3(place, 2.04, 900000);
+    marker.position.set(vector.x, vector.y, vector.z);
+    marker.scale.setScalar(index === 1 ? 0.16 : 0.13);
+    marker.renderOrder = 8;
+    group.add(marker);
+  }
+  return group;
+}
+
+function createAirportMarkerTexture(isDestination: boolean): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const glow = context.createRadialGradient(64, 64, 4, 64, 64, 58);
+  glow.addColorStop(0, isDestination ? 'rgba(255, 224, 142, 0.72)' : 'rgba(144, 235, 255, 0.58)');
+  glow.addColorStop(0.42, isDestination ? 'rgba(255, 190, 88, 0.26)' : 'rgba(86, 190, 255, 0.18)');
+  glow.addColorStop(1, 'rgba(255,255,255,0)');
+  context.fillStyle = glow;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.save();
+  context.translate(64, 64);
+  context.rotate(-0.64);
+  context.strokeStyle = isDestination ? 'rgba(255, 245, 205, 0.95)' : 'rgba(214, 249, 255, 0.9)';
+  context.lineWidth = 4;
+  context.lineCap = 'round';
+  context.beginPath();
+  context.moveTo(-38, 0);
+  context.lineTo(38, 0);
+  context.stroke();
+  context.setLineDash([7, 7]);
+  context.lineWidth = 2;
+  context.strokeStyle = 'rgba(10, 22, 30, 0.62)';
+  context.beginPath();
+  context.moveTo(-31, 0);
+  context.lineTo(31, 0);
+  context.stroke();
+  context.restore();
+
+  context.strokeStyle = isDestination ? 'rgba(255, 224, 142, 0.9)' : 'rgba(144, 235, 255, 0.72)';
+  context.lineWidth = 3;
+  context.beginPath();
+  context.arc(64, 64, 43, 0, Math.PI * 2);
+  context.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function hideLabel(element: HTMLSpanElement): void {
@@ -401,6 +514,13 @@ function createAirportFeatures(origin: PlaceReference, destination: PlaceReferen
     countryCode: place.countryCode,
     tourismHint: index === 0 ? '起飛機場' : '降落機場'
   }));
+}
+
+function airportFocusLabel(place: PlaceReference): string {
+  const shortName = place.name
+    .replace(/\s+International\s+Airport$/i, '')
+    .replace(/\s+Airport$/i, '');
+  return place.iataCode ? `${place.iataCode} ${shortName}` : shortName;
 }
 
 function mergeSceneFeatures(features: GeographicFeature[]): GeographicFeature[] {
@@ -574,24 +694,39 @@ function createRouteCityLights(features: GeographicFeature[]): { points: THREE.P
     .slice(0, 96);
 
   for (const feature of lightFeatures) {
-    const vector = geographicToVector3(feature, 2.018, 900000);
-    positions.push(vector.x, vector.y, vector.z);
-    const warm = Math.min(1, 0.55 + Math.log10(Math.max(10_000, feature.population ?? 80_000)) / 12);
-    colors.push(1, warm, 0.48);
+    const population = Math.max(12_000, feature.population ?? 120_000);
+    const count = Math.min(18, Math.max(4, Math.round(Math.log10(population) * 2.2)));
+    const spreadMeters = Math.min(22000, Math.max(4200, Math.sqrt(population) * 11));
+    const random = createSeededRandom(hashString(feature.id));
+    for (let index = 0; index < count; index += 1) {
+      const angle = random() * Math.PI * 2;
+      const radius = spreadMeters * Math.sqrt(random());
+      const latitudeOffset = Math.cos(angle) * radius / 111320;
+      const longitudeOffset = Math.sin(angle) * radius / Math.max(28000, 111320 * Math.cos(THREE.MathUtils.degToRad(feature.latitude)));
+      const vector = geographicToVector3({
+        ...feature,
+        latitude: feature.latitude + latitudeOffset,
+        longitude: feature.longitude + longitudeOffset
+      }, 2.021, 900000);
+      positions.push(vector.x, vector.y, vector.z);
+      const warmth = 0.64 + random() * 0.28;
+      const brightness = 0.52 + random() * 0.38;
+      colors.push(brightness, brightness * warmth, brightness * 0.46);
+    }
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: 0.028,
+    size: 0.011,
     map: createCityLightSpriteTexture(),
     vertexColors: true,
     transparent: true,
-    opacity: 0.02,
+    opacity: 0,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
-    alphaTest: 0.08
+    alphaTest: 0.04
   });
 
   return {
@@ -610,9 +745,9 @@ function createCityLightSpriteTexture(): THREE.CanvasTexture {
   }
 
   const glow = context.createRadialGradient(32, 32, 0, 32, 32, 31);
-  glow.addColorStop(0, 'rgba(255, 250, 214, 1)');
-  glow.addColorStop(0.28, 'rgba(255, 216, 119, 0.92)');
-  glow.addColorStop(0.62, 'rgba(255, 183, 77, 0.32)');
+  glow.addColorStop(0, 'rgba(255, 238, 178, 0.92)');
+  glow.addColorStop(0.18, 'rgba(255, 198, 92, 0.62)');
+  glow.addColorStop(0.48, 'rgba(255, 155, 55, 0.16)');
   glow.addColorStop(1, 'rgba(255, 183, 77, 0)');
   context.fillStyle = glow;
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -621,6 +756,39 @@ function createCityLightSpriteTexture(): THREE.CanvasTexture {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
+}
+
+function airportFocusForPoint(point: LocationPoint, segment: JourneySegment): { point?: PlaceReference; strength: number } {
+  const originStrength = airportProximityStrength(point, segment.origin);
+  const destinationStrength = airportProximityStrength(point, segment.destination);
+  return destinationStrength >= originStrength
+    ? { point: segment.destination, strength: destinationStrength }
+    : { point: segment.origin, strength: originStrength };
+}
+
+function airportProximityStrength(point: LocationPoint, airport: PlaceReference): number {
+  const distanceMeters = haversineDistanceMeters(point, airport);
+  const altitudeMeters = Math.max(0, point.altitudeMeters ?? 0);
+  const distanceStrength = 1 - smoothstep(9000, 95000, distanceMeters);
+  const altitudeStrength = 1 - smoothstep(1200, 9800, altitudeMeters);
+  return THREE.MathUtils.clamp(distanceStrength * altitudeStrength, 0, 1);
+}
+
+function createSeededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 0xffffffff;
+  };
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function nightFactorAt(point: LocationPoint, sunVector: THREE.Vector3): number {

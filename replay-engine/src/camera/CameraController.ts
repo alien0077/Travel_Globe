@@ -8,6 +8,12 @@ export type CameraMode = FlightSystemCameraMode | LegacyCameraMode;
 
 const CAMERA_ALTITUDE_SCALE_METERS = 180000;
 
+export interface CameraUpdateOptions {
+  snap?: boolean;
+  focusPoint?: GeographicPoint;
+  focusStrength?: number;
+}
+
 export class CameraController {
   mode: CameraMode = 'global';
   private orbitYaw = 0;
@@ -31,10 +37,15 @@ export class CameraController {
     this.zoom = THREE.MathUtils.clamp(this.zoom * (1 + delta), 0.16, 2.8);
   }
 
-  update(point: GeographicPoint, bearingDegrees: number, options: { snap?: boolean } = {}): void {
+  update(point: GeographicPoint, bearingDegrees: number, options: CameraUpdateOptions = {}): void {
     const lerpAmount = options.snap ? 1 : undefined;
     const aircraftPosition = geographicToVector3(point, 2, CAMERA_ALTITUDE_SCALE_METERS);
     this.target.set(aircraftPosition.x, aircraftPosition.y, aircraftPosition.z);
+    const focusStrength = THREE.MathUtils.clamp(options.focusStrength ?? 0, 0, 1);
+    if (options.focusPoint && focusStrength > 0) {
+      const focusPosition = geographicToVector3(options.focusPoint, 2, CAMERA_ALTITUDE_SCALE_METERS);
+      this.target.lerp(new THREE.Vector3(focusPosition.x, focusPosition.y, focusPosition.z), focusStrength);
+    }
     const normal = this.target.clone().normalize();
     const forward = this.forwardVector(normal, bearingDegrees);
 
@@ -59,11 +70,12 @@ export class CameraController {
 
     if (this.mode === 'overhead') {
       const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const airportZoom = THREE.MathUtils.lerp(1.18, 0.72, focusStrength) * this.zoom;
       this.desired
         .copy(this.target)
-        .add(normal.clone().multiplyScalar(1.18 * this.zoom))
-        .add(right.multiplyScalar(0.09))
-        .add(forward.clone().multiplyScalar(-0.08));
+        .add(normal.clone().multiplyScalar(airportZoom))
+        .add(right.multiplyScalar(THREE.MathUtils.lerp(0.09, 0.025, focusStrength)))
+        .add(forward.clone().multiplyScalar(THREE.MathUtils.lerp(-0.08, -0.02, focusStrength)));
       this.camera.position.lerp(this.desired, lerpAmount ?? 0.12);
       this.camera.up.copy(forward);
       this.camera.lookAt(this.target);

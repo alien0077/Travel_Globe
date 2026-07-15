@@ -216,7 +216,12 @@ for (const viewport of [
     await page.fill('.preload-field:nth-child(2) input', 'CI100');
     await page.fill('.preload-field:nth-child(5) input', '2026-07-11');
     await page.fill('.preload-field:nth-child(6) input', '09:30');
-    await page.click('.preload-submit');
+    await page.evaluate(() => {
+      const submit = document.querySelector('.preload-submit');
+      if (submit instanceof HTMLButtonElement) {
+        submit.click();
+      }
+    });
     await page.waitForTimeout(500);
     afterPreload = await page.evaluate(() => ({
       route: document.querySelector('.hud-route')?.textContent ?? '',
@@ -354,10 +359,14 @@ async function verifyMobileFd234Regression(page) {
     actionStatuses: [],
     preloadVisible: {},
     drawerMetrics: {},
+    arrivalFocus: {},
     brightness: {},
     daylightBrightness: {},
+    nightRegression: {},
     screenshotPath,
     daylightScreenshotPath,
+    arrivalScreenshotPath: path.join(screenshotDir, 'mobile-fd234-arrival-airport.png'),
+    nightScreenshotPath: path.join(screenshotDir, 'mobile-fd234-night-regression.png'),
     preloadScreenshotPath,
     failure: ''
   };
@@ -450,7 +459,12 @@ async function verifyMobileFd234Regression(page) {
 
     await page.locator('.preload-field:nth-child(2) input').fill('FD234');
     await page.waitForTimeout(250);
-    await page.click('.preload-submit');
+    await page.evaluate(() => {
+      const submit = document.querySelector('.preload-submit');
+      if (submit instanceof HTMLButtonElement) {
+        submit.click();
+      }
+    });
     await page.waitForTimeout(1200);
     assert((await page.locator('.hud-title').innerText()).includes('FD234'), 'FD234 was not applied');
     await clickViewMode(page, 'flightPreview');
@@ -473,6 +487,84 @@ async function verifyMobileFd234Regression(page) {
     });
     assert(report.daylightBrightness.average >= 110, `FD234 daytime takeoff scene still too dark: ${JSON.stringify(report.daylightBrightness)}`);
     assert(report.daylightBrightness.bright >= 120000, `FD234 daytime takeoff scene lacks visible daylight pixels: ${JSON.stringify(report.daylightBrightness)}`);
+
+    await clickViewMode(page, 'overhead');
+    await page.evaluate(() => {
+      const scrubber = document.querySelector('.timeline-scrubber');
+      if (scrubber instanceof HTMLInputElement) {
+        scrubber.value = '1000';
+        scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: report.arrivalScreenshotPath, fullPage: false });
+    report.arrivalFocus = await page.evaluate(() => ({
+      airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
+      dayFactor: Number(document.querySelector('.globe-viewport')?.dataset.dayFactor ?? '0'),
+      hudPoint: document.querySelector('.hud-point')?.textContent ?? '',
+      hudStats: document.querySelector('.hud-stats')?.textContent ?? '',
+      activeMode: document.querySelector('.view-mode-button.is-active') instanceof HTMLButtonElement
+        ? document.querySelector('.view-mode-button.is-active')?.getAttribute('data-mode') ?? ''
+        : '',
+      labels: [...document.querySelectorAll('.globe-place-label:not(.is-hidden)')].map((label) => label.textContent?.trim() ?? '')
+    }));
+    assert(report.arrivalFocus.activeMode === 'overhead', `FD234 arrival check did not stay overhead: ${JSON.stringify(report.arrivalFocus)}`);
+    assert(report.arrivalFocus.airportFocus >= 0.82, `FD234 arrival did not zoom/focus the airport: ${JSON.stringify(report.arrivalFocus)}`);
+    assert(report.arrivalFocus.hudStats.includes('0 km'), `FD234 arrival did not reach airport endpoint: ${JSON.stringify(report.arrivalFocus)}`);
+    assert(report.arrivalFocus.labels.some((label) => label.includes('NRT') || label.includes('Narita')), `FD234 arrival airport label is not visible: ${JSON.stringify(report.arrivalFocus)}`);
+
+    await page.evaluate(() => {
+      const timeInput = document.querySelector('.preload-field:nth-child(6) input');
+      if (timeInput instanceof HTMLInputElement) {
+        timeInput.value = '22:15';
+        timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        timeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+    await page.evaluate(() => {
+      const submit = document.querySelector('.preload-submit');
+      if (submit instanceof HTMLButtonElement) {
+        submit.click();
+      }
+    });
+    await page.waitForTimeout(1200);
+    await clickViewMode(page, 'overhead');
+    await page.evaluate(() => {
+      const scrubber = document.querySelector('.timeline-scrubber');
+      if (scrubber instanceof HTMLInputElement) {
+        scrubber.value = '760';
+        scrubber.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: report.nightScreenshotPath, fullPage: false });
+    const nightViewportSize = page.viewportSize() ?? { width: 390, height: 844 };
+    report.nightRegression = {
+      ...readPngBrightness(report.nightScreenshotPath, {
+        x: 0,
+        y: 220,
+        width: nightViewportSize.width,
+        height: Math.min(440, nightViewportSize.height - 430)
+      }),
+      dayFactor: await page.evaluate(() => Number(document.querySelector('.globe-viewport')?.dataset.dayFactor ?? '1')),
+      localSolarHour: await page.evaluate(() => Number(document.querySelector('.globe-viewport')?.dataset.localSolarHour ?? '0'))
+    };
+    assert(report.nightRegression.dayFactor <= 0.35, `FD234 night scene is still using daylight: ${JSON.stringify(report.nightRegression)}`);
+    assert(report.nightRegression.average <= 105, `FD234 night scene is too bright: ${JSON.stringify(report.nightRegression)}`);
+
+    await page.evaluate(() => {
+      const timeInput = document.querySelector('.preload-field:nth-child(6) input');
+      if (timeInput instanceof HTMLInputElement) {
+        timeInput.value = '09:30';
+        timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        timeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const submit = document.querySelector('.preload-submit');
+      if (submit instanceof HTMLButtonElement) {
+        submit.click();
+      }
+    });
+    await page.waitForTimeout(1200);
 
     await clickViewMode(page, 'commandCenter');
     await page.evaluate(() => {
