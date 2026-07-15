@@ -387,6 +387,32 @@ async function verifyMobileFd234Regression(page) {
     await page.click('.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
 
+    assert((await page.locator('.preload-panel-shell[open]').count()) === 1, 'preload/API key panel should be open by default on mobile drawer');
+    for (const label of ['aviationstack API key（保存在本機）', '航班號', '起飛', '抵達', '日期', '時間', '機型', '套用航線']) {
+      report.preloadVisible[label] = await page.getByText(label, { exact: true }).first().isVisible().catch(() => false);
+      assert(report.preloadVisible[label], `preload field not visible: ${label}`);
+    }
+    await page.screenshot({ path: preloadScreenshotPath, fullPage: false });
+
+    report.drawerMetrics = await page.evaluate(() => {
+      const drawer = document.querySelector('.system-drawer')?.getBoundingClientRect();
+      const preload = document.querySelector('.preload-panel-shell')?.getBoundingClientRect();
+      const controls = document.querySelector('.controls')?.getBoundingClientRect();
+      const actionGrid = document.querySelector('.action-grid');
+      return {
+        drawerBottom: drawer?.bottom,
+        preloadBottom: preload?.bottom,
+        controlsTop: controls?.top,
+        actionGridHidden: actionGrid ? getComputedStyle(actionGrid).display === 'none' : false
+      };
+    });
+    assert(report.drawerMetrics.actionGridHidden, 'action grid should hide while preload is open on mobile');
+    assert(report.drawerMetrics.preloadBottom <= report.drawerMetrics.drawerBottom + 1, `preload panel overflowed drawer: ${JSON.stringify(report.drawerMetrics)}`);
+    assert(report.drawerMetrics.drawerBottom < report.drawerMetrics.controlsTop, `drawer overlaps controls: ${JSON.stringify(report.drawerMetrics)}`);
+
+    await page.getByText('航班預載 / API key', { exact: true }).click();
+    await page.waitForTimeout(200);
+
     const labels = ['Import', 'Export', 'Share', '使用手冊', 'GPX', 'KML', 'Journal', 'Pack'];
     report.hitTargets = await page.evaluate((buttonLabels) => buttonLabels.map((label) => {
       const nodes = [...document.querySelectorAll('.action-grid button, .action-grid a')];
@@ -431,33 +457,6 @@ async function verifyMobileFd234Regression(page) {
     await actionButton(page, 'Pack').click();
     await page.waitForTimeout(250);
     assert((await page.locator('.capability').innerText()).includes('Core Global Atlas'), 'Pack button did not update capability text');
-    await page.getByText('航班預載', { exact: true }).click();
-    await page.waitForTimeout(250);
-
-    for (const label of ['aviationstack API key', '航班號', '起飛', '抵達', '日期', '時間', '機型', '套用航線']) {
-      report.preloadVisible[label] = await page.getByText(label, { exact: true }).first().isVisible().catch(() => false);
-      assert(report.preloadVisible[label], `preload field not visible: ${label}`);
-    }
-    await page.screenshot({ path: preloadScreenshotPath, fullPage: false });
-
-    report.drawerMetrics = await page.evaluate(() => {
-      const drawer = document.querySelector('.system-drawer')?.getBoundingClientRect();
-      const preload = document.querySelector('.preload-panel-shell')?.getBoundingClientRect();
-      const controls = document.querySelector('.controls')?.getBoundingClientRect();
-      const actionGrid = document.querySelector('.action-grid');
-      return {
-        drawerBottom: drawer?.bottom,
-        preloadBottom: preload?.bottom,
-        controlsTop: controls?.top,
-        actionGridHidden: actionGrid ? getComputedStyle(actionGrid).display === 'none' : false
-      };
-    });
-    assert(report.drawerMetrics.actionGridHidden, 'action grid should hide while preload is open on mobile');
-    assert(report.drawerMetrics.preloadBottom <= report.drawerMetrics.drawerBottom + 1, `preload panel overflowed drawer: ${JSON.stringify(report.drawerMetrics)}`);
-    assert(report.drawerMetrics.drawerBottom < report.drawerMetrics.controlsTop, `drawer overlaps controls: ${JSON.stringify(report.drawerMetrics)}`);
-
-    await page.getByText('航班預載', { exact: true }).click();
-    await page.waitForTimeout(200);
     await page.getByText('Travel Atlas', { exact: true }).click();
     await page.waitForTimeout(200);
     report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
@@ -485,7 +484,7 @@ async function verifyMobileFd234Regression(page) {
     await page.click('.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 1, 'system drawer did not reopen after preload close check');
-    await page.getByText('航班預載', { exact: true }).click();
+    await page.getByText('航班預載 / API key', { exact: true }).click();
     await page.waitForTimeout(200);
 
     await page.locator('.preload-field:nth-child(2) input').fill('FD234');

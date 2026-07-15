@@ -254,10 +254,10 @@ export class TravelGlobeApp {
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
     preloadShell.className = 'dock-panel preload-panel-shell';
-    preloadShell.open = false;
+    preloadShell.open = isCompactViewport;
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
-    preloadSummary.textContent = '航班預載';
+    preloadSummary.textContent = '航班預載 / API key';
     bindDetailsSummaryToggle(preloadSummary, preloadShell, () => {
       dock.classList.toggle('has-open-preload', preloadShell.open);
     });
@@ -407,6 +407,7 @@ export class TravelGlobeApp {
     systemSummary.addEventListener('pointerup', toggleSystemDrawer);
     systemSummary.addEventListener('touchend', toggleSystemDrawer, { passive: false });
     systemSummary.addEventListener('click', toggleSystemDrawer);
+    dock.classList.toggle('has-open-preload', preloadShell.open);
     drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
     systemDrawer.append(systemSummary, drawerBody);
 
@@ -634,12 +635,15 @@ export class TravelGlobeApp {
     });
     this.flightNumberInput.addEventListener('change', applyKnownFlight);
 
-    form.append(
-      field('aviationstack API key', this.aviationstackApiKeyInput, {
+    const apiKeyField = field('aviationstack API key（保存在本機）', this.aviationstackApiKeyInput, {
         placeholder: '保存在本機',
         type: 'password',
         required: false
-      }),
+      });
+    apiKeyField.classList.add('preload-api-key-field');
+
+    form.append(
+      apiKeyField,
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
       airportField('起飛', this.originInput, airportSuggestions, markPending, {
         placeholder: 'TPE / Taipei'

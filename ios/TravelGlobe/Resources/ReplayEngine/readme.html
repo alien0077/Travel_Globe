@@ -255,7 +255,7 @@
             <div class="steps">
               <div class="card">
                 <h3>1. 打開回放</h3>
-                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在「航班預載」只輸入航班號。若有 aviationstack API key，可填入並保存在本機；查詢成功後會快取航班，之後 API 失敗時會先用歷史航班回補。</p>
+                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在右側「… / 更多」打開「航班預載 / API key」只輸入航班號。若有 aviationstack API key，可填入第一列「aviationstack API key（保存在本機）」；查詢成功後會快取航班，之後 API 失敗時會先用歷史航班回補。</p>
               </div>
               <div class="card">
                 <h3>2. 播放或暫停</h3>
@@ -288,8 +288,8 @@
                 <td>可點擊旅程事件直接跳到該時間點，中央紀錄卡會同步顯示地點、區域與航段資訊。</td>
               </tr>
               <tr>
-                <th>航班預載</th>
-                <td>可輸入 aviationstack API key、航班號、起降機場、日期、時間與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
+                <th>航班預載 / API key</th>
+                <td>手機版按右側「… / 更多」會直接展開此區。可輸入 aviationstack API key、航班號、起降機場、日期、時間與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
               </tr>
               <tr>
                 <th>Travel Atlas</th>
@@ -359,7 +359,7 @@
             <h2>Live GPS 飛行模式</h2>
             <p>iOS app 可用 iPhone CoreLocation 接收真實 GPS，透過 native bridge 即時送進 Replay Engine。此模式不需要行動網路；飛航模式下 GPS 仍可能可用，但定位品質會受座位、窗邊距離、機身遮蔽與首次定位時間影響。</p>
             <ol>
-              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，在「航班預載」輸入 aviationstack API key（可留空）、航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
+              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，手機版再按右側「… / 更多」，在「航班預載 / API key」輸入 aviationstack API key（可留空）、航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
               <li>回到 iOS 主畫面，在 <code>Record Into</code> 選單挑要錄入的行程，再按 <code>Start</code>。iOS 會把 GPS recording 綁到被選到航線的 <code>segmentId</code>；若沒有套用航線，則建立 GPS-only recording。</li>
               <li>按 <code>Open Replay Engine</code> 回到地球畫面。收到第一筆 GPS 後，控制列會進入 <code>LIVE</code>，HUD 會顯示 <code>Live GPS</code> 或 GPS 狀態。</li>
               <li>若需要開飛航模式，開啟後把手機放在靠窗位置，等待 GPS 重新定位。定位恢復後飛機會繼續沿真實位置移動。</li>
