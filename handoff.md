@@ -129,7 +129,7 @@ These items now depend on external data products, post-push validation, or large
 - Photo matching and journal media: PhotoKit GPS can create `照片打卡`, and Web records can attach/show local photo thumbnails. Missing work: native explicit picker thumbnails, `.travelglobe` binary media packaging, and share/export privacy review UI.
 - Notifications: Web rules now request native local scheduling; richer recording-phase reminders and delayed/geofence triggers remain future work.
 - Travel record editing: records can be added, edited, hidden, reclassified, time-adjusted, photo-attached, and undone. Missing work: drag-to-reassign journey/segment, cross-device sync, and a fully polished native-style list editor.
-- iOS CI: workflow has been patched to create `Travel Globe CI` simulator before destination resolution; needs confirmation on GitHub Actions after push.
+- iOS CI: GitHub Actions run `29391659438` completed successfully after push. It confirmed the Replay build, iOS resource copy, XcodeGen generation, and generic simulator build; the named simulator test steps were skipped because the destination output was empty, so future work can tighten the test destination output if full simulator tests are required.
 
 See `docs/unfinished-features-audit.md` for the longer audit.
 

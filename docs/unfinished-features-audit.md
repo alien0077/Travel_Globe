@@ -59,8 +59,8 @@ This audit tracks features that looked like placeholders, provider shells, or pa
 ### iOS GitHub Actions simulator destination
 
 - Evidence: the latest failed iOS workflow only exposed placeholder simulator destinations on `macos-latest` / Xcode 26.5, so destination resolution failed before tests.
-- Current state: `.github/workflows/ios.yml` now creates a named `Travel Globe CI` simulator and resolves that exact destination before running tests.
-- Remaining gap: this needs a post-push GitHub Actions confirmation.
+- Current state: `.github/workflows/ios.yml` now creates a named `Travel Globe CI` simulator. Push run `29391659438` completed successfully and confirmed replay build, resource copy, XcodeGen generation, and generic simulator build.
+- Remaining gap: the simulator test destination output was empty in that successful run, so the full `xcodebuild test` step was skipped. Future work can tighten the destination output if simulator tests must run on every push.
 
 ### Photo matching and journal media
 
