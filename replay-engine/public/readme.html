@@ -238,6 +238,7 @@
           <a href="#quick-start">快速開始</a>
           <a href="#screen">畫面說明</a>
           <a href="#controls">操作控制</a>
+          <a href="#atlas">Travel Atlas</a>
           <a href="#camera">視角模式</a>
           <a href="#exports">匯出資料</a>
           <a href="#offline">離線使用</a>
@@ -254,7 +255,7 @@
             <div class="steps">
               <div class="card">
                 <h3>1. 打開回放</h3>
-                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在「航班預載」只輸入航班號，讓離線班表先解析起降機場並建立回放旅程。</p>
+                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在「航班預載」只輸入航班號。若有 aviationstack API key，可填入並保存在本機；查詢成功後會快取航班，之後 API 失敗時會先用歷史航班回補。</p>
               </div>
               <div class="card">
                 <h3>2. 播放或暫停</h3>
@@ -288,7 +289,11 @@
               </tr>
               <tr>
                 <th>航班預載</th>
-                <td>使用離線班表與機場索引建立預估 Flight Plan。已知航班如 <code>CI100</code> 可自動解析 <code>TPE → NRT</code>，手動起降機場欄位可留空或覆寫。</td>
+                <td>可輸入 aviationstack API key、航班號、起降機場、日期、時間與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
+              </tr>
+              <tr>
+                <th>Travel Atlas</th>
+                <td>顯示旅程統計、起降機場 detail、OurAirports frequency/navaid 摘要、離線包、本機歷史旅程與通知狀態。</td>
               </tr>
               <tr>
                 <th>Below / Nearby</th>
@@ -307,7 +312,17 @@
               <li><code>Export</code>：匯出完整 Travel Globe 回放包。</li>
               <li><code>Share</code>：匯出隱私處理後的分享版 JSON。</li>
               <li><code>Journal</code>：產生離線飛行日誌 Markdown。</li>
-              <li><code>Pack</code>：安裝示範離線資料包。</li>
+              <li><code>Pack</code>：快速安裝 Core Global Atlas；完整離線包安裝/刪除可在 Travel Atlas 面板操作。</li>
+            </ul>
+          </section>
+
+          <section id="atlas">
+            <h2>Travel Atlas</h2>
+            <ul>
+              <li><strong>機場 detail</strong>：航線起點與終點會顯示機場名稱、城市、跑道數、常用頻率與附近導航台。這些資料來自本機 OurAirports aviation context index。</li>
+              <li><strong>離線資料包</strong>：<code>Core Global Atlas</code> 與 <code>East Asia Flight Context</code> 可在面板內安裝或刪除。狀態會保存在本機瀏覽器/iOS WebView localStorage，不會上傳。</li>
+              <li><strong>本機歷史旅程</strong>：已載入或建立過的 journey 會出現在本機歷史清單，可從 Travel Atlas 載入或刪除。刪除只移除本機儲存，不會影響已匯出的檔案。</li>
+              <li><strong>通知</strong>：Replay Engine 會把目前 notification rules 送到 iOS native local notification；瀏覽器模式只會顯示提醒狀態。</li>
             </ul>
           </section>
 
@@ -336,15 +351,15 @@
 
           <section id="offline">
             <h2>離線使用</h2>
-            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble 地球貼圖、Natural Earth 海岸線/國界、OurAirports 機場/頻率/導航台索引、航線、城市光點、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
-            <p>「航班預載」目前使用離線機場索引與大圓航線推估 route、事件、ETA 和旅遊紀錄；實際航路、航班狀態與延誤資訊可在後續接第三方航班 API 後覆蓋同一個 provider 流程。</p>
+            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、OurAirports 機場/頻率/導航台索引、航線、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
+            <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key 查詢航班；成功後會寫入本機航班快取。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 Great Circle 預估 route、事件、ETA 和旅遊紀錄。</p>
           </section>
 
           <section id="live-gps">
             <h2>Live GPS 飛行模式</h2>
             <p>iOS app 可用 iPhone CoreLocation 接收真實 GPS，透過 native bridge 即時送進 Replay Engine。此模式不需要行動網路；飛航模式下 GPS 仍可能可用，但定位品質會受座位、窗邊距離、機身遮蔽與首次定位時間影響。</p>
             <ol>
-              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，在「航班預載」輸入航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
+              <li>起飛前先開 Travel Globe，按 <code>Open Replay Engine</code>，在「航班預載」輸入 aviationstack API key（可留空）、航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
               <li>回到 iOS 主畫面，在 <code>Record Into</code> 選單挑要錄入的行程，再按 <code>Start</code>。iOS 會把 GPS recording 綁到被選到航線的 <code>segmentId</code>；若沒有套用航線，則建立 GPS-only recording。</li>
               <li>按 <code>Open Replay Engine</code> 回到地球畫面。收到第一筆 GPS 後，控制列會進入 <code>LIVE</code>，HUD 會顯示 <code>Live GPS</code> 或 GPS 狀態。</li>
               <li>若需要開飛航模式，開啟後把手機放在靠窗位置，等待 GPS 重新定位。定位恢復後飛機會繼續沿真實位置移動。</li>
@@ -362,7 +377,7 @@
               <li><strong>選擇行程並開始 GPS</strong>：按 iOS 主畫面的 <code>Record Into</code> 選單挑目標 flight plan，再按 <code>Start</code>。native recording 會使用被選到的 flight plan；每個真實 GPS 點都會保存同一個 <code>segmentId</code>，用來對回該航段。</li>
               <li><strong>停止 GPS</strong>：按 <code>Stop</code> 後，app 才把 recording 標記為 completed，產生實際 GPS 航跡、起訖事件、旅遊紀錄與 Travel Atlas 摘要。</li>
               <li><strong>GPS打卡 / 照片打卡</strong>：在 iOS 主畫面可把目前 GPS 或照片 EXIF GPS 加到目前行程。Replay Engine 收到 native bridge 後會顯示成「GPS打卡」或「照片打卡」旅遊紀錄。</li>
-              <li><strong>人工編輯</strong>：在「旅遊紀錄」面板可新增事件、修改目前紀錄、隱藏紀錄，或編輯航線摘要。人工修改只寫入 edit overlay 或 journey metadata，不會改掉原始 GPS 點。</li>
+              <li><strong>人工編輯</strong>：在「旅遊紀錄」面板可新增事件、修改目前紀錄、調整分類/時間、附加本機照片縮圖、復原上次編輯、隱藏紀錄，或編輯航線摘要。人工修改只寫入 edit overlay、media metadata 或 journey metadata，不會改掉原始 GPS 點。</li>
               <li><strong>資料對應</strong>：GPS record 是原始軌跡；Visit Point 是同一行程下的到此一遊點；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。刪除/隱藏旅遊事件不會刪除 SQLite 裡的真實 GPS。</li>
             </ol>
           </section>
@@ -371,11 +386,11 @@
             <h2>資料來源</h2>
             <ul>
               <li>Airport and runway data provided by OurAirports. 頻率與導航台資料也來自 OurAirports 離線 CSV。</li>
-              <li>Made with Natural Earth. Natural Earth 提供 110m 國界與海岸線資料基礎。</li>
-              <li>NASA Visible Earth / Blue Marble 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
+              <li>Made with Natural Earth. Natural Earth 提供 50m 國界/海岸線、10m populated places 與 geography region points。</li>
+              <li>NASA Visible Earth / Blue Marble 與 Earth lights/cloud/specular texture 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
               <li>飛機模型庫只接受 CC0 或 CC BY、可商業使用、可修改、非 Editorial 的 GLB/glTF 模型；若模型來自 Sketchfab，App 會保留作者、授權、模型連結與 Sketchfab 來源標示，並可套用 Travel Globe 中性塗裝。</li>
               <li>Bundled aircraft model attribution: A320 Airbus A320-200 V2 by Dlourine; A321 Airbus +A321Neo Wizzair by CloudHubOmniTeam; A350 Airbus A350 by jhag; A380 Airbus A380 - 800 by Nobilis 2; B737 Indonesian Government Boeing 737-800 by Muhamad Mirza Arrafi; B767 boeing 767(american) by 1883; B777 Boeing 777-300ER Model by hakai315; B787 Boeing 787-9 by Nobilis 2. All are listed as Creative Commons Attribution via Sketchfab in the bundled <code>license.json</code> files.</li>
-              <li>目前航班預載第一版使用離線班表種子與 Great Circle 預估航線，尚未接入付費真實航班 API。</li>
+              <li>aviationstack 可用使用者自己的本機 API key 查詢即時航班並快取 origin/destination/time 等資訊；免費層仍不提供完整 filed route、waypoints 或歷史航跡。</li>
             </ul>
           </section>
 
@@ -385,10 +400,13 @@
               <li><code>Start Flight Recording</code>：開始紀錄 GPS 航跡。</li>
               <li><code>Stop Recording</code>：停止並保存旅程。</li>
               <li><code>Open Replay Engine</code>：打開內嵌 Web Replay Engine。</li>
-              <li><code>Request Photo Access</code>：測試照片權限，未來用於旅程照片匹配。</li>
-              <li><code>Request Notifications</code>：測試通知權限，未來用於飛行事件提醒。</li>
+              <li><code>GPS打卡</code>：用目前 iPhone GPS 在目前行程新增一筆 visit point。</li>
+              <li><code>照片打卡</code>：從行程時間範圍內有 GPS 的 PhotoKit 照片匯入 visit points。</li>
+              <li><code>載入最新紀錄</code>：把 SQLite 最新 journey queue 回 Replay Engine，適合 app 重新打開後繼續看剛錄完的旅程。</li>
+              <li><code>Photos</code>：要求或更新 PhotoKit 權限，用於照片 GPS 匯入。</li>
+              <li><code>Notifications</code>：要求或更新通知權限；Replay Engine notification rules 會透過 native bridge 排程 local notification。</li>
             </ul>
-            <p>實際飛行時的建議順序是：先在 iOS 主畫面開始 recording，再開 Replay Engine 看 live 地球；飛行中不要用瀏覽器版本紀錄，因為 live GPS bridge 只存在 iOS app 內嵌 WKWebView。</p>
+            <p>實際飛行時的建議順序是：先在 Replay Engine 套用航線，再回 iOS 主畫面選 <code>Record Into</code> 並按 <code>Start</code>，最後回 Replay Engine 看 live 地球；飛行中不要用瀏覽器版本紀錄，因為 live GPS bridge 只存在 iOS app 內嵌 WKWebView。</p>
           </section>
 
           <section id="tips">
