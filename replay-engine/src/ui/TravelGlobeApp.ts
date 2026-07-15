@@ -366,14 +366,36 @@ export class TravelGlobeApp {
     actionGrid.className = 'action-grid';
     actionGrid.append(importButton, exportButton, shareButton, manualLink, gpxButton, kmlButton, journalButton, packButton);
 
-    const systemDrawer = document.createElement('details');
+    const systemDrawer = document.createElement('section');
     systemDrawer.className = 'dock-panel system-drawer';
-    systemDrawer.open = false;
-    const systemSummary = document.createElement('summary');
+    const systemSummary = document.createElement('button');
+    systemSummary.type = 'button';
     systemSummary.className = 'panel-summary panel-title';
     systemSummary.textContent = '更多';
+    systemSummary.setAttribute('aria-expanded', 'false');
     const drawerBody = document.createElement('div');
     drawerBody.className = 'drawer-body';
+    drawerBody.hidden = true;
+    let lastSystemDrawerToggleMs = 0;
+    const setSystemDrawerOpen = (isOpen: boolean): void => {
+      systemDrawer.classList.toggle('is-open', isOpen);
+      systemSummary.setAttribute('aria-expanded', String(isOpen));
+      drawerBody.hidden = !isOpen;
+    };
+    const toggleSystemDrawer = (event?: Event): void => {
+      event?.preventDefault();
+      event?.stopPropagation();
+      const now = performance.now();
+      if (now - lastSystemDrawerToggleMs < 280) {
+        return;
+      }
+      lastSystemDrawerToggleMs = now;
+      setSystemDrawerOpen(!systemDrawer.classList.contains('is-open'));
+    };
+    systemSummary.addEventListener('pointerdown', (event) => event.stopPropagation());
+    systemSummary.addEventListener('pointerup', toggleSystemDrawer);
+    systemSummary.addEventListener('touchend', toggleSystemDrawer, { passive: false });
+    systemSummary.addEventListener('click', toggleSystemDrawer);
     drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
     systemDrawer.append(systemSummary, drawerBody);
 

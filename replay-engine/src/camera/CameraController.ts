@@ -40,15 +40,20 @@ export class CameraController {
 
     if (this.mode === 'totalRoute') {
       const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
-      const distance = THREE.MathUtils.clamp(2.45 * this.zoom, 1.85, 4.8);
+      const distance = THREE.MathUtils.clamp(3.45 * this.zoom, 2.65, 6.2);
       this.desired
         .copy(this.target)
         .add(forward.clone().multiplyScalar(-distance))
-        .add(right.multiplyScalar(0.45 * distance))
-        .add(normal.clone().multiplyScalar(1.18 * this.zoom));
+        .add(right.multiplyScalar(0.36 * distance))
+        .add(normal.clone().multiplyScalar(2.35 * this.zoom));
       this.camera.position.lerp(this.desired, lerpAmount ?? 0.1);
       this.camera.up.copy(normal);
-      this.camera.lookAt(this.target.clone().add(forward.clone().multiplyScalar(0.12)));
+      this.camera.lookAt(
+        this.target
+          .clone()
+          .add(forward.clone().multiplyScalar(0.28))
+          .add(normal.clone().multiplyScalar(0.28))
+      );
       return;
     }
 

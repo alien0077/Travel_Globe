@@ -202,9 +202,9 @@ for (const viewport of [
 
   if (check.ok) {
     await page.evaluate(() => {
-      const systemDrawer = document.querySelector('.system-drawer');
-      if (systemDrawer instanceof HTMLDetailsElement) {
-        systemDrawer.open = true;
+      const systemSummary = document.querySelector('.system-drawer > .panel-summary');
+      if (systemSummary instanceof HTMLButtonElement) {
+        systemSummary.click();
       }
       const preloadShell = document.querySelector('.preload-panel-shell');
       if (preloadShell instanceof HTMLDetailsElement) {

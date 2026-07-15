@@ -377,18 +377,26 @@ input {
   overflow: hidden;
 }
 
-.dock-panel[open] {
+.dock-panel[open],
+.dock-panel.is-open {
   max-height: calc(100svh - 150px);
 }
 
 .panel-summary {
   display: flex;
+  width: 100%;
   min-height: 42px;
   align-items: center;
   justify-content: space-between;
+  border: 0;
   padding: 10px 12px;
+  background: transparent;
   cursor: pointer;
   list-style: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
 }
 
 .panel-summary::-webkit-details-marker {
@@ -402,7 +410,8 @@ input {
   line-height: 1;
 }
 
-.dock-panel[open] > .panel-summary::after {
+.dock-panel[open] > .panel-summary::after,
+.dock-panel.is-open > .panel-summary::after {
   content: "-";
 }
 
@@ -419,6 +428,10 @@ input {
   max-height: calc(100svh - 220px);
   overflow-y: auto;
   padding: 0 10px 10px;
+}
+
+.system-drawer:not(.is-open) .drawer-body {
+  display: none;
 }
 
 .action-grid {
@@ -1090,30 +1103,30 @@ select.preload-input {
     font-size: 10px;
   }
 
-  .system-drawer[open] {
+  .system-drawer.is-open {
     position: fixed;
     top: calc(10px + env(safe-area-inset-top));
     right: calc(10px + env(safe-area-inset-right));
     left: calc(10px + env(safe-area-inset-left));
-    z-index: 4;
+    z-index: 12;
     width: auto;
     max-height: calc(100svh - 92px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
-  .system-drawer:not([open]) .panel-summary {
+  .system-drawer:not(.is-open) .panel-summary {
     justify-content: center;
     padding: 0;
   }
 
-  .system-drawer:not([open]) .panel-summary::after {
+  .system-drawer:not(.is-open) .panel-summary::after {
     content: none;
   }
 
-  .system-drawer:not([open]) .panel-title {
+  .system-drawer:not(.is-open) .panel-title {
     font-size: 0;
   }
 
-  .system-drawer:not([open]) .panel-title::before {
+  .system-drawer:not(.is-open) .panel-title::before {
     content: "...";
     font-size: 16px;
   }
