@@ -4,11 +4,13 @@ import {
   parseNativePayload,
   postNativeMessage,
   type NativeFlightPlanPayload,
+  type NativeNotificationSchedulePayload,
   type NativeRecordingPayload,
   type NativeVisitPointPayload,
   type NativeVisitPointsPayload
 } from '../bridge/nativeBridge';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
+import type { SavedJourneySummary } from '../bridge/RuntimeAdapter';
 import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
@@ -22,9 +24,10 @@ import {
   summarizeBelowMe,
   type FlightOverlay
 } from '../flight/flightAnalytics';
-import { OfflineAirportFlightPreloadProvider } from '../flight/flightPlanProvider';
+import { AviationstackFlightPreloadProvider, readAviationstackApiKey, writeAviationstackApiKey } from '../flight-preload/aviationstackProvider';
 import type { PreloadFlightRequest } from '../flight-preload/buildPreloadedFlightJourney';
 import {
+  findAirportByIata,
   findAirportContextByIata,
   getAirportIndexSummary,
   listAirportSuggestions,
@@ -46,10 +49,14 @@ import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
   coreOfflinePacks,
+  deletePack,
   describeInstalledPacks,
   formatBytes,
   getInstalledSizeBytes,
   installPack,
+  isPackInstalled,
+  loadOfflinePackState,
+  saveOfflinePackState,
   type OfflinePackState
 } from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
@@ -60,17 +67,19 @@ import { buildTimeMachineState } from '../time-machine/timeMachine';
 import {
   buildTravelRecords,
   getRegionLabel,
+  getTravelRegionOptions,
   summarizeTravelRecords,
   writeTravelRecordEdit,
   type TravelRecord,
   type TravelRegion
 } from '../travel-records/travelRecords';
+import type { TravelNotification } from '../notifications/notificationRules';
 import { buildPlanSummary } from '../travel-plan/planEngine';
 
 export class TravelGlobeApp {
   private readonly root: HTMLElement;
   private readonly adapter: BrowserRuntimeAdapter;
-  private readonly flightPreloadProvider = new OfflineAirportFlightPreloadProvider();
+  private readonly flightPreloadProvider = new AviationstackFlightPreloadProvider();
   private journey?: Journey;
   private scene?: TravelGlobeScene;
   private clock?: ReplayClock;
@@ -79,13 +88,16 @@ export class TravelGlobeApp {
   private routeLandmarks: GeographicFeature[] = [];
   private cameraMode: CameraMode = 'flightPreview';
   private lastFrameMs?: number;
-  private packState: OfflinePackState = { packs: [] };
+  private packState: OfflinePackState = loadOfflinePackState();
   private autoRecordingContext?: AutoRecordingContext;
   private travelRecords: TravelRecord[] = [];
   private activeRecordId?: string;
   private activeRegion: TravelRegion | 'all' = 'all';
   private liveGps = new LiveGpsTracker();
   private isLiveGpsMode = false;
+  private savedJourneys: SavedJourneySummary[] = [];
+  private recordEditUndoStack: Journey[] = [];
+  private scheduledNotificationIds = new Set<string>();
 
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
@@ -105,6 +117,7 @@ export class TravelGlobeApp {
   private readonly pilotHud = document.createElement('div');
   private readonly productPanel = document.createElement('section');
   private readonly preloadPanel = document.createElement('section');
+  private readonly aviationstackApiKeyInput = document.createElement('input');
   private readonly flightNumberInput = document.createElement('input');
   private readonly originInput = document.createElement('input');
   private readonly destinationInput = document.createElement('input');
@@ -114,6 +127,7 @@ export class TravelGlobeApp {
   private readonly aircraftTypeSelect = document.createElement('select');
   private readonly preloadStatus = document.createElement('div');
   private readonly fileInput = document.createElement('input');
+  private readonly mediaInput = document.createElement('input');
 
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
@@ -138,6 +152,8 @@ export class TravelGlobeApp {
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
     this.lastFrameMs = undefined;
+    await this.adapter.saveJourney(journey);
+    this.savedJourneys = await this.adapter.listSavedJourneys();
 
     this.renderShell(journey, this.segment);
     this.scene?.dispose();
@@ -148,7 +164,6 @@ export class TravelGlobeApp {
       this.routeLandmarks
     );
     this.scene.start((timeMs) => this.frame(timeMs));
-    await this.adapter.saveJourney(journey);
   }
 
   private renderShell(journey: Journey, segment: JourneySegment): void {
@@ -312,7 +327,7 @@ export class TravelGlobeApp {
     packButton.className = 'control-button secondary-action';
     packButton.textContent = 'Pack';
     packButton.addEventListener('click', () => {
-      this.packState = installPack(this.packState, coreOfflinePacks[1]);
+      this.installOfflinePack(coreOfflinePacks[0].id);
       this.renderProductPanel();
     });
 
@@ -325,6 +340,17 @@ export class TravelGlobeApp {
         return;
       }
       void this.importJourney(file);
+    });
+
+    this.mediaInput.type = 'file';
+    this.mediaInput.accept = 'image/*';
+    this.mediaInput.hidden = true;
+    this.mediaInput.addEventListener('change', () => {
+      const file = this.mediaInput.files?.[0];
+      if (!file) {
+        return;
+      }
+      void this.attachMediaToActiveRecord(file);
     });
 
     const actionGrid = document.createElement('div');
@@ -345,7 +371,7 @@ export class TravelGlobeApp {
     controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
     dock.append(systemDrawer);
     overlay.append(hud, this.viewRail, dock, this.pilotHud, controls);
-    this.root.replaceChildren(this.viewport, overlay, this.fileInput);
+    this.root.replaceChildren(this.viewport, overlay, this.fileInput, this.mediaInput);
 
     this.hudTitle.textContent = 'FLIGHT REPLAY';
     this.hudRoute.textContent = `${journey.title} | ${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
@@ -482,6 +508,7 @@ export class TravelGlobeApp {
     const airportSuggestions = listAirportSuggestions();
 
     this.flightNumberInput.value = stringValue(segment.metadata.flightNumber, 'CI100');
+    this.aviationstackApiKeyInput.value = readAviationstackApiKey();
     this.originInput.value = segment.origin.iataCode ?? '';
     this.destinationInput.value = segment.destination.iataCode ?? '';
     this.departureDateInput.value = toInputDate(segment.startTime);
@@ -503,33 +530,43 @@ export class TravelGlobeApp {
     submitButton.textContent = '套用航線';
 
     this.preloadStatus.className = 'preload-status';
-    this.preloadStatus.textContent = '輸入航班或選擇起飛/抵達，修改日期時間後按「套用航線」才會更新地球與航跡。';
+    this.preloadStatus.textContent = '可輸入 aviationstack API key 自動查航班；查到後會存在本機，API 失敗時用歷史航班 fallback。';
 
     const markPending = (): void => {
       this.preloadStatus.textContent = '已修改設定，請按「套用航線」更新地球、時間與航跡。';
     };
     const applyKnownFlight = (): void => {
       const schedule = findScheduleByFlightNumber(this.flightNumberInput.value);
-      if (!schedule) {
+      const cached = this.flightPreloadProvider.getCachedFlight(this.flightNumberInput.value);
+      if (!schedule && !cached) {
         markPending();
         return;
       }
-      this.originInput.value = schedule.originIata;
-      this.destinationInput.value = schedule.destinationIata;
-      const details = [`${schedule.originIata} -> ${schedule.destinationIata}`];
-      if (schedule.defaultDepartureTime) {
-        this.departureTimeInput.value = schedule.defaultDepartureTime;
-        details.push(schedule.defaultDepartureTime);
+      const known = cached ?? schedule;
+      if (!known) {
+        markPending();
+        return;
       }
-      if (schedule.defaultDurationMinutes) {
-        this.durationInput.value = String(schedule.defaultDurationMinutes);
-        details.push(`${schedule.defaultDurationMinutes} 分鐘`);
+      this.originInput.value = known.originIata;
+      this.destinationInput.value = known.destinationIata;
+      const details = [`${known.originIata} -> ${known.destinationIata}`];
+      const defaultDepartureTime = cached?.departureTime ?? schedule?.defaultDepartureTime;
+      const defaultDurationMinutes = cached?.durationMinutes ?? schedule?.defaultDurationMinutes;
+      const defaultAircraftType = cached?.aircraftType ?? schedule?.defaultAircraftType;
+      if (defaultDepartureTime) {
+        this.departureTimeInput.value = defaultDepartureTime;
+        details.push(defaultDepartureTime);
       }
-      if (schedule.defaultAircraftType) {
-        this.aircraftTypeSelect.value = schedule.defaultAircraftType;
-        details.push(schedule.defaultAircraftType);
+      if (defaultDurationMinutes) {
+        this.durationInput.value = String(defaultDurationMinutes);
+        details.push(`${defaultDurationMinutes} 分鐘`);
       }
-      this.preloadStatus.textContent = `${schedule.flightNumber} 已帶入 ${details.join('、')}。請按「套用航線」更新地球與航跡。`;
+      if (defaultAircraftType) {
+        this.aircraftTypeSelect.value = normalizeAircraftSelectValue(defaultAircraftType);
+        details.push(defaultAircraftType);
+      }
+      const sourceLabel = cached ? '本機歷史快取' : '離線 seed';
+      this.preloadStatus.textContent = `${known.flightNumber} 已由${sourceLabel}帶入 ${details.join('、')}。請按「套用航線」更新地球與航跡。`;
     };
     for (const input of [
       this.flightNumberInput,
@@ -542,6 +579,12 @@ export class TravelGlobeApp {
       input.addEventListener('input', markPending);
       input.addEventListener('change', markPending);
     }
+    this.aviationstackApiKeyInput.addEventListener('change', () => {
+      writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
+      this.preloadStatus.textContent = this.aviationstackApiKeyInput.value.trim()
+        ? 'aviationstack API key 已保存在本機。下次套用航線會先嘗試 API，成功後寫入航班快取。'
+        : 'aviationstack API key 已清除；會使用本機快取或離線 seed。';
+    });
     this.flightNumberInput.addEventListener('input', () => {
       if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
         applyKnownFlight();
@@ -550,6 +593,11 @@ export class TravelGlobeApp {
     this.flightNumberInput.addEventListener('change', applyKnownFlight);
 
     form.append(
+      field('aviationstack API key', this.aviationstackApiKeyInput, {
+        placeholder: '保存在本機',
+        type: 'password',
+        required: false
+      }),
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
       airportField('起飛', this.originInput, airportSuggestions, markPending, {
         placeholder: 'TPE / Taipei'
@@ -562,6 +610,7 @@ export class TravelGlobeApp {
       selectField('機型', this.aircraftTypeSelect),
       submitButton
     );
+    this.aviationstackApiKeyInput.classList.add('is-secret');
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       void this.preloadFlightFromForm();
@@ -580,6 +629,7 @@ export class TravelGlobeApp {
       durationMinutes: Number(this.durationInput.value) || undefined,
       aircraftType: this.aircraftTypeSelect.value
     };
+    writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
 
     try {
       this.preloadStatus.textContent = '正在建立預載航線...';
@@ -695,15 +745,40 @@ export class TravelGlobeApp {
     const tags = document.createElement('div');
     tags.className = 'record-tags';
     tags.replaceChildren(...record.tags.map((tag) => tagPill(tag)));
+    const mediaGallery = document.createElement('div');
+    mediaGallery.className = 'record-media-gallery';
+    if (record.mediaItems.length === 0) {
+      mediaGallery.textContent = '尚未附加照片';
+    } else {
+      mediaGallery.replaceChildren(
+        ...record.mediaItems.map((item) => {
+          const media = document.createElement('figure');
+          media.className = 'record-media-item';
+          if (item.url && item.type.startsWith('image/')) {
+            const image = document.createElement('img');
+            image.src = item.url;
+            image.alt = item.name;
+            media.append(image);
+          }
+          const caption = document.createElement('figcaption');
+          caption.textContent = `${item.name} | ${item.privacy === 'shareable' ? '可匯出' : '本機私有'}`;
+          media.append(caption);
+          return media;
+        })
+      );
+    }
     const actions = document.createElement('div');
     actions.className = 'record-actions';
     actions.replaceChildren(
       recordActionButton('新增事件', () => void this.addManualTravelRecord()),
       recordActionButton('修改紀錄', () => void this.editActiveTravelRecord(record)),
+      recordActionButton('分類/時間', () => void this.editRecordDetails(record)),
+      recordActionButton('附加照片', () => this.mediaInput.click()),
+      recordActionButton('復原上次', () => void this.undoRecordEdit()),
       recordActionButton('隱藏紀錄', () => void this.hideActiveTravelRecord(record)),
       recordActionButton('編輯航線摘要', () => void this.editFlightSummary())
     );
-    content.append(meta, title, subtitle, tags, actions);
+    content.append(meta, title, subtitle, tags, mediaGallery, actions);
 
     this.recordPreview.replaceChildren(image, content);
   }
@@ -738,6 +813,7 @@ export class TravelGlobeApp {
         editable: true
       }
     };
+    this.pushRecordUndo();
     await this.loadJourney({
       ...this.journey,
       events: [...this.journey.events, event],
@@ -761,6 +837,7 @@ export class TravelGlobeApp {
       return;
     }
     const subtitle = window.prompt('備註/副標題', record.subtitle) ?? record.subtitle;
+    this.pushRecordUndo();
     const edited = writeTravelRecordEdit(this.journey, record.id, {
       title,
       subtitle,
@@ -779,7 +856,101 @@ export class TravelGlobeApp {
     if (!window.confirm(`隱藏「${record.title}」？原始 GPS 與事件資料仍會保留。`)) {
       return;
     }
+    this.pushRecordUndo();
     await this.loadJourney(writeTravelRecordEdit(this.journey, record.id, { hidden: true }));
+  }
+
+  private async editRecordDetails(record: TravelRecord): Promise<void> {
+    if (!this.journey) {
+      return;
+    }
+    const regionOptions = getTravelRegionOptions();
+    const regionPrompt = regionOptions.map((option) => `${option.id}=${option.label}`).join(', ');
+    const region = window.prompt(`區域分類：${regionPrompt}`, record.region);
+    if (region === null) {
+      return;
+    }
+    const timestamp = window.prompt('時間 ISO 8601', record.timestamp);
+    if (timestamp === null) {
+      return;
+    }
+    const normalizedRegion = regionOptions.some((option) => option.id === region)
+      ? (region as TravelRegion)
+      : record.region;
+    const normalizedTimestamp = Number.isFinite(Date.parse(timestamp)) ? new Date(timestamp).toISOString() : record.timestamp;
+    this.pushRecordUndo();
+    await this.loadJourney(writeTravelRecordEdit(this.journey, record.id, {
+      region: normalizedRegion,
+      timestamp: normalizedTimestamp,
+      note: 'details edit'
+    }));
+    this.activeRecordId = record.id;
+    this.renderTimeline();
+    this.renderRecordPreview();
+  }
+
+  private async attachMediaToActiveRecord(file: File): Promise<void> {
+    if (!this.journey || !this.activeRecordId) {
+      this.mediaInput.value = '';
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const mediaId = `media-${this.activeRecordId}-${Date.now()}`;
+      const mediaItem = {
+        id: mediaId,
+        name: file.name || 'photo',
+        type: file.type || 'image/jpeg',
+        url: dataUrl,
+        linkedRecordId: this.activeRecordId,
+        privacy: 'private'
+      };
+      this.pushRecordUndo();
+      const updatedEvents = this.journey.events.map((event) =>
+        event.id === this.activeRecordId
+          ? {
+              ...event,
+              mediaIds: [...new Set([...event.mediaIds, mediaId])],
+              metadata: {
+                ...event.metadata,
+                mediaAttachedAt: new Date().toISOString()
+              }
+            }
+          : event
+      );
+      await this.loadJourney({
+        ...this.journey,
+        events: updatedEvents,
+        media: [...this.journey.media, mediaItem],
+        metadata: {
+          ...this.journey.metadata,
+          mediaPrivacyDefault: 'private'
+        }
+      });
+      this.activeRecordId = mediaItem.linkedRecordId;
+      this.renderTimeline();
+      this.renderRecordPreview();
+      this.capability.textContent = `已將 ${mediaItem.name} 附加到旅遊紀錄；預設只存在本機 journey。`;
+    } finally {
+      this.mediaInput.value = '';
+    }
+  }
+
+  private async undoRecordEdit(): Promise<void> {
+    const previous = this.recordEditUndoStack.pop();
+    if (!previous) {
+      this.capability.textContent = '沒有可復原的旅遊紀錄編輯。';
+      return;
+    }
+    await this.loadJourney(previous);
+    this.capability.textContent = '已復原上一筆旅遊紀錄編輯。';
+  }
+
+  private pushRecordUndo(): void {
+    if (!this.journey) {
+      return;
+    }
+    this.recordEditUndoStack = [...this.recordEditUndoStack.slice(-7), structuredClone(this.journey)];
   }
 
   private async editFlightSummary(): Promise<void> {
@@ -914,6 +1085,7 @@ export class TravelGlobeApp {
     const journal = generateOfflineJournal(this.journey);
     const timeMachine = buildTimeMachineState([this.journey]);
     const notifications = currentPoint ? evaluateNotifications(currentPoint, 2_000_000_000) : [];
+    this.scheduleNativeNotifications(notifications);
     const atlas = summarizeTravelRecords(this.journey, this.travelRecords);
     const airportIndex = getAirportIndexSummary();
     const segment = getPrimaryFlightSegment(this.journey);
@@ -974,7 +1146,178 @@ export class TravelGlobeApp {
     packDescription.className = 'pack-description';
     packDescription.textContent = describeInstalledPacks(this.packState);
 
-    this.productPanel.replaceChildren(list, regionBars, packDescription);
+    const airportDetails = document.createElement('div');
+    airportDetails.className = 'atlas-section-grid';
+    airportDetails.replaceChildren(
+      ...[
+        segment.origin.iataCode ? this.renderAirportDetailCard(segment.origin.iataCode, '起飛機場') : undefined,
+        segment.destination.iataCode ? this.renderAirportDetailCard(segment.destination.iataCode, '降落機場') : undefined
+      ].filter((item): item is HTMLElement => Boolean(item))
+    );
+
+    const packControls = document.createElement('div');
+    packControls.className = 'atlas-section';
+    const packTitle = document.createElement('strong');
+    packTitle.textContent = '離線資料包';
+    const packList = document.createElement('div');
+    packList.className = 'pack-control-list';
+    packList.replaceChildren(
+      ...coreOfflinePacks.map((pack) => {
+        const installed = isPackInstalled(this.packState, pack.id);
+        const row = document.createElement('div');
+        row.className = 'pack-control-row';
+        const body = document.createElement('span');
+        body.textContent = `${pack.name} | ${formatBytes(pack.sizeBytes)} | ${pack.dataLayers.length} layers`;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'record-action-button';
+        button.textContent = installed ? '刪除' : '安裝';
+        button.addEventListener('click', () => {
+          if (installed) {
+            this.deleteOfflinePack(pack.id);
+          } else {
+            this.installOfflinePack(pack.id);
+          }
+        });
+        row.append(body, button);
+        return row;
+      })
+    );
+    packControls.append(packTitle, packList);
+
+    const savedJourneyList = document.createElement('div');
+    savedJourneyList.className = 'atlas-section';
+    const savedTitle = document.createElement('strong');
+    savedTitle.textContent = '本機歷史旅程';
+    const savedRows = document.createElement('div');
+    savedRows.className = 'saved-journey-list';
+    savedRows.replaceChildren(
+      ...(this.savedJourneys.length > 0
+        ? this.savedJourneys.slice(0, 6).map((summary) => this.renderSavedJourneyRow(summary))
+        : [textLine('尚無本機歷史旅程')])
+    );
+    savedJourneyList.append(savedTitle, savedRows);
+
+    const notificationList = document.createElement('div');
+    notificationList.className = 'atlas-section';
+    const notificationTitle = document.createElement('strong');
+    notificationTitle.textContent = '通知';
+    notificationList.append(
+      notificationTitle,
+      textLine(notifications.length > 0 ? notifications.map((item) => item.body).join(' | ') : '目前沒有需要提醒的事件')
+    );
+
+    this.productPanel.replaceChildren(
+      list,
+      regionBars,
+      airportDetails,
+      packControls,
+      savedJourneyList,
+      notificationList,
+      packDescription
+    );
+  }
+
+  private renderAirportDetailCard(iataCode: string, label: string): HTMLElement {
+    const airport = findAirportByIata(iataCode);
+    const context = findAirportContextByIata(iataCode);
+    const card = document.createElement('div');
+    card.className = 'airport-detail-card';
+    const title = document.createElement('strong');
+    title.textContent = `${label} ${iataCode}`;
+    const summary = document.createElement('span');
+    summary.textContent = airport
+      ? `${airport.name} | ${airport.municipality}, ${airport.countryCode} | runways ${airport.runwayCount}`
+      : '本機 airport index 尚無此機場 detail';
+    const radio = document.createElement('small');
+    const frequencies = context?.frequencies
+      .slice(0, 3)
+      .map((item) => `${item.type}${item.frequencyMhz ? ` ${item.frequencyMhz.toFixed(3)}` : ''}`)
+      .join(', ') || '無頻率資料';
+    const navaids = context?.navaids
+      .slice(0, 3)
+      .map((item) => `${item.ident} ${item.type}`)
+      .join(', ') || '無 navaid 資料';
+    radio.textContent = `FREQ: ${frequencies} | NAVAID: ${navaids}`;
+    card.append(title, summary, radio);
+    return card;
+  }
+
+  private renderSavedJourneyRow(summary: SavedJourneySummary): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'saved-journey-row';
+    const body = document.createElement('span');
+    body.textContent = `${summary.title} | ${summary.status} | ${formatShortDate(summary.startTime)}`;
+    const loadButton = document.createElement('button');
+    loadButton.type = 'button';
+    loadButton.className = 'record-action-button';
+    loadButton.textContent = '載入';
+    loadButton.addEventListener('click', () => void this.loadSavedJourney(summary.id));
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'record-action-button';
+    deleteButton.textContent = '刪除';
+    deleteButton.addEventListener('click', () => void this.deleteSavedJourney(summary.id));
+    row.append(body, loadButton, deleteButton);
+    return row;
+  }
+
+  private installOfflinePack(packId: string): void {
+    const pack = coreOfflinePacks.find((candidate) => candidate.id === packId);
+    if (!pack) {
+      return;
+    }
+    this.packState = installPack(this.packState, pack);
+    saveOfflinePackState(this.packState);
+    this.capability.textContent = `${pack.name} 已安裝到本機離線資料狀態。`;
+    this.renderProductPanel();
+  }
+
+  private deleteOfflinePack(packId: string): void {
+    const pack = coreOfflinePacks.find((candidate) => candidate.id === packId);
+    this.packState = deletePack(this.packState, packId);
+    saveOfflinePackState(this.packState);
+    this.capability.textContent = `${pack?.name ?? packId} 已從本機離線資料狀態移除。`;
+    this.renderProductPanel();
+  }
+
+  private async loadSavedJourney(journeyId: string): Promise<void> {
+    const journey = await this.adapter.loadJourneyById(journeyId);
+    if (!journey) {
+      this.capability.textContent = '找不到這筆本機歷史旅程。';
+      return;
+    }
+    await this.loadJourney(journey);
+    this.capability.textContent = `已載入本機歷史旅程：${journey.title}`;
+  }
+
+  private async deleteSavedJourney(journeyId: string): Promise<void> {
+    if (this.journey?.id === journeyId) {
+      this.capability.textContent = '目前播放中的 journey 不能直接刪除，請先載入其他旅程。';
+      return;
+    }
+    if (!window.confirm('刪除此本機歷史 journey？匯出的 .travelglobe 檔不會受影響。')) {
+      return;
+    }
+    await this.adapter.deleteJourney(journeyId);
+    this.savedJourneys = await this.adapter.listSavedJourneys();
+    this.renderProductPanel();
+  }
+
+  private scheduleNativeNotifications(notifications: TravelNotification[]): void {
+    for (const notification of notifications) {
+      const identifier = `travelglobe.${notification.id}`;
+      if (this.scheduledNotificationIds.has(identifier)) {
+        continue;
+      }
+      const payload: NativeNotificationSchedulePayload = {
+        identifier,
+        title: notification.title,
+        body: notification.body
+      };
+      postNativeMessage('notification.schedule', payload);
+      this.scheduledNotificationIds.add(identifier);
+    }
   }
 
   private readonly handleNativeEvent = (event: Event): void => {
@@ -1212,6 +1555,28 @@ function recordActionButton(label: string, onClick: () => void): HTMLElement {
   button.textContent = label;
   button.addEventListener('click', onClick);
   return button;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result ?? '')));
+    reader.addEventListener('error', () => reject(reader.error ?? new Error('Unable to read media file')));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatShortDate(timestamp: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return timestamp;
+  }
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(date);
 }
 
 function localizePhase(value: string): string {

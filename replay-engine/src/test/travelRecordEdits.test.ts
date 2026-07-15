@@ -75,4 +75,37 @@ describe('travel record edits', () => {
     expect(records.some((record) => record.title === 'GPS打卡')).toBe(true);
     expect(records.some((record) => record.title === '照片打卡')).toBe(true);
   });
+
+  it('shows locally attached media and manual region edits on records', () => {
+    const event = sampleJourney.events.find((candidate) => candidate.location);
+    expect(event).toBeDefined();
+    const mediaId = 'media-local-photo';
+    const journey = {
+      ...sampleJourney,
+      events: sampleJourney.events.map((candidate) =>
+        candidate.id === event?.id
+          ? { ...candidate, mediaIds: [mediaId] }
+          : candidate
+      ),
+      media: [
+        {
+          id: mediaId,
+          name: 'window-seat.jpg',
+          type: 'image/jpeg',
+          url: 'data:image/jpeg;base64,abc',
+          privacy: 'private'
+        }
+      ]
+    };
+    const edited = writeTravelRecordEdit(journey, event!.id, {
+      region: 'europe',
+      timestamp: '2026-07-10T10:00:00Z',
+      note: 'details edit'
+    });
+    const record = buildTravelRecords(edited).find((candidate) => candidate.id === event!.id);
+
+    expect(record?.region).toBe('europe');
+    expect(record?.mediaItems[0]?.name).toBe('window-seat.jpg');
+    expect(record?.tags).toContain('Edited');
+  });
 });

@@ -7,15 +7,20 @@ export interface GlobeObjects {
   globe: THREE.Group;
   earth: THREE.Mesh;
   clouds: THREE.Mesh;
+  nightLights: THREE.Mesh;
 }
 
 const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
+const EARTH_LIGHTS_FILENAME = 'earth-lights-2048.png';
+const EARTH_CLOUDS_FILENAME = 'earth-clouds-1024.png';
+const EARTH_SPECULAR_FILENAME = 'earth-specular-2048.jpg';
 
 export function createGlobe(radius = 2): GlobeObjects {
   const globe = new THREE.Group();
 
   const earthTexture = createFallbackEarthTexture();
-  new THREE.TextureLoader().load(
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.load(
     resolveBundledAsset(BLUE_MARBLE_FILENAME),
     (loadedTexture) => {
       loadedTexture.colorSpace = THREE.SRGBColorSpace;
@@ -24,10 +29,16 @@ export function createGlobe(radius = 2): GlobeObjects {
       loadedTexture.offset.x = 0.25;
       earthMaterial.map = loadedTexture;
       earthMaterial.bumpMap = loadedTexture;
-      earthMaterial.emissiveMap = loadedTexture;
       earthMaterial.needsUpdate = true;
     }
   );
+  textureLoader.load(resolveBundledAsset(EARTH_SPECULAR_FILENAME), (loadedTexture) => {
+    loadedTexture.anisotropy = 8;
+    loadedTexture.wrapS = THREE.RepeatWrapping;
+    loadedTexture.offset.x = 0.25;
+    earthMaterial.roughnessMap = loadedTexture;
+    earthMaterial.needsUpdate = true;
+  });
   earthTexture.colorSpace = THREE.SRGBColorSpace;
   earthTexture.anisotropy = 8;
   earthTexture.wrapS = THREE.RepeatWrapping;
@@ -39,14 +50,31 @@ export function createGlobe(radius = 2): GlobeObjects {
     bumpMap: earthTexture,
     bumpScale: 0.018,
     color: 0xffffff,
-    emissive: 0x446676,
-    emissiveMap: earthTexture,
-    emissiveIntensity: 0.38,
+    emissive: 0x172939,
+    emissiveIntensity: 0.08,
     roughness: 0.92,
     metalness: 0.0
   });
   const earth = new THREE.Mesh(earthGeometry, earthMaterial);
   globe.add(earth);
+
+  const nightLightsMaterial = new THREE.MeshBasicMaterial({
+    map: createFallbackNightLightsTexture(),
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  textureLoader.load(resolveBundledAsset(EARTH_LIGHTS_FILENAME), (loadedTexture) => {
+    loadedTexture.colorSpace = THREE.SRGBColorSpace;
+    loadedTexture.anisotropy = 8;
+    loadedTexture.wrapS = THREE.RepeatWrapping;
+    loadedTexture.offset.x = 0.25;
+    nightLightsMaterial.map = loadedTexture;
+    nightLightsMaterial.needsUpdate = true;
+  });
+  const nightLights = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.003, 96, 64), nightLightsMaterial);
+  globe.add(nightLights);
 
   const clouds = new THREE.Mesh(
     new THREE.SphereGeometry(radius * 1.012, 96, 64),
@@ -58,12 +86,22 @@ export function createGlobe(radius = 2): GlobeObjects {
       depthWrite: false
     })
   );
+  const cloudMaterial = clouds.material;
+  if (cloudMaterial instanceof THREE.MeshLambertMaterial) {
+    textureLoader.load(resolveBundledAsset(EARTH_CLOUDS_FILENAME), (loadedTexture) => {
+      loadedTexture.colorSpace = THREE.SRGBColorSpace;
+      loadedTexture.anisotropy = 8;
+      loadedTexture.wrapS = THREE.RepeatWrapping;
+      cloudMaterial.map = loadedTexture;
+      cloudMaterial.needsUpdate = true;
+    });
+  }
   globe.add(clouds);
 
   globe.add(createNaturalEarthBoundaries(radius * 1.0004));
   globe.add(createAtmosphere(radius));
 
-  return { globe, earth, clouds };
+  return { globe, earth, clouds, nightLights };
 }
 
 function createFallbackEarthTexture(): THREE.CanvasTexture {
@@ -212,6 +250,9 @@ function createNaturalEarthBoundaries(radius: number): THREE.Group {
 }
 
 export function shouldRenderGlobeLabel(feature: GeographicFeature): boolean {
+  if (feature.type === 'airport') {
+    return true;
+  }
   if (feature.type === 'majorCity') {
     return feature.importance >= 0.76 && feature.minZoomRank <= 8;
   }
@@ -282,5 +323,30 @@ function createCloudTexture(): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
+  return texture;
+}
+
+function createFallbackNightLightsTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+  context.fillStyle = '#000';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = 'rgba(255, 214, 128, 0.45)';
+  for (let index = 0; index < 180; index += 1) {
+    const x = (index * 97) % canvas.width;
+    const y = 90 + ((index * 53) % 330);
+    context.beginPath();
+    context.arc(x, y, 0.8 + (index % 4) * 0.4, 0, Math.PI * 2);
+    context.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.offset.x = 0.25;
   return texture;
 }

@@ -30,7 +30,12 @@ for (const viewport of [
   await page.route('**/*', (route) => {
     const requestUrl = new URL(route.request().url());
     if (allowedHosts.has(requestUrl.hostname)) {
-      if (requestUrl.pathname.includes('blue-marble-land-ocean-ice-2048')) {
+      if (
+        requestUrl.pathname.includes('blue-marble-land-ocean-ice-2048') ||
+        requestUrl.pathname.includes('earth-lights-2048') ||
+        requestUrl.pathname.includes('earth-clouds-1024') ||
+        requestUrl.pathname.includes('earth-specular-2048')
+      ) {
         assetRequests.push(requestUrl.pathname);
       }
       void route.continue();
@@ -58,8 +63,8 @@ for (const viewport of [
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
     const preloadText = document.querySelector('.preload-panel')?.textContent ?? '';
-    const preloadFlightNumber = document.querySelector('.preload-field:nth-child(1) input') instanceof HTMLInputElement
-      ? document.querySelector('.preload-field:nth-child(1) input')?.value ?? ''
+    const preloadFlightNumber = document.querySelector('.preload-field:nth-child(2) input') instanceof HTMLInputElement
+      ? document.querySelector('.preload-field:nth-child(2) input')?.value ?? ''
       : '';
     const previewText = document.querySelector('.record-preview')?.textContent ?? '';
     const filterText = document.querySelector('.record-filters')?.textContent ?? '';
@@ -206,9 +211,9 @@ for (const viewport of [
         preloadShell.open = true;
       }
     });
-    await page.fill('.preload-field:nth-child(1) input', 'CI100');
-    await page.fill('.preload-field:nth-child(4) input', '2026-07-11');
-    await page.fill('.preload-field:nth-child(5) input', '09:30');
+    await page.fill('.preload-field:nth-child(2) input', 'CI100');
+    await page.fill('.preload-field:nth-child(5) input', '2026-07-11');
+    await page.fill('.preload-field:nth-child(6) input', '09:30');
     await page.click('.preload-submit');
     await page.waitForTimeout(500);
     afterPreload = await page.evaluate(() => ({

@@ -24,6 +24,14 @@ download "https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_land.zip" 
   "$SOURCE_DIR/natural-earth/ne_110m_land.zip"
 download "https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_coastline.zip" \
   "$SOURCE_DIR/natural-earth/ne_110m_coastline.zip"
+download "https://naturalearth.s3.amazonaws.com/50m_cultural/ne_50m_admin_0_countries.zip" \
+  "$SOURCE_DIR/natural-earth/ne_50m_admin_0_countries.zip"
+download "https://naturalearth.s3.amazonaws.com/50m_physical/ne_50m_coastline.zip" \
+  "$SOURCE_DIR/natural-earth/ne_50m_coastline.zip"
+download "https://naturalearth.s3.amazonaws.com/10m_cultural/ne_10m_populated_places.zip" \
+  "$SOURCE_DIR/natural-earth/ne_10m_populated_places.zip"
+download "https://naturalearth.s3.amazonaws.com/10m_physical/ne_10m_geography_regions_points.zip" \
+  "$SOURCE_DIR/natural-earth/ne_10m_geography_regions_points.zip"
 
 download "https://davidmegginson.github.io/ourairports-data/airports.csv" \
   "$SOURCE_DIR/ourairports/airports.csv"
@@ -40,6 +48,12 @@ download "https://davidmegginson.github.io/ourairports-data/regions.csv" \
 
 download "https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.jpg" \
   "$SOURCE_DIR/nasa/blue-marble-land-ocean-ice-2048.jpg"
+download "https://threejs.org/examples/textures/planets/earth_lights_2048.png" \
+  "$SOURCE_DIR/nasa/earth-lights-2048.png"
+download "https://threejs.org/examples/textures/planets/earth_clouds_1024.png" \
+  "$SOURCE_DIR/nasa/earth-clouds-1024.png"
+download "https://threejs.org/examples/textures/planets/earth_specular_2048.jpg" \
+  "$SOURCE_DIR/nasa/earth-specular-2048.jpg"
 
 {
   printf "sha256\tbytes\tpath\tsource\n"

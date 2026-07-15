@@ -1,6 +1,6 @@
 # Unfinished Features Audit
 
-Updated: 2026-07-11
+Updated: 2026-07-15
 
 This audit tracks features that looked like placeholders, provider shells, or partially wired product modes. It excludes generated Replay Engine build files.
 
@@ -9,40 +9,52 @@ This audit tracks features that looked like placeholders, provider shells, or pa
 ### Flight preload
 
 - Previous state: `FlightPlanProvider` had an offline fixture lookup and a future `network-provider` source, but no user-facing way to preload a flight.
-- Current state: Replay Engine now has a `航班預載` panel. Users can enter only a known flight number such as `CI100`; the offline schedule seed resolves it to `TPE -> NRT`, then the app builds a valid planned `Journey`, loads it into the existing globe replay, creates events, updates Travel Atlas records, and stores it through the browser runtime adapter. Manual origin/destination IATA fields remain available as optional overrides.
-- Remaining gap: broad airline schedule/status/airway data still needs a licensed, imported, or configured provider. The first version intentionally uses Great Circle route estimation and later overlays GPS actual track.
+- Current state: Replay Engine now has a `航班預載` panel. Users can enter a local aviationstack API key in Web or the iOS WebView; successful flight-number lookups are cached locally and reused when the API later fails. Manual origin/destination IATA fields remain available as optional overrides, and the offline seed still resolves first-version examples such as `CI100`.
+- Remaining gap: aviationstack free-tier lookups do not provide a full filed airway/waypoint route. The first version intentionally uses Great Circle route estimation and later overlays GPS actual track.
 
 ### OurAirports airport index
 
 - Previous state: `flight-preload/airportIndex.ts` was a curated in-code list.
-- Current state: `scripts/prepare-airport-index.mjs` generates `shared/offline-packs/core-global/airports-index.json` from OurAirports airports/runways/countries/regions CSVs. The index includes IATA/ICAO, coordinates, country/region, municipality, scheduled service, runway count, and longest runway. It also generates `shared/offline-packs/core-global/aviation-context-index.json` from frequencies and navaids, plus `ourairports-manifest.json` with source metadata.
-- Remaining gap: the aviation context is visible in product status, but there is not yet a full searchable airport detail UI.
+- Current state: `scripts/prepare-airport-index.mjs` generates `shared/offline-packs/core-global/airports-index.json` from OurAirports airports/runways/countries/regions CSVs. The index includes IATA/ICAO, coordinates, country/region, municipality, scheduled service, runway count, and longest runway. It also generates `shared/offline-packs/core-global/aviation-context-index.json` from frequencies and navaids, plus `ourairports-manifest.json` with source metadata. Travel Atlas now renders origin/destination airport detail cards with runway, frequency, and navaid summaries.
+- Remaining gap: a larger standalone airport browser/search screen could still be added later, but route-level airport detail is wired.
 
 ### Natural Earth boundaries and offline manifests
 
 - Previous state: the globe used placeholder border arcs and the core offline pack manifest was fixture-only.
-- Current state: `scripts/prepare-geo-data.mjs` extracts Natural Earth 110m coastlines and admin country boundaries into `shared/offline-packs/core-global/geo-boundaries.json`; `createGlobe.ts` renders those lines instead of placeholder arcs. The core manifest now lists Natural Earth and fixture source files with size/hash metadata and generated index paths.
-- Remaining gap: higher-detail geometry, label ranking, and spatial indexes are not built yet.
+- Current state: `scripts/prepare-geo-data.mjs` extracts Natural Earth 50m coastlines and admin country boundaries into `shared/offline-packs/core-global/geo-boundaries.json`, 10m populated places into `populated-places.json`, and 10m geography region points into `geography-regions.json`; `createGlobe.ts` renders the higher-detail lines. The core manifest lists Natural Earth and fixture source files with size/hash metadata and generated index paths. Offline pack install/delete state is persisted locally and exposed in Travel Atlas.
+- Remaining gap: true spatial indexes and remote per-region package downloads are not built yet.
+
+### Globe lighting and descent detail
+
+- Previous state: day/night was local-time procedural shading with route-nearby city light sprites; clouds were generated canvas marks.
+- Current state: the globe uses bundled Earth lights, cloud, and specular textures, with replay-date seasonal sun declination and UTC-based sun direction. Origin/destination airports are rendered as globe labels; they start large at takeoff, shrink as altitude/distance increases, and grow again during descent.
+- Remaining gap: this is not a live weather feed. Cloud cover is a realistic static texture with animation, not real-time METAR/satellite weather.
+
+### Runtime, records, and native bridge
+
+- Previous state: Travel Records were mostly prompt-based, browser history was hidden in localStorage, and iOS notifications/photo data were adjacent but not fully visible in Replay Engine.
+- Current state: `BrowserRuntimeAdapter` lists/loads/deletes local journeys; Travel Atlas exposes that history. iOS can queue the latest SQLite journey into Replay Engine after relaunch, Web notification rules can call native `notification.schedule`, and Travel Records support local photo attachments, thumbnails, region/time edits, and undo.
+- Remaining gap: a full native runtime adapter, binary media packaging, cross-device sync, and richer delayed/geofence notification triggers are still future work.
 
 ## Still Partial
 
 ### Network flight-plan provider
 
-- Evidence: `FlightPlanLookupResult.source` still includes `network-provider`, but no network implementation exists. The current offline schedule seed only contains first-version examples such as `CI100` and `BR190`.
-- Impact: unknown flight numbers cannot fetch a true carrier schedule, aircraft, delays, filed route, or waypoints unless the user manually enters origin/destination.
-- Next step: add a flight-number schedule source backed by a licensed/imported dataset first; defer paid historical/real-time API until filed routes or historical actual tracks become product requirements.
+- Evidence: aviationstack lookup is implemented for local user-provided API keys, but the app still does not ingest paid schedule/route products or filed waypoints.
+- Impact: unknown flight numbers can often fill origin/destination from aviationstack real-time data, but exact seasonal schedules, historical records, filed routes, delays, gates, and waypoints remain limited by plan/data availability.
+- Next step: add a licensed schedule/route source or paid aviationstack endpoints only when those fields become product requirements.
 
 ### Offline packs
 
-- Evidence: `offlinePacks.ts` now references generated Natural Earth / OurAirports manifests and the UI reports installed data layers, but Pack still toggles browser-local state rather than downloading/deleting remote package assets.
-- Impact: product state reflects real generated layers, but app storage management is not production-grade yet.
+- Evidence: `offlinePacks.ts` now references generated Natural Earth / OurAirports manifests, persists local install/delete state, and Travel Atlas exposes Core Global Atlas / East Asia Flight Context controls.
+- Impact: product state reflects real generated layers and local user choice, but app storage management is not a production remote package installer yet.
 - Next step: package generated indexes as installable assets and wire download/delete paths through native/web runtime capabilities.
 
 ### Browser/native runtime split
 
-- Evidence: browser `.travelglobe` and share-safe JSON export now go through `BrowserRuntimeAdapter`, but import and native recording payload handoff are still handled outside one complete runtime contract.
-- Impact: Web export is less coupled to UI, but iOS/Web parity is incomplete.
-- Next step: move import and native recorded-journey payload loading behind runtime-capability methods and make iOS/web behavior explicit in UI.
+- Evidence: browser `.travelglobe`, share-safe JSON export, saved journey list/load/delete, and iOS latest-SQLite replay queue now go through explicit adapter/bridge paths.
+- Impact: Web history is usable and native relaunch handoff exists, but the native layer still does not replace browser localStorage as a complete runtime adapter.
+- Next step: formalize a `NativeRuntimeAdapter` for full journey CRUD/import/export parity.
 
 ### iOS GitHub Actions simulator destination
 
@@ -52,18 +64,18 @@ This audit tracks features that looked like placeholders, provider shells, or pa
 
 ### Photo matching and journal media
 
-- Evidence: `PhotoImportService` exists on iOS and `photoMatcher.ts` exists in Replay Engine, but Travel Atlas record cards still use generated visual placeholders rather than real media thumbnails.
-- Impact: travel records feel atlas-like, but not yet a true personal photo diary.
-- Next step: connect imported photo metadata/media IDs to `TravelRecord` rendering and `.travelglobe` package assets.
+- Evidence: `PhotoImportService` can create PhotoKit GPS visit points, and Web Travel Records can attach local photos and render thumbnails.
+- Impact: travel records can now show user media locally, but native picker thumbnails and package/export privacy review remain future work.
+- Next step: connect native PhotoKit asset thumbnails/full image export to `.travelglobe` package assets with per-photo privacy controls.
 
 ### Notifications
 
-- Evidence: `notificationRules.ts` produces replay notification suggestions; iOS manual still frames notification permission as a test path.
-- Impact: notifications are visible in product state, but not scheduled as native notifications from replay/recording events.
-- Next step: wire notification rules into `TravelNotificationService` with user-controlled permission and scheduling.
+- Evidence: `notificationRules.ts` produces replay notification suggestions, and Web now sends `notification.schedule` bridge messages to `TravelNotificationService`.
+- Impact: native local scheduling is wired for current rules; richer timing, geofencing, and recording-phase reminders are still product work.
+- Next step: add user controls for reminder categories and delayed/geofence triggers.
 
 ### Full native recording to replay handoff
 
-- Evidence: iOS has recording/database/export pieces, while Web Replay Engine currently loads bundled sample or imported/preloaded journeys.
-- Impact: live native recording and Web replay are adjacent but not fully unified as a seamless "record then replay this exact journey" flow.
-- Next step: export recorded SQLite journey/points into the same `Journey` contract consumed by Replay Engine, then open that payload in the WebView bridge.
+- Evidence: iOS sends live/completed recording payloads and can queue the latest SQLite journey into Replay Engine after relaunch.
+- Impact: planned-flight recordings can round-trip into Web Replay; a fully native-created GPS-only journey still relies on the current Web journey shell.
+- Next step: build a native-to-Web `Journey` serializer for GPS-only journeys without a preloaded flight plan.

@@ -9,19 +9,24 @@ const naturalEarthDir = resolve(root, 'shared/source-data/natural-earth');
 const outputPath = resolve(root, 'shared/offline-packs/core-global/manifest.json');
 const boundariesPath = resolve(root, 'shared/offline-packs/core-global/geo-boundaries.json');
 const populatedPlacesPath = resolve(root, 'shared/offline-packs/core-global/populated-places.json');
+const geographyRegionsPath = resolve(root, 'shared/offline-packs/core-global/geography-regions.json');
 const landmarks = JSON.parse(readFileSync(landmarksPath, 'utf8'));
 const regionCodes = [...new Set(landmarks.map((landmark) => landmark.countryCode).filter(Boolean))].sort();
-const coastlineZip = resolve(naturalEarthDir, 'ne_110m_coastline.zip');
-const countriesZip = resolve(naturalEarthDir, 'ne_110m_admin_0_countries.zip');
-const populatedPlacesZip = resolve(naturalEarthDir, 'ne_110m_populated_places.zip');
-const coastlineShape = readZipEntry(coastlineZip, 'ne_110m_coastline.shp');
-const countriesShape = readZipEntry(countriesZip, 'ne_110m_admin_0_countries.shp');
-const populatedPlacesDbf = readZipEntry(populatedPlacesZip, 'ne_110m_populated_places.dbf');
+const coastlineDataset = naturalEarthDataset('ne_50m_coastline', 'ne_110m_coastline');
+const countriesDataset = naturalEarthDataset('ne_50m_admin_0_countries', 'ne_110m_admin_0_countries');
+const populatedPlacesDataset = naturalEarthDataset('ne_10m_populated_places', 'ne_110m_populated_places');
+const geographyRegionsDataset = naturalEarthDataset('ne_10m_geography_regions_points');
+const coastlineShape = readZipEntry(coastlineDataset.zipPath, `${coastlineDataset.name}.shp`);
+const countriesShape = readZipEntry(countriesDataset.zipPath, `${countriesDataset.name}.shp`);
+const populatedPlacesDbf = readZipEntry(populatedPlacesDataset.zipPath, `${populatedPlacesDataset.name}.dbf`);
+const geographyRegionsDbf = readZipEntry(geographyRegionsDataset.zipPath, `${geographyRegionsDataset.name}.dbf`);
 const coastlines = readShapeLines(coastlineShape, 'coastline');
 const countryBorders = readShapeLines(countriesShape, 'country-border');
 const boundaryFingerprint = createHash('sha256').update(coastlineShape).update(countriesShape).digest('hex');
 const populatedPlacesFingerprint = createHash('sha256').update(populatedPlacesDbf).digest('hex');
+const geographyRegionsFingerprint = createHash('sha256').update(geographyRegionsDbf).digest('hex');
 const populatedPlaces = readPopulatedPlaces(populatedPlacesDbf);
+const geographyRegions = readGeographyRegions(geographyRegionsDbf);
 const boundaries = {
   schemaVersion: '1.0.0',
   generatedFrom: `sha256:${boundaryFingerprint}`,
@@ -29,8 +34,8 @@ const boundaries = {
     name: 'Natural Earth',
     attribution: 'Made with Natural Earth.',
     urls: {
-      coastline: 'https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_coastline.zip',
-      adminCountries: 'https://naturalearth.s3.amazonaws.com/110m_cultural/ne_110m_admin_0_countries.zip'
+      coastline: naturalEarthUrl(coastlineDataset),
+      adminCountries: naturalEarthUrl(countriesDataset)
     }
   },
   contents: {
@@ -46,12 +51,25 @@ const populatedPlacesIndex = {
   source: {
     name: 'Natural Earth',
     attribution: 'Made with Natural Earth.',
-    url: 'https://naturalearth.s3.amazonaws.com/110m_cultural/ne_110m_populated_places.zip'
+    url: naturalEarthUrl(populatedPlacesDataset)
   },
   contents: {
     places: populatedPlaces.length
   },
   places: populatedPlaces
+};
+const geographyRegionsIndex = {
+  schemaVersion: '1.0.0',
+  generatedFrom: `sha256:${geographyRegionsFingerprint}`,
+  source: {
+    name: 'Natural Earth',
+    attribution: 'Made with Natural Earth.',
+    url: naturalEarthUrl(geographyRegionsDataset)
+  },
+  contents: {
+    regions: geographyRegions.length
+  },
+  regions: geographyRegions
 };
 
 const manifest = {
@@ -65,9 +83,10 @@ const manifest = {
       attribution: 'Made with Natural Earth.',
       sourceUrl: 'https://www.naturalearthdata.com/',
           files: [
-            fileEntry('shared/source-data/natural-earth/ne_110m_admin_0_countries.zip'),
-            fileEntry('shared/source-data/natural-earth/ne_110m_coastline.zip'),
-            fileEntry('shared/source-data/natural-earth/ne_110m_populated_places.zip')
+            fileEntry(relativePathForDataset(countriesDataset)),
+            fileEntry(relativePathForDataset(coastlineDataset)),
+            fileEntry(relativePathForDataset(populatedPlacesDataset)),
+            fileEntry(relativePathForDataset(geographyRegionsDataset))
           ]
     },
     {
@@ -81,6 +100,7 @@ const manifest = {
   contents: {
     landmarks: landmarks.length,
     populatedPlaces: populatedPlaces.length,
+    geographyRegions: geographyRegions.length,
     regionCodes,
     countryBorders: {
       status: 'prepared',
@@ -97,17 +117,47 @@ const manifest = {
   },
   indexes: {
     boundaries: 'shared/offline-packs/core-global/geo-boundaries.json',
-    populatedPlaces: 'shared/offline-packs/core-global/populated-places.json'
+    populatedPlaces: 'shared/offline-packs/core-global/populated-places.json',
+    geographyRegions: 'shared/offline-packs/core-global/geography-regions.json'
   }
 };
 
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(boundariesPath, `${JSON.stringify(boundaries)}\n`);
 writeFileSync(populatedPlacesPath, `${JSON.stringify(populatedPlacesIndex)}\n`);
+writeFileSync(geographyRegionsPath, `${JSON.stringify(geographyRegionsIndex)}\n`);
 writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(`Prepared Natural Earth boundaries with ${boundaries.contents.points} points at ${boundariesPath}`);
 console.log(`Prepared Natural Earth populated places with ${populatedPlaces.length} places at ${populatedPlacesPath}`);
+console.log(`Prepared Natural Earth geography regions with ${geographyRegions.length} places at ${geographyRegionsPath}`);
 console.log(`Prepared offline geo manifest at ${outputPath}`);
+
+function naturalEarthDataset(preferredName, fallbackName) {
+  const preferredPath = resolve(naturalEarthDir, `${preferredName}.zip`);
+  try {
+    statSync(preferredPath);
+    return { name: preferredName, zipPath: preferredPath };
+  } catch {
+    if (!fallbackName) {
+      throw new Error(`Missing Natural Earth source ${preferredName}.zip`);
+    }
+  }
+  const fallbackPath = resolve(naturalEarthDir, `${fallbackName}.zip`);
+  statSync(fallbackPath);
+  return { name: fallbackName, zipPath: fallbackPath };
+}
+
+function naturalEarthUrl(dataset) {
+  const scale = dataset.name.match(/ne_(\d+)m_/)?.[1] ?? '110';
+  const category = dataset.name.includes('coastline') || dataset.name.includes('land') || dataset.name.includes('geography')
+    ? 'physical'
+    : 'cultural';
+  return `https://naturalearth.s3.amazonaws.com/${scale}m_${category}/${dataset.name}.zip`;
+}
+
+function relativePathForDataset(dataset) {
+  return `shared/source-data/natural-earth/${dataset.name}.zip`;
+}
 
 function fileEntry(relativePath) {
   const absolutePath = resolve(root, relativePath);
@@ -120,7 +170,7 @@ function fileEntry(relativePath) {
 }
 
 function readZipEntry(zipPath, entryName) {
-  return execFileSync('unzip', ['-p', zipPath, entryName], { maxBuffer: 20 * 1024 * 1024 });
+  return execFileSync('unzip', ['-p', zipPath, entryName], { maxBuffer: 80 * 1024 * 1024 });
 }
 
 function readPopulatedPlaces(buffer) {
@@ -154,6 +204,35 @@ function readPopulatedPlaces(buffer) {
     .sort((a, b) =>
       a.labelRank - b.labelRank ||
       b.population - a.population ||
+      a.name.localeCompare(b.name)
+    );
+}
+
+function readGeographyRegions(buffer) {
+  const records = readDbfRecords(buffer);
+  return records
+    .map((record, index) => ({
+      id: `natural-earth-region-${numberField(record.ne_id ?? record.NE_ID, index)}`,
+      name: stringField(record.name_en) || stringField(record.name) || stringField(record.label),
+      nameZh: stringField(record.name_zht) || stringField(record.name_zh),
+      label: stringField(record.label),
+      type: 'landmark',
+      featureClass: stringField(record.featurecla),
+      region: stringField(record.region),
+      subregion: stringField(record.subregion),
+      latitude: numberField(record.lat_y ?? record.LAT_Y),
+      longitude: numberField(record.long_x ?? record.LONG_X),
+      scalerank: numberField(record.scalerank, 99),
+      minZoom: numberField(record.min_zoom, 9)
+    }))
+    .filter((region) =>
+      region.name &&
+      Number.isFinite(region.latitude) &&
+      Number.isFinite(region.longitude)
+    )
+    .sort((a, b) =>
+      a.scalerank - b.scalerank ||
+      a.minZoom - b.minZoom ||
       a.name.localeCompare(b.name)
     );
 }

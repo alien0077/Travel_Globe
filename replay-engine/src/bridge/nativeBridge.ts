@@ -70,6 +70,12 @@ export interface NativeVisitPointsPayload {
   points: NativeVisitPointPayload[];
 }
 
+export interface NativeNotificationSchedulePayload {
+  identifier: string;
+  title: string;
+  body: string;
+}
+
 declare global {
   interface Window {
     TravelGlobeNative?: {

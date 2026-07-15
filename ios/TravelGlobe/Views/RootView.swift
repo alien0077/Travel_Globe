@@ -124,6 +124,10 @@ struct RootView: View {
                 }
 
                 StatusPill(text: appModel.replayEngineStatus)
+
+                ActionButton(title: "載入最新紀錄", style: .secondary) {
+                    Task { await appModel.loadLatestJourneyInReplay() }
+                }
             }
         }
     }

@@ -5,7 +5,7 @@ Travel Globe should support every useful geographic layer, but production packs 
 ## Approved First-Pack Sources
 
 - Natural Earth: country borders, coastlines, populated places, and small-scale labels. Public domain; attribution optional but recommended as `Made with Natural Earth`.
-- NASA Blue Marble / NASA Earth imagery: globe texture candidates. NASA media generally may be used for factual, educational, and informational purposes, but the app must not imply NASA endorsement and must avoid NASA marks as branding.
+- NASA Blue Marble / NASA Earth imagery and Three.js example Earth textures: globe, night-lights, cloud, and specular texture candidates. NASA media generally may be used for factual, educational, and informational purposes, but the app must not imply NASA endorsement and must avoid NASA marks as branding.
 - OurAirports: airports, runways, frequencies, navaids, countries, and regions. Public domain; credit is not required, but Travel Globe should still show `Airport and runway data provided by OurAirports.` in About / Data Sources.
 
 ## Optional / Isolated Pack
@@ -30,9 +30,10 @@ Travel Globe should support every useful geographic layer, but production packs 
 
 The current repository includes a downloaded source baseline under `shared/source-data/`:
 
-- Natural Earth 110m admin countries, populated places, land, and coastline archives
+- Natural Earth 110m baseline archives, 50m admin/coastline archives, 10m populated places, and 10m geography region point archives
 - OurAirports airports, runways, frequencies, navaids, countries, and regions CSV files
 - NASA Visible Earth Blue Marble `land_ocean_ice_2048.jpg`
+- Bundled Earth lights, clouds, and specular textures from the Three.js example texture set
 
 Run `scripts/download-geo-data.sh` to refresh the baseline and regenerate `shared/source-data/source-manifest.tsv`.
 Run `npm --prefix replay-engine run prepare:airports` after refreshing OurAirports data to regenerate `shared/offline-packs/core-global/airports-index.json`.

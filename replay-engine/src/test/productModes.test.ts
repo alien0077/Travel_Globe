@@ -1,20 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { sampleJourney } from '../data/sampleJourney';
 import { generateOfflineJournal } from '../journal/generateJournal';
 import { createPhotoTimelineEvents } from '../media/photoMatcher';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
   coreOfflinePacks,
+  deletePack,
   describeInstalledPacks,
   formatBytes,
   getInstalledSizeBytes,
-  installPack
+  installPack,
+  loadOfflinePackState,
+  saveOfflinePackState
 } from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { buildTimeMachineState } from '../time-machine/timeMachine';
 import { buildPlanSummary, matchEventsToPlan } from '../travel-plan/planEngine';
 
 describe('complete product mode services', () => {
+  beforeEach(() => {
+    installMemoryLocalStorage();
+  });
+
   it('summarizes travel plan completion', () => {
     const plan = buildPlanSummary(sampleJourney);
     const matched = matchEventsToPlan(sampleJourney.events, plan.plannedPlaces);
@@ -71,6 +78,15 @@ describe('complete product mode services', () => {
     expect(notifications.map((item) => item.id)).toContain('storage-low');
   });
 
+  it('persists offline pack install and delete state locally', () => {
+    const installed = installPack({ packs: [] }, coreOfflinePacks[1], '2026-07-10T00:00:00Z');
+    saveOfflinePackState(installed);
+    expect(loadOfflinePackState().packs.map((pack) => pack.id)).toEqual(['east-asia-flight']);
+
+    saveOfflinePackState(deletePack(installed, coreOfflinePacks[1].id));
+    expect(loadOfflinePackState().packs).toHaveLength(0);
+  });
+
   it('creates photo timeline events from imported media candidates', () => {
     const events = createPhotoTimelineEvents(sampleJourney, [
       {
@@ -86,3 +102,16 @@ describe('complete product mode services', () => {
     expect(events[0].source).toBe('photo');
   });
 });
+
+function installMemoryLocalStorage(): void {
+  const storage = new Map<string, string>();
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+      clear: () => storage.clear()
+    },
+    configurable: true
+  });
+}

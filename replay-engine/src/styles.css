@@ -109,6 +109,22 @@ input {
   box-shadow: 0 0 8px rgb(140 255 196 / 68%);
 }
 
+.globe-place-label.is-airport {
+  color: #fff8d5;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.globe-place-label.is-airport::before {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgb(255 248 213 / 88%);
+  background: rgb(255 196 91 / 82%);
+  box-shadow:
+    0 0 0 5px rgb(255 196 91 / 16%),
+    0 0 14px rgb(255 213 122 / 82%);
+}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -537,6 +553,10 @@ input {
   text-transform: uppercase;
 }
 
+.preload-input.is-secret {
+  text-transform: none;
+}
+
 select.preload-input {
   -webkit-appearance: none;
   appearance: none;
@@ -658,6 +678,81 @@ select.preload-input {
 .record-body {
   display: grid;
   gap: 7px;
+}
+
+.atlas-section,
+.atlas-section-grid,
+.pack-control-list,
+.saved-journey-list {
+  display: grid;
+  gap: 7px;
+}
+
+.atlas-section > strong {
+  color: #e9fdff;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.atlas-section-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.airport-detail-card,
+.pack-control-row,
+.saved-journey-row {
+  min-width: 0;
+  border: 1px solid rgb(126 220 230 / 12%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.airport-detail-card {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
+.airport-detail-card strong,
+.airport-detail-card span,
+.airport-detail-card small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.airport-detail-card strong {
+  color: #f5fbff;
+  font-size: 12px;
+}
+
+.airport-detail-card span,
+.airport-detail-card small {
+  color: #a7c7c8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.pack-control-row,
+.saved-journey-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  padding: 7px;
+}
+
+.saved-journey-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.pack-control-row > span,
+.saved-journey-row > span {
+  min-width: 0;
+  color: #a7c7c8;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .region-bar-row {
@@ -853,6 +948,36 @@ select.preload-input {
   color: #d9f4f6;
   font-size: 10px;
   font-weight: 750;
+}
+
+.record-media-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  color: #8fb1b4;
+  font-size: 10px;
+}
+
+.record-media-item {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+
+.record-media-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.record-media-item figcaption {
+  min-width: 0;
+  overflow: hidden;
+  color: #a7c7c8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 860px) {

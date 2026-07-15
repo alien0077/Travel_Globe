@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
-import type { JourneySegment, LocationPoint } from '../data/types';
+import type { JourneySegment, LocationPoint, PlaceReference } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
 import { landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
 import { EARTH_RADIUS_METERS, geographicToVector3, haversineDistanceMeters } from '../geo/geodesy';
@@ -22,6 +22,7 @@ interface LabelCandidate {
   height: number;
   distanceMeters: number;
   opacity: number;
+  scale: number;
 }
 
 export class TravelGlobeScene {
@@ -32,6 +33,7 @@ export class TravelGlobeScene {
   private readonly aircraft: THREE.Group;
   private readonly earth: THREE.Mesh;
   private readonly clouds: THREE.Mesh;
+  private readonly nightLights: THREE.Mesh;
   private readonly ambient: THREE.AmbientLight;
   private readonly sun: THREE.DirectionalLight;
   private readonly cityLights: THREE.Points;
@@ -68,7 +70,10 @@ export class TravelGlobeScene {
     this.container.appendChild(this.renderer.domElement);
     this.labelLayer = document.createElement('div');
     this.labelLayer.className = 'globe-label-layer';
-    this.landmarkLabels = createDomLandmarkLabels(this.labelLayer, routeLandmarks);
+    this.landmarkLabels = createDomLandmarkLabels(this.labelLayer, [
+      ...createAirportFeatures(segment.origin, segment.destination),
+      ...routeLandmarks
+    ]);
     this.container.appendChild(this.labelLayer);
     this.bindInteraction();
 
@@ -76,9 +81,10 @@ export class TravelGlobeScene {
     this.scene.fog = new THREE.Fog(0xd7e5e1, 9, 18);
     this.scene.add(createStarField(360, 46));
 
-    const { globe, earth, clouds } = createGlobe();
+    const { globe, earth, clouds, nightLights } = createGlobe();
     this.earth = earth;
     this.clouds = clouds;
+    this.nightLights = nightLights;
     this.scene.add(globe);
     const cityLights = createRouteCityLights(routeLandmarks);
     this.cityLights = cityLights.points;
@@ -222,7 +228,9 @@ export class TravelGlobeScene {
   }
 
   private updateDayNight(point: LocationPoint): void {
-    const nightFactor = nightFactorAt(point.timestamp, point.longitude);
+    const sunVector = sunVectorAt(point.timestamp);
+    this.sun.position.copy(sunVector.clone().multiplyScalar(8));
+    const nightFactor = nightFactorAt(point, sunVector);
     const dayFactor = 1 - nightFactor;
     const daySky = new THREE.Color(0xd7e5e1);
     const nightSky = new THREE.Color(0x07111d);
@@ -239,7 +247,10 @@ export class TravelGlobeScene {
       earthMaterial.emissiveIntensity = lerp(0.1, 0.38, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
-      this.clouds.material.opacity = lerp(0.12, 0.22, dayFactor);
+      this.clouds.material.opacity = lerp(0.18, 0.32, dayFactor);
+    }
+    if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
+      this.nightLights.material.opacity = lerp(0.02, 0.9, nightFactor);
     }
     this.cityLightMaterial.opacity = lerp(0.02, 0.92, nightFactor);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
@@ -286,7 +297,8 @@ export class TravelGlobeScene {
         width: Math.max(34, label.element.offsetWidth),
         height: Math.max(14, label.element.offsetHeight),
         distanceMeters,
-        opacity: labelOpacityForDistance(distanceMeters, maxLabelDistance)
+        opacity: labelOpacityForDistance(distanceMeters, maxLabelDistance),
+        scale: labelScaleForFeature(label.feature, distanceMeters, this.currentPoint)
       });
     }
 
@@ -294,7 +306,7 @@ export class TravelGlobeScene {
     for (const candidate of visibleLabels) {
       candidate.label.element.classList.remove('is-hidden');
       candidate.label.element.style.opacity = candidate.opacity.toFixed(3);
-      candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px)`;
+      candidate.label.element.style.transform = `translate(${candidate.x}px, ${candidate.y}px) scale(${candidate.scale.toFixed(3)})`;
     }
   }
 
@@ -313,13 +325,13 @@ function hideLabel(element: HTMLSpanElement): void {
 
 function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeature[]): GlobeDomLabel[] {
   const labels: GlobeDomLabel[] = [];
-  for (const feature of features) {
+  for (const feature of mergeSceneFeatures(features)) {
     if (!shouldRenderGlobeLabel(feature)) {
       continue;
     }
 
     const element = document.createElement('span');
-    element.className = `globe-place-label ${feature.type === 'majorCity' ? 'is-city' : 'is-landmark'} is-hidden`;
+    element.className = `globe-place-label ${labelClassForFeature(feature)} is-hidden`;
     element.textContent = landmarkDisplayName(feature);
     layer.appendChild(element);
 
@@ -331,6 +343,40 @@ function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeat
     });
   }
   return labels;
+}
+
+function createAirportFeatures(origin: PlaceReference, destination: PlaceReference): GeographicFeature[] {
+  return [origin, destination].map((place, index) => ({
+    id: `airport-${place.iataCode ?? place.name}-${index}`,
+    name: `${place.iataCode ?? place.name} ${place.name}`,
+    nameZh: place.iataCode ? `${place.iataCode} ${place.name}` : undefined,
+    type: 'airport',
+    minZoomRank: 0,
+    importance: 1.25,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    countryCode: place.countryCode,
+    tourismHint: index === 0 ? '起飛機場' : '降落機場'
+  }));
+}
+
+function mergeSceneFeatures(features: GeographicFeature[]): GeographicFeature[] {
+  const seen = new Set<string>();
+  return features.filter((feature) => {
+    const key = `${feature.type}:${feature.id}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function labelClassForFeature(feature: GeographicFeature): string {
+  if (feature.type === 'airport') {
+    return 'is-airport';
+  }
+  return feature.type === 'majorCity' ? 'is-city' : 'is-landmark';
 }
 
 function selectVisibleLabels(candidates: LabelCandidate[], maxCount: number): LabelCandidate[] {
@@ -354,7 +400,7 @@ function selectVisibleLabels(candidates: LabelCandidate[], maxCount: number): La
 }
 
 function labelPriority(candidate: LabelCandidate): number {
-  const typeBoost = candidate.label.feature.type === 'landmark' ? 1.15 : 1;
+  const typeBoost = candidate.label.feature.type === 'airport' ? 1.55 : candidate.label.feature.type === 'landmark' ? 1.15 : 1;
   const distancePenalty = Math.min(1.8, candidate.distanceMeters / 450000);
   return candidate.label.feature.importance * typeBoost - distancePenalty;
 }
@@ -419,6 +465,16 @@ function labelDistanceLimitMeters(point: LocationPoint, cameraMode: CameraMode):
     default:
       return dynamicLimit;
   }
+}
+
+function labelScaleForFeature(feature: GeographicFeature, distanceMeters: number, point?: LocationPoint): number {
+  if (feature.type !== 'airport') {
+    return 1;
+  }
+  const altitudeMeters = Math.max(0, point?.altitudeMeters ?? 0);
+  const distanceScale = 1 - Math.min(0.46, distanceMeters / 180000);
+  const altitudeScale = 1 - Math.min(0.34, altitudeMeters / 14000);
+  return Math.max(0.62, Math.min(1.45, 1.36 * distanceScale * altitudeScale));
 }
 
 function labelOpacityForDistance(distanceMeters: number, maxDistanceMeters: number): number {
@@ -524,18 +580,28 @@ function createCityLightSpriteTexture(): THREE.CanvasTexture {
   return texture;
 }
 
-function nightFactorAt(timestamp: string, longitude: number): number {
+function nightFactorAt(point: LocationPoint, sunVector: THREE.Vector3): number {
+  const vector = geographicToVector3(point, 1, 0);
+  const surface = new THREE.Vector3(vector.x, vector.y, vector.z).normalize();
+  const sunScore = surface.dot(sunVector);
+  return 1 - smoothstep(-0.1, 0.18, sunScore);
+}
+
+function sunVectorAt(timestamp: string): THREE.Vector3 {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) {
-    return 0;
+    return new THREE.Vector3(-3, 4, 7).normalize();
   }
+  const startOfYear = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const dayOfYear = Math.floor((date.getTime() - startOfYear) / 86400000);
   const utcHour =
     date.getUTCHours() +
     date.getUTCMinutes() / 60 +
     date.getUTCSeconds() / 3600;
-  const localHour = positiveModulo(utcHour + longitude / 15, 24);
-  const dayScore = (Math.cos(((localHour - 12) / 12) * Math.PI) + 1) / 2;
-  return 1 - smoothstep(0.18, 0.55, dayScore);
+  const declination = 23.44 * Math.sin(THREE.MathUtils.degToRad((360 / 365) * (dayOfYear - 81)));
+  const subsolarLongitude = positiveModulo((12 - utcHour) * 15 + 180, 360) - 180;
+  const vector = geographicToVector3({ latitude: declination, longitude: subsolarLongitude }, 1, 0);
+  return new THREE.Vector3(vector.x, vector.y, vector.z).normalize();
 }
 
 function positiveModulo(value: number, divisor: number): number {

@@ -14,14 +14,24 @@ export interface TravelRecord {
   coordinateLabel: string;
   accent: string;
   tags: string[];
+  mediaItems: TravelRecordMedia[];
 }
 
 export type TravelRegion = 'east-asia' | 'se-asia' | 'europe' | 'americas' | 'south-asia' | 'oceania' | 'world';
+
+export interface TravelRecordMedia {
+  id: string;
+  name: string;
+  type: string;
+  url?: string;
+  privacy: 'private' | 'shareable';
+}
 
 export interface TravelRecordEdit {
   title?: string;
   subtitle?: string;
   timestamp?: string;
+  region?: TravelRegion;
   note?: string;
   hidden?: boolean;
 }
@@ -60,7 +70,7 @@ const regionAccents: Record<TravelRegion, string> = {
 export function buildTravelRecords(journey: Journey): TravelRecord[] {
   const edits = readTravelRecordEdits(journey);
   const events = getSortedTimelineEvents(journey).filter((event) => event.location);
-  const records = events.map((event) => applyRecordEdit(createRecordFromEvent(event), edits));
+  const records = events.map((event) => applyRecordEdit(createRecordFromEvent(event, journey), edits));
 
   if (records.length > 0) {
     return records.filter((record) => !edits.records[record.id]?.hidden);
@@ -108,6 +118,10 @@ export function getRegionLabel(region: TravelRegion): string {
   return regionLabels[region];
 }
 
+export function getTravelRegionOptions(): Array<{ id: TravelRegion; label: string }> {
+  return Object.entries(regionLabels).map(([id, label]) => ({ id: id as TravelRegion, label }));
+}
+
 export function readTravelRecordEdits(journey: Journey): TravelRecordEdits {
   const raw = journey.metadata.travelRecordEdits;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -143,7 +157,7 @@ export function writeTravelRecordEdit(
   };
 }
 
-function createRecordFromEvent(event: TimelineEvent): TravelRecord {
+function createRecordFromEvent(event: TimelineEvent, journey?: Journey): TravelRecord {
   const location = event.location as GeographicPoint;
   const region = classifyRegion(location);
   return {
@@ -158,7 +172,8 @@ function createRecordFromEvent(event: TimelineEvent): TravelRecord {
     location,
     coordinateLabel: formatCoordinate(location),
     accent: regionAccents[region],
-    tags: [regionLabels[region], event.type.replace(/([A-Z])/g, ' $1').trim()]
+    tags: [regionLabels[region], event.type.replace(/([A-Z])/g, ' $1').trim()],
+    mediaItems: readRecordMedia(journey, event)
   };
 }
 
@@ -173,6 +188,9 @@ function applyRecordEdit(record: TravelRecord, edits: TravelRecordEdits): Travel
     subtitle: edit.subtitle?.trim() || record.subtitle,
     timestamp: edit.timestamp && Number.isFinite(Date.parse(edit.timestamp)) ? edit.timestamp : record.timestamp,
     dateLabel: edit.timestamp && Number.isFinite(Date.parse(edit.timestamp)) ? formatRecordDate(edit.timestamp) : record.dateLabel,
+    region: edit.region ?? record.region,
+    regionLabel: edit.region ? regionLabels[edit.region] : record.regionLabel,
+    accent: edit.region ? regionAccents[edit.region] : record.accent,
     tags: edit.note?.trim() ? [...record.tags, 'Edited'] : record.tags
   };
 }
@@ -191,7 +209,35 @@ function createFallbackRecord(id: string, title: string, timestamp: string, loca
     location,
     coordinateLabel: formatCoordinate(location),
     accent: regionAccents[region],
-    tags: [regionLabels[region], 'Waypoint']
+    tags: [regionLabels[region], 'Waypoint'],
+    mediaItems: []
+  };
+}
+
+function readRecordMedia(journey: Journey | undefined, event: TimelineEvent): TravelRecordMedia[] {
+  if (!journey || event.mediaIds.length === 0 || !Array.isArray(journey.media)) {
+    return [];
+  }
+  return journey.media
+    .map((item) => normalizeMediaItem(item))
+    .filter((item): item is TravelRecordMedia => item !== undefined)
+    .filter((item) => event.mediaIds.includes(item.id));
+}
+
+function normalizeMediaItem(value: unknown): TravelRecordMedia | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const item = value as Record<string, unknown>;
+  if (typeof item.id !== 'string') {
+    return undefined;
+  }
+  return {
+    id: item.id,
+    name: typeof item.name === 'string' ? item.name : 'media',
+    type: typeof item.type === 'string' ? item.type : 'application/octet-stream',
+    url: typeof item.url === 'string' ? item.url : undefined,
+    privacy: item.privacy === 'shareable' ? 'shareable' : 'private'
   };
 }
 

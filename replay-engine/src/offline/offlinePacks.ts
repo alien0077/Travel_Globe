@@ -17,6 +17,8 @@ export interface OfflinePackState {
   packs: OfflinePack[];
 }
 
+const offlinePackStateKey = 'travel-globe:offline-pack-state:v1';
+
 export const coreOfflinePacks: OfflinePack[] = [
   {
     id: 'core-global',
@@ -59,6 +61,40 @@ export function deletePack(state: OfflinePackState, packId: string): OfflinePack
   };
 }
 
+export function loadOfflinePackState(): OfflinePackState {
+  if (typeof localStorage === 'undefined') {
+    return { packs: [] };
+  }
+  try {
+    const raw = localStorage.getItem(offlinePackStateKey);
+    if (!raw) {
+      return { packs: [] };
+    }
+    const parsed = JSON.parse(raw) as OfflinePackState;
+    if (!Array.isArray(parsed.packs)) {
+      return { packs: [] };
+    }
+    return {
+      packs: parsed.packs
+        .filter((pack) => typeof pack.id === 'string')
+        .map((pack) => reconcilePack(pack))
+    };
+  } catch {
+    return { packs: [] };
+  }
+}
+
+export function saveOfflinePackState(state: OfflinePackState): void {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+  localStorage.setItem(offlinePackStateKey, JSON.stringify(state));
+}
+
+export function isPackInstalled(state: OfflinePackState, packId: string): boolean {
+  return state.packs.some((pack) => pack.id === packId);
+}
+
 export function getInstalledSizeBytes(state: OfflinePackState): number {
   return state.packs.reduce((total, pack) => total + pack.sizeBytes, 0);
 }
@@ -91,4 +127,15 @@ function manifestSizeBytes(manifest: { files?: Array<{ bytes: number }>; sources
 
 function checksumFromGeneratedSources(parts: string[]): string {
   return parts.join('|').replace(/^sha256:/, '').slice(0, 24);
+}
+
+function reconcilePack(pack: OfflinePack): OfflinePack {
+  const current = coreOfflinePacks.find((candidate) => candidate.id === pack.id);
+  if (!current) {
+    return pack;
+  }
+  return {
+    ...current,
+    installedAt: pack.installedAt
+  };
 }

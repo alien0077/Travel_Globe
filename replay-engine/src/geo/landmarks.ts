@@ -1,4 +1,5 @@
 import landmarksJson from '../../../shared/fixtures/landmarks.json';
+import geographyRegionsJson from '../../../shared/offline-packs/core-global/geography-regions.json';
 import populatedPlacesJson from '../../../shared/offline-packs/core-global/populated-places.json';
 import type { GeographicPoint } from '../data/types';
 import { haversineDistanceMeters, initialBearingDegrees } from './geodesy';
@@ -32,6 +33,17 @@ interface NaturalEarthPlace extends GeographicPoint {
   isMegaCity: boolean;
 }
 
+interface NaturalEarthRegion extends GeographicPoint {
+  id: string;
+  name: string;
+  nameZh?: string;
+  type: 'landmark';
+  region?: string;
+  subregion?: string;
+  scalerank: number;
+  minZoom: number;
+}
+
 export interface LandmarkProximity {
   feature: GeographicFeature;
   distanceMeters: number;
@@ -41,7 +53,8 @@ export interface LandmarkProximity {
 
 export const curatedLandmarks = landmarksJson as GeographicFeature[];
 export const naturalEarthPlaces = (populatedPlacesJson.places as NaturalEarthPlace[]).map(toGeographicFeature);
-export const fixtureLandmarks = mergeGeographicFeatures([...curatedLandmarks, ...naturalEarthPlaces]);
+export const naturalEarthRegions = (geographyRegionsJson.regions as NaturalEarthRegion[]).map(toRegionFeature);
+export const fixtureLandmarks = mergeGeographicFeatures([...curatedLandmarks, ...naturalEarthPlaces, ...naturalEarthRegions]);
 const ROUTE_LANDMARK_SAMPLE_LIMIT = 96;
 const ROUTE_LANDMARK_MAX_DISTANCE_METERS = 650_000;
 
@@ -92,7 +105,7 @@ export function findNearestLandmark(
         relativeWindow: relativeWindowDirection(headingDegrees, bearingDegrees)
       };
     })
-    .sort((a, b) => a.distanceMeters - b.distanceMeters)[0];
+    .sort((a, b) => landmarkProximityScore(a) - landmarkProximityScore(b))[0];
 }
 
 export function landmarksNearRoute(
@@ -155,6 +168,20 @@ function toGeographicFeature(place: NaturalEarthPlace): GeographicFeature {
   };
 }
 
+function toRegionFeature(region: NaturalEarthRegion): GeographicFeature {
+  return {
+    id: region.id,
+    name: region.name,
+    nameZh: region.nameZh,
+    type: 'landmark',
+    minZoomRank: Math.max(0, Math.round(region.minZoom)),
+    importance: Math.max(0.78, 1 - Math.min(8, region.scalerank) * 0.035),
+    latitude: region.latitude,
+    longitude: region.longitude,
+    tourismHint: region.subregion || region.region
+  };
+}
+
 function importanceForPlace(place: NaturalEarthPlace): number {
   if (place.isWorldCity || place.isMegaCity || place.isCapital) {
     return 0.96;
@@ -166,6 +193,16 @@ function importanceForPlace(place: NaturalEarthPlace): number {
     return 0.88;
   }
   return 0.78;
+}
+
+function landmarkProximityScore(proximity: LandmarkProximity): number {
+  const typeBonus = proximity.feature.type === 'airport'
+    ? 60_000
+    : proximity.feature.type === 'majorCity'
+      ? 0
+      : 150_000;
+  const importanceBonus = proximity.feature.importance * 24_000;
+  return proximity.distanceMeters - typeBonus - importanceBonus;
 }
 
 function mergeGeographicFeatures(features: GeographicFeature[]): GeographicFeature[] {

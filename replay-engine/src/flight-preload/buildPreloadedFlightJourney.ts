@@ -16,11 +16,13 @@ export interface PreloadFlightRequest {
   departureTime: string;
   durationMinutes?: number;
   aircraftType?: string;
+  airlineName?: string;
+  source?: PreloadFlightResult['source'];
 }
 
 export interface PreloadFlightResult {
   journey: Journey;
-  source: 'offline-airport-index' | 'offline-schedule-index';
+  source: 'offline-airport-index' | 'offline-schedule-index' | 'aviationstack' | 'aviationstack-cache';
   warnings: string[];
 }
 
@@ -61,7 +63,8 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
   const endMs = startMs + durationSeconds * 1000;
   const journeyId = `journey-${flightNumber.toLowerCase()}-${origin.iataCode?.toLowerCase()}-${destination.iataCode?.toLowerCase()}-${request.departureDate}`;
   const segmentId = `segment-${flightNumber.toLowerCase()}-${request.departureDate}`;
-  const preloadSource: PreloadFlightResult['source'] = schedule ? 'offline-schedule-index' : 'offline-airport-index';
+  const preloadSource: PreloadFlightResult['source'] =
+    request.source ?? (schedule ? 'offline-schedule-index' : 'offline-airport-index');
 
   const derivedReplayRoute = {
     kind: 'derivedReplay' as const,
@@ -143,13 +146,14 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     metadata: {
       flightNumber,
       aircraftType: request.aircraftType?.trim() || schedule?.defaultAircraftType || DEFAULT_AIRCRAFT_TYPE,
+      airlineName: request.airlineName?.trim() || schedule?.airlineName,
       preloadSource
     }
   };
 
   return {
     source: preloadSource,
-    warnings: [buildPreloadWarning(flightNumber, origin, destination, Boolean(schedule))],
+    warnings: [buildPreloadWarning(flightNumber, origin, destination, preloadSource, Boolean(schedule))],
     journey: {
       schemaVersion: '1.0.0',
       appVersion: '0.1.0',
@@ -186,9 +190,16 @@ function buildPreloadWarning(
   flightNumber: string,
   origin: AirportRecord,
   destination: AirportRecord,
+  source: PreloadFlightResult['source'],
   usedSchedule: boolean
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
+  if (source === 'aviationstack') {
+    return `${flightNumber} 已由 aviationstack 帶入 ${routeLabel}，並已保存到本機快取；若之後 API 無法查詢，會用這筆歷史航班 fallback。`;
+  }
+  if (source === 'aviationstack-cache') {
+    return `${flightNumber} 使用本機 aviationstack 歷史快取帶入 ${routeLabel}。目前使用 Great Circle 預估航線；實際航跡仍以 GPS 記錄為準。`;
+  }
   if (usedSchedule) {
     return `${flightNumber} 已由離線班表解析為 ${routeLabel}。目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。`;
   }

@@ -1,6 +1,6 @@
 # Travel Globe Handoff
 
-Updated: 2026-07-14
+Updated: 2026-07-15
 
 ## Current Direction
 
@@ -105,23 +105,30 @@ npm --prefix replay-engine run build
 - Native visit points now support one-shot `GPS打卡` and PhotoKit `照片打卡`; both persist in SQLite `visit_points` and sync to Replay Engine as Travel Records without mutating raw GPS tracks.
 - Travel Records can be manually added, edited, hidden, and have flight summary metadata corrected through an overlay; raw SQLite GPS remains read-only.
 - App manual now documents the full flight-plan-to-GPS-to-Travel-Records workflow and bundled aircraft model attribution.
+- aviationstack key entry is available in the Web/iOS Replay Engine preload panel; keys and successful flight lookups are stored locally, and failed future lookups fall back to flight history cache before offline seeds/manual IATA.
+- Natural Earth core geography is refreshed to 50m coastlines/country borders plus 10m populated places and geography region points.
+- Globe rendering now uses bundled Earth lights/cloud/specular textures, seasonal UTC sun direction, and airport labels that scale down after takeoff and grow again during descent.
+- Travel Atlas now shows origin/destination airport detail cards with runway counts, radio frequencies, and nearby navaids from the generated OurAirports aviation context index.
+- Offline pack install/delete state is persisted in local browser storage and exposed in Travel Atlas for the Core Global Atlas and East Asia Flight Context packs.
+- Browser runtime adapter now lists, loads, and deletes locally saved journeys, making historical `.travelglobe` sessions visible from Travel Atlas instead of only hidden in localStorage.
+- iOS can queue the latest SQLite journey back into Replay Engine after relaunch via `載入最新紀錄`, and Web notifications can request native local scheduling through `notification.schedule`.
+- Travel Records now support local photo attachments, thumbnail display, manual region/time edits, and one-step undo while preserving raw GPS/events.
 
 ## Still Partial
 
-These are the main half-finished areas to continue next:
+These items now depend on external data products, post-push validation, or larger future scope:
 
-- Network flight-plan provider: source type exists, but no API implementation or key-management path is wired.
-- Flight schedule coverage: only a seed schedule index exists; broad flight-number lookup needs an imported or licensed schedule source.
-- Flight schedule accuracy: FD234/FD235 currently know route segment, rough duration, and aircraft family only; exact seasonal schedule, operating days, departure/arrival time, aircraft substitutions, and multi-leg `DMK-KHH-NRT` / `NRT-KHH-DMK` modeling still need an API or reviewed timetable import.
-- Frequencies and navaids: transformed into an aviation context index and visible in product stats; a full airport detail/search UI is still not built.
-- Offline packs: core pack state now references real generated layers; install/download remains a browser-local product state, not a real remote package installer.
-- Geographic borders: Natural Earth 110m coastlines/country boundaries now render on the globe; higher-detail packs and label ranking remain future work.
-- Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks with Natural Earth 110m populated places. This covers global major city names but not a complete global landmark database. Missing work: add a reviewed regional/global landmark fixture pipeline, source attribution, per-region offline packs, richer categories such as mountains/islands/bays/cultural landmarks, higher-detail populated-place packs, and viewport-aware label collision/ranking so labels do not become a wall of text on mobile.
-- Night lighting coverage: current night mode uses replay time/local longitude plus route-nearby city points as procedural lights. Missing work: full global night-light texture, weather/cloud darkness variation, seasonal sun position/terminator accuracy, and per-city light intensity calibrated from real night-lights data.
-- Runtime adapter split: browser export is behind the adapter; native recording handoff now works through bridge messages, but there is still no full native runtime adapter for loading historical SQLite journeys into WebView after app relaunch.
-- Photo matching and journal media: PhotoKit GPS can create `照片打卡`, but Travel Atlas cards still use generated placeholders. Missing work: explicit photo picker, thumbnails/full media attachment, export-pack media inclusion, and per-photo privacy controls.
-- Notifications: rules exist, but native notification scheduling is not wired to replay/recording events.
-- Travel record editing: v1 is prompt/overlay based, with native `GPS打卡`/`照片打卡` synced as events. Missing work: polished list editor, undo, richer event categories, drag-to-reassign journey/segment, and cross-device sync.
+- Network flight-plan provider: aviationstack real-time lookup is implemented with local key storage and local flight cache fallback, but exact filed routes/waypoints and paid schedule/history products remain unwired.
+- Flight schedule coverage: aviationstack can fill many live flight-number origin/destination pairs when the user provides a key; broad offline schedule lookup still needs an imported or licensed schedule source.
+- Flight schedule accuracy: FD234/FD235 still depend on the offline seed unless aviationstack returns live data; exact seasonal schedule, operating days, aircraft substitutions, and multi-leg `DMK-KHH-NRT` / `NRT-KHH-DMK` modeling still need an API response or reviewed timetable import.
+- Offline packs: core packs can be installed/deleted locally; a future remote package downloader and optional per-region payload delivery are still not built.
+- Geographic borders: Natural Earth 50m coastlines/country boundaries now render on the globe; true spatial indexes for point-in-polygon queries remain future work.
+- Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks with Natural Earth 10m populated places and geography region points. Missing work: reviewed regional/global landmark fixture pipeline, richer categories, per-region offline packs, and deeper mobile label ranking.
+- Night lighting coverage: current night mode uses bundled Earth lights/cloud/specular textures plus seasonal sun direction and route-nearby city points. Missing work: live weather/satellite cloud updates, real-time cloud darkness variation, and calibrated per-city light intensity from a dedicated night-lights dataset.
+- Runtime adapter split: browser history and iOS latest-SQLite replay handoff exist; a fully separate native runtime adapter that replaces browser localStorage remains future architecture work.
+- Photo matching and journal media: PhotoKit GPS can create `照片打卡`, and Web records can attach/show local photo thumbnails. Missing work: native explicit picker thumbnails, `.travelglobe` binary media packaging, and share/export privacy review UI.
+- Notifications: Web rules now request native local scheduling; richer recording-phase reminders and delayed/geofence triggers remain future work.
+- Travel record editing: records can be added, edited, hidden, reclassified, time-adjusted, photo-attached, and undone. Missing work: drag-to-reassign journey/segment, cross-device sync, and a fully polished native-style list editor.
 - iOS CI: workflow has been patched to create `Travel Globe CI` simulator before destination resolution; needs confirmation on GitHub Actions after push.
 
 See `docs/unfinished-features-audit.md` for the longer audit.

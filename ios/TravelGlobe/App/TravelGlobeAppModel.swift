@@ -233,6 +233,27 @@ final class TravelGlobeAppModel: ObservableObject {
         enqueueBridgeMessage(type: "flightPlan.selected", payload: FlightPlanStatusPayload(plan: plan, status: "selected"))
     }
 
+    func loadLatestJourneyInReplay() async {
+        do {
+            guard let journey = try await repository.recentJourneys(limit: 1).first else {
+                replayEngineStatus = "Replay Engine: no stored journey"
+                return
+            }
+            let points = try await repository.locationPoints(journeyId: journey.id, since: nil)
+            let visitPoints = try await repository.visitPoints(journeyId: journey.id)
+            activeJourney = journey
+            activeLocationPointCount = points.count
+            activeVisitPointCount = visitPoints.count
+            enqueueRecordingStatus("recording.completed", journey: journey, points: points)
+            enqueueVisitPointsStatus("visitPoints.sync", journey: journey, points: visitPoints)
+            replayEngineStatus = "Replay Engine: queued latest stored journey"
+        } catch {
+            replayEngineStatus = "Replay Engine: load latest error \(error.localizedDescription)"
+            diagnostics.append(.error(replayEngineStatus))
+        }
+    }
+
+
     private func publishLiveLocation(_ point: LocationPointRecord) {
         guard let payload = LiveLocationPayload(point: point).jsonString else { return }
         latestLiveLocationMessage = NativeBridgeMessage(
@@ -248,6 +269,8 @@ final class TravelGlobeAppModel: ObservableObject {
         switch message.type {
         case "flightPlan.apply":
             applyFlightPlanMessage(message)
+        case "notification.schedule":
+            scheduleNotificationMessage(message)
         default:
             break
         }
@@ -268,6 +291,21 @@ final class TravelGlobeAppModel: ObservableObject {
         Self.saveSelectedFlightPlanKey(plan.selectionKey)
         enqueueBridgeMessage(type: "flightPlan.ready", payload: FlightPlanStatusPayload(plan: plan, status: "ready"))
         enqueueBridgeMessage(type: "flightPlan.selected", payload: FlightPlanStatusPayload(plan: plan, status: "selected"))
+    }
+
+    private func scheduleNotificationMessage(_ message: NativeBridgeMessage) {
+        guard
+            let data = message.payload.data(using: .utf8),
+            let notification = try? JSONDecoder().decode(NotificationSchedulePayload.self, from: data)
+        else {
+            diagnostics.append(.error("Unable to decode notification request from Replay Engine"))
+            return
+        }
+        notificationService.schedule(
+            title: notification.title,
+            body: notification.body,
+            identifier: notification.identifier
+        )
     }
 
     private var selectedFlightPlan: FlightPlanRecord? {
@@ -438,6 +476,12 @@ private struct FlightPlanStatusPayload: Encodable {
         plannedRoute = plan.plannedRoute
         self.status = status
     }
+}
+
+private struct NotificationSchedulePayload: Decodable {
+    var identifier: String
+    var title: String
+    var body: String
 }
 
 private struct RecordingStatusPayload: Encodable {
