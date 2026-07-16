@@ -32,7 +32,7 @@ struct ReplayEngineView: UIViewRepresentable {
         appModel.bridge.configure(webView)
 
         if let url = TravelGlobeAppModel.replayEngineIndexURL() {
-            let readAccessURL = Bundle.main.resourceURL ?? url.deletingLastPathComponent()
+            let readAccessURL = url.deletingLastPathComponent()
             appModel.updateReplayEngineStatus("loading index.html")
             webView.loadFileURL(url, allowingReadAccessTo: readAccessURL)
         } else {
@@ -150,11 +150,7 @@ struct ReplayEngineView: UIViewRepresentable {
             guard !didInjectReplayBundle else { return }
             didInjectReplayBundle = true
 
-            guard let scriptURL = Bundle.main.url(
-                forResource: "index",
-                withExtension: "js",
-                subdirectory: "ReplayEngine"
-            ) else {
+            guard let scriptURL = OfflinePackDownloadService.replayAssetURL(relativePath: "index.js") else {
                 Task { @MainActor in
                     appModel.updateReplayEngineStatus("missing index.js")
                 }
@@ -222,22 +218,14 @@ struct ReplayEngineView: UIViewRepresentable {
 }
 
 final class ReplayAssetSchemeHandler: NSObject, WKURLSchemeHandler {
-    private let replayRootURL: URL? = Bundle.main.resourceURL?.appendingPathComponent("ReplayEngine", isDirectory: true)
-
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
         guard
             let requestURL = urlSchemeTask.request.url,
-            let replayRootURL
+            let fileURL = OfflinePackDownloadService.replayAssetURL(
+                relativePath: requestURL.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            )
         else {
             fail(urlSchemeTask, url: urlSchemeTask.request.url, statusCode: 404)
-            return
-        }
-
-        let relativePath = requestURL.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let fileURL = replayRootURL.appendingPathComponent(relativePath).standardizedFileURL
-        let rootPath = replayRootURL.standardizedFileURL.path
-        guard fileURL.path == rootPath || fileURL.path.hasPrefix(rootPath + "/") else {
-            fail(urlSchemeTask, url: requestURL, statusCode: 403)
             return
         }
 

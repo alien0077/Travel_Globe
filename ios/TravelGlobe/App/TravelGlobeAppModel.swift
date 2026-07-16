@@ -17,6 +17,7 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var photoPermissionStatus = "Photos: not checked"
     @Published var notificationPermissionStatus = "Notifications: not checked"
     @Published var replayEngineStatus = "Replay Engine: not checked"
+    @Published var offlinePackUpdateStatus = "Offline data: not checked"
     @Published var latestLiveLocationMessage: NativeBridgeMessage?
     @Published var outboundBridgeMessages: [NativeBridgeMessage] = []
     @Published var pendingFlightPlan: FlightPlanRecord?
@@ -31,6 +32,8 @@ final class TravelGlobeAppModel: ObservableObject {
     let exporter = JourneyExportService()
     private let photoImporter = PhotoImportService()
     private let notificationService = TravelNotificationService()
+    private let offlinePackDownloadService = OfflinePackDownloadService()
+    private var lastOfflinePackUpdateCheck: Date?
 
     init(
         repository: JourneyRepository = SQLiteJourneyRepository(database: TravelGlobeDatabase())
@@ -52,7 +55,10 @@ final class TravelGlobeAppModel: ObservableObject {
         self.bridge.onMessage = { [weak self] message in
             self?.handleWebMessage(message)
         }
-        Task { await refreshDiagnostics() }
+        Task {
+            await refreshDiagnostics()
+            await checkForOfflinePackUpdates()
+        }
     }
 
     func startFlightRecording() async {
@@ -209,6 +215,7 @@ final class TravelGlobeAppModel: ObservableObject {
                 .info(photoPermissionStatus),
                 .info(notificationPermissionStatus),
                 .info(replayEngineStatus),
+                .info(offlinePackUpdateStatus),
                 .info("Flight plan: \(recordingPlanStatus)"),
                 .info("Visit points: \(visitPointStatus)"),
                 .info("Stored journeys: \(storedJourneyCount)"),
@@ -221,6 +228,34 @@ final class TravelGlobeAppModel: ObservableObject {
 
     func updateReplayEngineStatus(_ status: String) {
         replayEngineStatus = "Replay Engine: \(status)"
+    }
+
+    func checkForOfflinePackUpdates(force: Bool = false) async {
+        let now = Date()
+        if
+            !force,
+            let lastOfflinePackUpdateCheck,
+            now.timeIntervalSince(lastOfflinePackUpdateCheck) < 6 * 60 * 60
+        {
+            return
+        }
+        lastOfflinePackUpdateCheck = now
+        offlinePackUpdateStatus = "Offline data: checking GitHub Pages"
+        do {
+            let result = try await offlinePackDownloadService.updateIfNeeded(force: force)
+            switch result.status {
+            case .alreadyCurrent:
+                offlinePackUpdateStatus = "Offline data: current"
+                await refreshDiagnostics()
+            case .updated:
+                offlinePackUpdateStatus = "Offline data: updated \(Self.formatBytes(result.downloadedBytes))"
+                await refreshDiagnostics()
+                replayEngineStatus = "Replay Engine: updated data ready; reopen Replay"
+            }
+        } catch {
+            offlinePackUpdateStatus = "Offline data: update failed \(error.localizedDescription)"
+            diagnostics.append(.error(offlinePackUpdateStatus))
+        }
     }
 
     func selectFlightPlan(_ selectionKey: String) {
@@ -428,8 +463,18 @@ final class TravelGlobeAppModel: ObservableObject {
     }
 
     static func replayEngineIndexURL() -> URL? {
-        Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "ReplayEngine")
+        OfflinePackDownloadService.replayEngineIndexURL()
             ?? Bundle.main.url(forResource: "index", withExtension: "html")
+    }
+
+    private static func formatBytes(_ bytes: Int) -> String {
+        if bytes < 1_000 {
+            return "\(bytes) B"
+        }
+        if bytes < 1_000_000 {
+            return String(format: "%.1f KB", Double(bytes) / 1_000)
+        }
+        return String(format: "%.1f MB", Double(bytes) / 1_000_000)
     }
 
     private static func locationStatusText(_ status: CLAuthorizationStatus) -> String {

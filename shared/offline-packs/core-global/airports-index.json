@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "generatedFrom": "sha256:9ba19aa0e27ebdd730087d728189c1e2f6e9d47c66d076e7cc9ba3169feb8f03",
+  "generatedFrom": "sha256:4599d198d94d0934b0628f8ae0398657e89c67be5578b6f0f656152babfa88c2",
   "source": {
     "name": "OurAirports",
     "attribution": "Airport and runway data provided by OurAirports.",
@@ -13,11 +13,20 @@
       "regions": "https://davidmegginson.github.io/ourairports-data/regions.csv"
     }
   },
+  "routeGraphSource": {
+    "name": "OpenFlights",
+    "license": "ODbL / DbCL",
+    "attribution": "Route graph derived from OpenFlights routes.dat.",
+    "sourceUrl": "https://openflights.org/data.php",
+    "note": "Historical route graph, not a live timetable. OpenFlights states route data is static and not suitable for navigation."
+  },
   "contents": {
     "airports": 4170,
     "scheduledServiceAirports": 4170,
-    "airportContexts": 3146,
-    "navaids": 11009
+    "airportContexts": 3667,
+    "navaids": 11009,
+    "openFlightsRoutes": 67652,
+    "openFlightsRouteAirports": 3130
   },
   "airports": [
     {
@@ -14511,8 +14520,8 @@
       "regionCode": "CA-BC",
       "regionName": "British Columbia",
       "municipality": "Vancouver",
-      "latitude": 49.291265,
-      "longitude": -123.11717,
+      "latitude": 49.290739,
+      "longitude": -123.118541,
       "elevationFeet": 0,
       "scheduledService": true,
       "runwayCount": 0
@@ -40910,6 +40919,24 @@
       "scheduledService": true,
       "runwayCount": 3,
       "longestRunwayFeet": 8742
+    },
+    {
+      "id": "airport-lsg",
+      "ourairportsId": 350945,
+      "ident": "CN-0249",
+      "type": "medium_airport",
+      "name": "Leshan Airport",
+      "iataCode": "LSG",
+      "countryCode": "CN",
+      "countryName": "China",
+      "regionCode": "CN-51",
+      "regionName": "Sichuan Province",
+      "municipality": "Leshan (Wutongqiao)",
+      "latitude": 29.438627,
+      "longitude": 103.749218,
+      "elevationFeet": 1189,
+      "scheduledService": true,
+      "runwayCount": 0
     },
     {
       "id": "airport-lsh",
@@ -75363,26 +75390,6 @@
       "scheduledService": true,
       "runwayCount": 4,
       "longestRunwayFeet": 1729
-    },
-    {
-      "id": "airport-wsi",
-      "ourairportsId": 607457,
-      "ident": "YSWS",
-      "type": "large_airport",
-      "name": "Nancy Bird Walton, Western Sydney International Airport",
-      "iataCode": "WSI",
-      "icaoCode": "YSWS",
-      "countryCode": "AU",
-      "countryName": "Australia",
-      "regionCode": "AU-NSW",
-      "regionName": "New South Wales",
-      "municipality": "Sydney",
-      "latitude": -33.88806,
-      "longitude": 150.71472,
-      "elevationFeet": 260,
-      "scheduledService": true,
-      "runwayCount": 1,
-      "longestRunwayFeet": 12139
     },
     {
       "id": "airport-wsk",

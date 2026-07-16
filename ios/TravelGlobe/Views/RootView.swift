@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var appModel: TravelGlobeAppModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -28,6 +29,10 @@ struct RootView: View {
         }
         .tint(.cyan)
         .dynamicTypeSize(.small ... .xLarge)
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await appModel.checkForOfflinePackUpdates() }
+        }
     }
 
     private var header: some View {
@@ -57,6 +62,7 @@ struct RootView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
 
+                StatusPill(text: "真實飛行：先選 Record Into，再按 Start；Replay Engine 用來看 LIVE 地球")
                 StatusPill(text: appModel.recordingPlanStatus)
                 StatusPill(text: appModel.visitPointStatus)
 
@@ -124,9 +130,15 @@ struct RootView: View {
                 }
 
                 StatusPill(text: appModel.replayEngineStatus)
+                StatusPill(text: appModel.offlinePackUpdateStatus)
 
-                ActionButton(title: "載入最新紀錄", style: .secondary) {
-                    Task { await appModel.loadLatestJourneyInReplay() }
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ActionButton(title: "載入最新紀錄", style: .secondary) {
+                        Task { await appModel.loadLatestJourneyInReplay() }
+                    }
+                    ActionButton(title: "更新離線資料", style: .secondary) {
+                        Task { await appModel.checkForOfflinePackUpdates(force: true) }
+                    }
                 }
             }
         }

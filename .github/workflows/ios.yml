@@ -32,8 +32,10 @@ jobs:
         id: ios-simulator
         run: |
           set -euo pipefail
-          if xcrun simctl list devices available | grep -q 'Travel Globe CI'; then
+          existing_udid="$(xcrun simctl list devices available | awk -F '[()]' '/Travel Globe CI/ {print $2; exit}' || true)"
+          if [ -n "$existing_udid" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "udid=${existing_udid}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           runtime="$(xcrun simctl list runtimes available | awk -F '[()]' '/iOS/ {print $2}' | tail -n 1 || true)"
@@ -45,21 +47,27 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if ! xcrun simctl create 'Travel Globe CI' "$device_type" "$runtime"; then
+          if ! created_udid="$(xcrun simctl create 'Travel Globe CI' "$device_type" "$runtime")"; then
             echo "Unable to create Travel Globe CI simulator; skipping simulator tests"
             echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "udid=${created_udid}" >> "$GITHUB_OUTPUT"
       - name: Resolve iOS simulator destination
         if: steps.ios-simulator.outputs.available == 'true'
         id: ios-destination
         run: |
           set -euo pipefail
+          xcrun simctl boot '${{ steps.ios-simulator.outputs.udid }}' || true
+          xcrun simctl bootstatus '${{ steps.ios-simulator.outputs.udid }}' -b
           xcodebuild -showdestinations -scheme TravelGlobe > /tmp/travelglobe-destinations.txt
           cat /tmp/travelglobe-destinations.txt
-          destination="$(python3 - <<'PY'
+          destination="$(python3 - '${{ steps.ios-simulator.outputs.udid }}' <<'PY'
           import re
+          import sys
+
+          udid = sys.argv[1]
 
           with open('/tmp/travelglobe-destinations.txt', encoding='utf-8') as handle:
               text = handle.read()
@@ -72,9 +80,13 @@ jobs:
                   print(f'id={match.group(1).strip()}')
                   break
           else:
-              raise SystemExit('No available Travel Globe CI simulator destination found')
+              print(f'platform=iOS Simulator,id={udid}')
           PY
           )"
+          if [ -z "$destination" ]; then
+            echo "Unable to resolve simulator destination"
+            exit 1
+          fi
           echo "destination=${destination}" >> "$GITHUB_OUTPUT"
       - if: steps.ios-simulator.outputs.available == 'true'
         run: xcodebuild test -quiet -scheme TravelGlobe -destination '${{ steps.ios-destination.outputs.destination }}' -derivedDataPath /tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO

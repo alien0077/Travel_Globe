@@ -30,11 +30,18 @@ export const coreOfflinePacks: OfflinePack[] = [
     dataLayers: [
       'Natural Earth coastlines',
       'Natural Earth country borders',
+      'Natural Earth geography regions',
+      'GeoNames cities',
+      'Travel Globe spatial grid',
       'OurAirports airport index',
       'OurAirports frequencies',
       'OurAirports navaids'
     ],
-    attribution: ['Made with Natural Earth.', 'Airport and runway data provided by OurAirports.']
+    attribution: [
+      'Made with Natural Earth.',
+      'Contains GeoNames data available under CC BY 4.0.',
+      'Airport and runway data provided by OurAirports.'
+    ]
   },
   {
     id: 'east-asia-flight',
@@ -119,10 +126,15 @@ export function describeInstalledPacks(state: OfflinePackState): string {
   return state.packs.map((pack) => `${pack.name}: ${pack.dataLayers.length} layers`).join(' | ');
 }
 
-function manifestSizeBytes(manifest: { files?: Array<{ bytes: number }>; sources?: Array<{ files: Array<{ bytes: number }> }> }): number {
+function manifestSizeBytes(manifest: {
+  files?: Array<{ bytes: number }>;
+  sources?: Array<{ files: Array<{ bytes: number }> }>;
+  payloads?: Record<string, Array<{ bytes: number }>>;
+}): number {
   const directFiles = manifest.files ?? [];
   const sourceFiles = manifest.sources?.flatMap((source) => source.files) ?? [];
-  return [...directFiles, ...sourceFiles].reduce((total, file) => total + file.bytes, 0);
+  const payloadFiles = Object.values(manifest.payloads ?? {}).flat();
+  return [...directFiles, ...sourceFiles, ...payloadFiles].reduce((total, file) => total + file.bytes, 0);
 }
 
 function checksumFromGeneratedSources(parts: string[]): string {

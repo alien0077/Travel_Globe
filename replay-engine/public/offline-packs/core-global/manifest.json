@@ -1,0 +1,134 @@
+{
+  "id": "core-global",
+  "version": "1.0.0",
+  "generatedAt": "2026-07-16T08:34:51.196Z",
+  "sources": [
+    {
+      "name": "Natural Earth",
+      "license": "Public domain",
+      "attribution": "Made with Natural Earth.",
+      "sourceUrl": "https://www.naturalearthdata.com/",
+      "files": [
+        {
+          "path": "shared/source-data/natural-earth/ne_50m_admin_0_countries.zip",
+          "bytes": 799734,
+          "sha256": "5fed433373581fa648920435f937d95f2d3c0200e067409c6478dcdf1b853139"
+        },
+        {
+          "path": "shared/source-data/natural-earth/ne_50m_coastline.zip",
+          "bytes": 455936,
+          "sha256": "640f805509b822f57f4840a2e18d9ff2412cf1cf6976124701c2789436166fde"
+        },
+        {
+          "path": "shared/source-data/natural-earth/ne_10m_populated_places.zip",
+          "bytes": 2811199,
+          "sha256": "cd149186f03d2603e0410da399b980a4357d0ac32d3a2305a49ed3dffcc41d7b"
+        },
+        {
+          "path": "shared/source-data/natural-earth/ne_10m_geography_regions_points.zip",
+          "bytes": 87372,
+          "sha256": "2cf54b21fc684f0f7023886379c7ae9c5c716d8bd4c3ead19050f3a7f53e4f7d"
+        }
+      ]
+    },
+    {
+      "name": "Project landmark fixtures",
+      "license": "project-fixture-only",
+      "attribution": "Internal Travel Globe fixture data.",
+      "sourceUrl": "shared/fixtures/landmarks.json",
+      "files": [
+        {
+          "path": "shared/fixtures/landmarks.json",
+          "bytes": 13847,
+          "sha256": "b9d63572202a36f3ff05b5557d84372d0602e348269c8c76e97299cefaec1335"
+        }
+      ]
+    },
+    {
+      "name": "GeoNames",
+      "license": "CC BY 4.0",
+      "attribution": "Contains GeoNames data available under CC BY 4.0.",
+      "sourceUrl": "https://download.geonames.org/export/dump/cities15000.zip",
+      "files": [
+        {
+          "path": "shared/source-data/geonames/cities15000.zip",
+          "bytes": 3299674,
+          "sha256": "3a61700e0cb7c62ed6f39472600112d98283e0761791ec1383febad749eb711e"
+        }
+      ]
+    }
+  ],
+  "contents": {
+    "landmarks": 46,
+    "populatedPlaces": 7342,
+    "geographyRegions": 235,
+    "geonamesCities": 33961,
+    "globalPlaces": 41583,
+    "regionCodes": [
+      "CN",
+      "HK",
+      "ID",
+      "JP",
+      "KR",
+      "MO",
+      "MY",
+      "PH",
+      "SG",
+      "TH",
+      "TW",
+      "VN"
+    ],
+    "countryBorders": {
+      "status": "prepared",
+      "lines": 1632
+    },
+    "coastlines": {
+      "status": "prepared",
+      "lines": 1429
+    },
+    "spatialIndex": {
+      "status": "prepared-grid",
+      "cellDegrees": 5,
+      "cells": 2187,
+      "indexedFeatures": 41583,
+      "indexedBoundaryLines": 3061,
+      "pointInPolygonQueryRequired": true
+    }
+  },
+  "indexes": {
+    "boundaries": "shared/offline-packs/core-global/geo-boundaries.json",
+    "populatedPlaces": "shared/offline-packs/core-global/populated-places.json",
+    "geographyRegions": "shared/offline-packs/core-global/geography-regions.json",
+    "globalPlaces": "shared/offline-packs/core-global/global-places.json",
+    "spatialIndex": "shared/offline-packs/core-global/geo-spatial-index.json"
+  },
+  "payloads": {
+    "coreGlobalAtlas": [
+      {
+        "path": "shared/offline-packs/core-global/geo-boundaries.json",
+        "bytes": 1146379,
+        "sha256": "38bf7b64ccc58fb471c5f00235cbfb63adfa8a871019e745e3043d6e80fb8442"
+      },
+      {
+        "path": "shared/offline-packs/core-global/populated-places.json",
+        "bytes": 2646638,
+        "sha256": "c6f61c801c82fe0f9c7db64bd20ffc33698683e4018e6ee73307b3d710e6e162"
+      },
+      {
+        "path": "shared/offline-packs/core-global/geography-regions.json",
+        "bytes": 59881,
+        "sha256": "5fa159662d48f1203e9a155cb31c57e6da1da6d3e92933c7522675118e81cf7f"
+      },
+      {
+        "path": "shared/offline-packs/core-global/global-places.json",
+        "bytes": 9708187,
+        "sha256": "1673e0b92a123ffcfc8b9c8bb697ebdd900c9b7e109bba1b0050349e90d3d2c7"
+      },
+      {
+        "path": "shared/offline-packs/core-global/geo-spatial-index.json",
+        "bytes": 1314868,
+        "sha256": "52d0c0f2d0a5657cc74e731998ea7b33537f97819b3a4c7118dc006627d04747"
+      }
+    ]
+  }
+}

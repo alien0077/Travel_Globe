@@ -6,6 +6,7 @@ import { landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
 import { EARTH_RADIUS_METERS, geographicToVector3, haversineDistanceMeters } from '../geo/geodesy';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
+import { simulatedCloudCoverFraction } from '../weather/simulatedCloudCover';
 import { createGlobe, createStarField, shouldRenderGlobeLabel } from './createGlobe';
 
 interface GlobeDomLabel {
@@ -287,14 +288,16 @@ export class TravelGlobeScene {
       earthMaterial.emissiveIntensity = lerp(0.18, 0.16, dayFactor);
     }
     if (this.clouds.material instanceof THREE.Material) {
-      this.clouds.material.opacity = lerp(0.36, 0.38, dayFactor);
+      const cloudCover = simulatedCloudCoverFraction(point, point.timestamp);
+      this.container.dataset.simulatedCloudCover = cloudCover.toFixed(3);
+      this.clouds.material.opacity = lerp(0.22, 0.5, cloudCover) * lerp(0.92, 1.08, dayFactor);
     }
     if (this.nightLights.material instanceof THREE.MeshBasicMaterial) {
-      this.nightLights.material.color.set(0xffb45f);
-      this.nightLights.material.opacity = lerp(0.0, 0.44, nightAmount);
+      this.nightLights.material.color.set(0xff9a32);
+      this.nightLights.material.opacity = lerp(0.0, 0.52, nightAmount);
     }
-    this.nightSurfaceWash.material.opacity = lerp(0.18, 0.0, dayFactor);
-    this.cityLightMaterial.opacity = lerp(0.0, 0.72, nightAmount);
+    this.nightSurfaceWash.material.opacity = lerp(0.12, 0.0, dayFactor);
+    this.cityLightMaterial.opacity = lerp(0.0, 0.9, nightAmount);
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
   }
 
@@ -728,10 +731,10 @@ function createRouteCityLights(features: GeographicFeature[]): { mesh: THREE.Ins
         latitude: feature.latitude + latitudeOffset,
         longitude: feature.longitude + longitudeOffset
       }, 2.004, 900000);
-      const amber = 0.36 + random() * 0.16;
-      const brightness = 0.72 + random() * 0.3;
-      const size = 0.006 + random() * 0.006;
-      const color = new THREE.Color(brightness, brightness * amber, brightness * (0.04 + random() * 0.04));
+      const amber = 0.42 + random() * 0.18;
+      const brightness = 0.78 + random() * 0.34;
+      const size = 0.008 + random() * 0.008;
+      const color = new THREE.Color(brightness, brightness * amber, brightness * (0.025 + random() * 0.035));
       points.push({ position: new THREE.Vector3(vector.x, vector.y, vector.z), size, color });
     }
   }

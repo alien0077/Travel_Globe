@@ -56,28 +56,29 @@ Behavior:
 - If the user enters origin/destination IATA, those fields override the schedule seed.
 - If the flight number is unknown and origin/destination are blank, the app asks for manual IATA input.
 
-### Great Circle Planned Route
+### Planned Route Fallback
 
-When no real filed route is available, Travel Globe uses Great Circle interpolation as the planned route. This is enough for the first Planned vs Actual experience:
+When no real filed route is available, Travel Globe uses Great Circle interpolation for the planned route. OpenFlights `routes.dat` is not used as route geometry because it does not include waypoints. If a matching origin-destination pair exists and no aircraft type came from aviationstack/cache/user input, Travel Globe may use the OpenFlights equipment code as the aircraft fallback only. This is enough for the first Planned vs Actual experience:
 
 - Planned: offline schedule plus OurAirports coordinates
 - Actual: GPS points collected during flight or imported after the trip
 
 Paid flight APIs remain deferred. They are only needed when the product requires real-time status, historical actual tracks, filed route strings, ATC waypoints, aircraft registration, or delay/cancel data.
 
-## OurAirports Refresh Cadence
+## Offline Data Refresh Cadence
 
-OurAirports CSVs update daily upstream. Travel Globe should refresh with review, not silently in app runtime:
+Travel Globe refreshes offline source data with review, not silently in app runtime:
 
-- Weekly drift check: `.github/workflows/ourairports-data.yml` runs Monday 03:17 UTC.
+- Weekly drift check: `.github/workflows/ourairports-data.yml` runs Monday 03:17 UTC and now checks the full offline source/core-global pack.
 - Manual refresh: trigger the workflow with `workflow_dispatch` before a release or when an airport/code correction matters.
-- Reviewed monthly refresh: if the weekly check reports a diff, run the local refresh commands, inspect the generated index diff, then commit.
+- Reviewed monthly refresh: if the weekly check reports a diff, run the local refresh commands, inspect generated source/index/public-pack diffs, then commit.
 
 Local refresh:
 
 ```bash
 scripts/download-geo-data.sh
 npm --prefix replay-engine run prepare:airports
+npm --prefix replay-engine run prepare:geo
 npm --prefix replay-engine run typecheck
 npm --prefix replay-engine run test
 npm --prefix replay-engine run build
@@ -95,7 +96,7 @@ npm --prefix replay-engine run build
 - Procedural replay-time day/night lighting and route-nearby city light points for night segments.
 - Offline pack manifests wired to generated Natural Earth and OurAirports indexes.
 - Runtime adapter browser export path for `.travelglobe` and share-safe JSON.
-- Great Circle planned route generation with replay, processed, and raw routes.
+- Planned route generation with Great Circle fallback, plus replay, processed, and raw routes.
 - Preview verification for `CI100` preload without manually entering origin/destination.
 - GitHub Actions drift check for OurAirports source/index changes.
 - GitHub Actions iOS workflow now creates a named simulator before resolving the test destination.
@@ -106,30 +107,39 @@ npm --prefix replay-engine run build
 - Travel Records can be manually added, edited, hidden, and have flight summary metadata corrected through an overlay; raw SQLite GPS remains read-only.
 - App manual now documents the full flight-plan-to-GPS-to-Travel-Records workflow and bundled aircraft model attribution.
 - aviationstack key entry is available in the Web/iOS Replay Engine preload panel; keys and successful flight lookups are stored locally, and failed future lookups fall back to flight history cache before offline seeds/manual IATA.
+- OpenFlights `routes.dat` is downloaded into `shared/source-data/openflights/` and transformed into historical route graph summaries inside `aviation-context-index.json`; matching origin-destination preloads can use its equipment code to fill a missing aircraft type. It is still not a live timetable, waypoint geometry, or filed route source, and it does not override aviationstack origin/destination/time/airline data.
 - Natural Earth core geography is refreshed to 50m coastlines/country borders plus 10m populated places and geography region points.
+- GeoNames `cities15000.zip` is downloaded into `shared/source-data/geonames/` and transformed into `shared/offline-packs/core-global/global-places.json`.
+- Core Global Atlas now includes `geo-spatial-index.json`, a 5-degree grid over global places and boundary-line bounding boxes for route-nearby candidate lookup.
 - Globe rendering now uses bundled Earth lights/cloud/specular textures, seasonal UTC sun direction, and airport labels that scale down after takeoff and grow again during descent.
 - Travel Atlas now shows origin/destination airport detail cards with runway counts, radio frequencies, and nearby navaids from the generated OurAirports aviation context index.
 - Offline pack install/delete state is persisted in local browser storage and exposed in Travel Atlas for the Core Global Atlas and East Asia Flight Context packs.
 - Browser runtime adapter now lists, loads, and deletes locally saved journeys, making historical `.travelglobe` sessions visible from Travel Atlas instead of only hidden in localStorage.
 - iOS can queue the latest SQLite journey back into Replay Engine after relaunch via `載入最新紀錄`, and Web notifications can request native local scheduling through `notification.schedule`.
 - Travel Records now support local photo attachments, thumbnail display, manual region/time edits, and one-step undo while preserving raw GPS/events.
+- GPS-only native recordings without a preloaded flight plan now create a standalone Replay Engine `Journey` from the iOS CoreLocation payload instead of mutating the currently loaded sample/web journey.
+- GPS-only native recordings with one real point now remain replayable by adding a short estimated point; zero-point recordings with flight airport metadata use an airport anchor instead of being dropped.
+- GitHub Actions iOS workflow now carries the simulator UDID from `simctl`, boots the named simulator before destination resolution, and falls back to an explicit UDID destination when `xcodebuild -showdestinations` omits the named simulator.
+- GitHub Actions offline data workflow now runs `prepare:airports`, `prepare:geo`, tests, and build against `shared/source-data`, `shared/offline-packs/core-global`, and `replay-engine/public/offline-packs/core-global`.
+- Travel Atlas now includes a searchable airport browser with scheduled-service filtering, runway/frequency/navaid counts, and OpenFlights historical route graph context.
+- Globe cloud opacity now varies from replay position/time through an offline simulated cloud-cover model; live METAR/satellite weather remains an optional provider layer.
 
 ## Still Partial
 
 These items now depend on external data products, post-push validation, or larger future scope:
 
-- Network flight-plan provider: aviationstack real-time lookup is implemented with local key storage and local flight cache fallback, but exact filed routes/waypoints and paid schedule/history products remain unwired.
-- Flight schedule coverage: aviationstack can fill many live flight-number origin/destination pairs when the user provides a key; broad offline schedule lookup still needs an imported or licensed schedule source.
+- Network flight-plan provider: aviationstack real-time lookup and OpenFlights equipment-code fallback are implemented, but exact filed routes/waypoints and paid schedule/history products remain unwired.
+- Flight schedule coverage: aviationstack can fill many live flight-number origin/destination pairs when the user provides a key; OpenFlights can show historical route graph context; broad offline flight-number schedule lookup still needs an imported or licensed schedule source because public airport/place/route datasets do not include airline timetable rights.
 - Flight schedule accuracy: FD234/FD235 still depend on the offline seed unless aviationstack returns live data; exact seasonal schedule, operating days, aircraft substitutions, and multi-leg `DMK-KHH-NRT` / `NRT-KHH-DMK` modeling still need an API response or reviewed timetable import.
-- Offline packs: core packs can be installed/deleted locally; a future remote package downloader and optional per-region payload delivery are still not built.
-- Geographic borders: Natural Earth 50m coastlines/country boundaries now render on the globe; true spatial indexes for point-in-polygon queries remain future work.
-- Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks with Natural Earth 10m populated places and geography region points. Missing work: reviewed regional/global landmark fixture pipeline, richer categories, per-region offline packs, and deeper mobile label ranking.
-- Night lighting coverage: current night mode uses bundled Earth lights/cloud/specular textures plus seasonal sun direction and route-nearby city points. Missing work: live weather/satellite cloud updates, real-time cloud darkness variation, and calibrated per-city light intensity from a dedicated night-lights dataset.
-- Runtime adapter split: browser history and iOS latest-SQLite replay handoff exist; a fully separate native runtime adapter that replaces browser localStorage remains future architecture work.
+- Geographic borders: Natural Earth 50m coastlines/country boundaries now render on the globe, and a generated grid spatial index is available for candidate lookup. Exact point-in-polygon query logic remains future work.
+- Landmark/place coverage: current labels merge curated East Asia/Southeast Asia landmarks, Natural Earth 10m populated places/geography regions, and GeoNames cities15000. Missing work: reviewed category-rich landmark datasets beyond city/place names, per-region offline packs, and deeper mobile label ranking.
+- Night lighting coverage: current night mode uses bundled Earth lights/cloud/specular textures plus seasonal sun direction, route-nearby city points, and simulated cloud-cover variation. Missing work: live weather/satellite cloud updates and calibrated per-city light intensity from a dedicated VIIRS night-lights dataset.
+- Runtime adapter split: browser history, iOS latest-SQLite replay handoff, and GPS-only native journey loading exist; a fully separate native runtime adapter that replaces browser localStorage remains future architecture work.
 - Photo matching and journal media: PhotoKit GPS can create `照片打卡`, and Web records can attach/show local photo thumbnails. Missing work: native explicit picker thumbnails, `.travelglobe` binary media packaging, and share/export privacy review UI.
 - Notifications: Web rules now request native local scheduling; richer recording-phase reminders and delayed/geofence triggers remain future work.
 - Travel record editing: records can be added, edited, hidden, reclassified, time-adjusted, photo-attached, and undone. Missing work: drag-to-reassign journey/segment, cross-device sync, and a fully polished native-style list editor.
-- iOS CI: GitHub Actions run `29391659438` completed successfully after push. It confirmed the Replay build, iOS resource copy, XcodeGen generation, and generic simulator build; the named simulator test steps were skipped because the destination output was empty, so future work can tighten the test destination output if full simulator tests are required.
+- iOS CI post-push validation: simulator destination fallback is tightened locally, but the updated workflow still needs a pushed GitHub Actions run to confirm hosted runner behavior.
+- Zero-point native recordings without any GPS coordinate or airport metadata still cannot create a meaningful map location.
 
 See `docs/unfinished-features-audit.md` for the longer audit.
 
@@ -137,6 +147,7 @@ See `docs/unfinished-features-audit.md` for the longer audit.
 
 ```bash
 npm --prefix replay-engine run prepare:airports
+npm --prefix replay-engine run prepare:geo
 npm --prefix replay-engine run typecheck
 npm --prefix replay-engine run test
 npm --prefix replay-engine run build

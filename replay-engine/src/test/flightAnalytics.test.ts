@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import globalPlacesIndex from '../../../shared/offline-packs/core-global/global-places.json';
+import spatialIndex from '../../../shared/offline-packs/core-global/geo-spatial-index.json';
 import { sampleJourney } from '../data/sampleJourney';
 import { getPrimaryFlightSegment } from '../data/types';
+import { installLandmarkIndex } from '../geo/landmarks';
 import {
   buildFlightHudMetrics,
   buildFlightOverlay,
@@ -14,6 +17,10 @@ import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames'
 describe('flight overlay analytics', () => {
   const segment = getPrimaryFlightSegment(sampleJourney);
   const bounds = getRouteTimeBounds(segment);
+
+  beforeAll(() => {
+    installLandmarkIndex(globalPlacesIndex.features, spatialIndex);
+  });
 
   it('detects replay events and flight metrics from the route', () => {
     const overlay = buildFlightOverlay(sampleJourney, segment);
@@ -83,5 +90,40 @@ describe('flight overlay analytics', () => {
 
     expect(routeLandmarks.length).toBeGreaterThan(0);
     expect(names).not.toEqual(expect.arrayContaining(['東京', '台北101', '上海']));
+  });
+
+  it('uses OpenFlights equipment codes only as an aircraft fallback when available', () => {
+    const preloaded = buildPreloadedFlightJourney({
+      flightNumber: 'CI100',
+      originIata: 'TPE',
+      destinationIata: 'NRT',
+      departureDate: '2026-07-14',
+      departureTime: '09:30'
+    });
+    const routeSegment = getPrimaryFlightSegment(preloaded.journey);
+
+    expect(routeSegment.metadata.routeFallbackSource).toBe('great-circle');
+    expect(routeSegment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
+    expect(routeSegment.metadata.aircraftType).toBe('744');
+    expect(routeSegment.metadata.openFlightsRouteCount).toBeGreaterThan(0);
+    expect(preloaded.warnings[0]).toContain('僅用其 equipment code 補機型 744');
+  });
+
+  it('keeps aviationstack aircraft data ahead of OpenFlights equipment codes', () => {
+    const preloaded = buildPreloadedFlightJourney({
+      flightNumber: 'CI100',
+      originIata: 'TPE',
+      destinationIata: 'NRT',
+      departureDate: '2026-07-14',
+      departureTime: '09:30',
+      aircraftType: 'A350',
+      source: 'aviationstack'
+    });
+    const routeSegment = getPrimaryFlightSegment(preloaded.journey);
+
+    expect(routeSegment.metadata.routeFallbackSource).toBe('great-circle');
+    expect(routeSegment.metadata.aircraftTypeSource).toBe('aviationstack');
+    expect(routeSegment.metadata.aircraftType).toBe('A350');
+    expect(routeSegment.metadata.openFlightsAircraftTypes).toContain('744');
   });
 });

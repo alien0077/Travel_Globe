@@ -745,7 +745,8 @@ select.preload-input {
 .atlas-section,
 .atlas-section-grid,
 .pack-control-list,
-.saved-journey-list {
+.saved-journey-list,
+.airport-browser-results {
   display: grid;
   gap: 7px;
 }
@@ -762,11 +763,46 @@ select.preload-input {
 
 .airport-detail-card,
 .pack-control-row,
-.saved-journey-row {
+.saved-journey-row,
+.airport-browser-row {
   min-width: 0;
   border: 1px solid rgb(126 220 230 / 12%);
   border-radius: 7px;
   background: rgb(255 255 255 / 7%);
+}
+
+.airport-browser-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+}
+
+.airport-browser-search {
+  min-width: 0;
+  height: 34px;
+  border: 1px solid rgb(126 220 230 / 18%);
+  border-radius: 7px;
+  background: rgb(3 20 25 / 72%);
+  color: #f5fbff;
+  font: inherit;
+  font-size: 12px;
+  padding: 0 9px;
+}
+
+.airport-browser-search:focus {
+  border-color: rgb(126 220 230 / 58%);
+  outline: none;
+}
+
+.airport-browser-toggle {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 5px;
+  align-items: center;
+  color: #a7c7c8;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .airport-detail-card {
@@ -795,16 +831,61 @@ select.preload-input {
 }
 
 .pack-control-row,
-.saved-journey-row {
+.saved-journey-row,
+.airport-browser-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(44px, 56px) minmax(0, 1fr);
   gap: 7px;
   align-items: center;
   padding: 7px;
 }
 
+.pack-control-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .saved-journey-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.airport-browser-row {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.airport-browser-row:hover,
+.airport-browser-row:focus-visible {
+  border-color: rgb(126 220 230 / 35%);
+  background: rgb(126 220 230 / 12%);
+  outline: none;
+}
+
+.airport-browser-row strong {
+  color: #f5fbff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.airport-browser-row span,
+.airport-browser-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.airport-browser-row span {
+  color: #d9f3f4;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.airport-browser-row small {
+  grid-column: 2;
+  color: #93b6b8;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .pack-control-row > span,
@@ -1188,6 +1269,7 @@ select.preload-input {
   }
 
   .product-panel-shell[open] .product-panel {
+    max-height: 260px;
     max-height: min(260px, calc(100svh - 584px));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1196,6 +1278,7 @@ select.preload-input {
   }
 
   .timeline-panel[open] .timeline-list {
+    max-height: 160px;
     max-height: min(160px, calc(100svh - 674px));
     overflow-y: auto;
     overscroll-behavior: contain;

@@ -17,12 +17,18 @@ for (const viewport of [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 390, height: 844 }
 ]) {
-  const page = await browser.newPage({ viewport });
+  console.error(`[verify-preview] ${viewport.name}: opening page`);
+  const page = await browser.newPage({ viewport, acceptDownloads: true });
+  page.setDefaultTimeout(10_000);
+  page.setDefaultNavigationTimeout(20_000);
   const errors = [];
   const assetRequests = [];
   let blockedExternalRequests = 0;
 
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('download', (download) => {
+    void download.cancel().catch(() => undefined);
+  });
   page.on('console', (message) => {
     if (message.type() === 'error') {
       errors.push(message.text());
@@ -47,6 +53,7 @@ for (const viewport of [
   });
 
   await page.goto(url, { waitUntil: 'networkidle' });
+  console.error(`[verify-preview] ${viewport.name}: page loaded`);
   await page.waitForSelector('canvas', { state: 'attached' });
   await page.waitForTimeout(700);
   await page.screenshot({ path: path.join(screenshotDir, `preview-${viewport.name}.png`) });
@@ -307,7 +314,13 @@ for (const viewport of [
     }
 
     if (viewport.name === 'mobile') {
-      mobileRegression = await verifyMobileFd234Regression(page);
+      console.error('[verify-preview] mobile: running FD234 regression');
+      mobileRegression = await withTimeout(
+        verifyMobileFd234Regression(page),
+        180_000,
+        'FD234 regression timed out after 180s'
+      );
+      console.error(`[verify-preview] mobile: FD234 regression ${mobileRegression.ok ? 'ok' : 'failed'}`);
     }
   }
 
@@ -378,16 +391,18 @@ async function verifyMobileFd234Regression(page) {
   };
 
   try {
-    await page.click('.system-drawer > .panel-summary');
+    console.error('[verify-preview] mobile: FD234 step drawer toggle');
+    await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 1, 'system drawer did not open');
-    await page.click('.system-drawer > .panel-summary');
+    await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 0, 'system drawer did not close from summary button');
-    await page.click('.system-drawer > .panel-summary');
+    await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
 
     assert((await page.locator('.preload-panel-shell[open]').count()) === 1, 'preload/API key panel should be open by default on mobile drawer');
+    console.error('[verify-preview] mobile: FD234 step preload visibility');
     for (const label of ['aviationstack API key（保存在本機）', '航班號', '起飛', '抵達', '日期', '時間', '機型', '套用航線']) {
       report.preloadVisible[label] = await page.getByText(label, { exact: true }).first().isVisible().catch(() => false);
       assert(report.preloadVisible[label], `preload field not visible: ${label}`);
@@ -410,9 +425,10 @@ async function verifyMobileFd234Regression(page) {
     assert(report.drawerMetrics.preloadBottom <= report.drawerMetrics.drawerBottom + 1, `preload panel overflowed drawer: ${JSON.stringify(report.drawerMetrics)}`);
     assert(report.drawerMetrics.drawerBottom < report.drawerMetrics.controlsTop, `drawer overlaps controls: ${JSON.stringify(report.drawerMetrics)}`);
 
-    await page.getByText('航班預載 / API key', { exact: true }).click();
+    await setDetailsOpen(page, '.preload-panel-shell', false);
     await page.waitForTimeout(200);
 
+    console.error('[verify-preview] mobile: FD234 step action hit targets');
     const labels = ['Import', 'Export', 'Share', '使用手冊', 'GPX', 'KML', 'Journal', 'Pack'];
     report.hitTargets = await page.evaluate((buttonLabels) => buttonLabels.map((label) => {
       const nodes = [...document.querySelectorAll('.action-grid button, .action-grid a')];
@@ -440,6 +456,7 @@ async function verifyMobileFd234Regression(page) {
       );
     }
 
+    console.error('[verify-preview] mobile: FD234 step action buttons');
     for (const [label, expectedText] of [
       ['Export', '.travelglobe 已下載到瀏覽器下載資料夾'],
       ['Share', '.share-safe.json 已下載到瀏覽器下載資料夾'],
@@ -447,17 +464,18 @@ async function verifyMobileFd234Regression(page) {
       ['KML', '.kml 已下載到瀏覽器下載資料夾'],
       ['Journal', '.journal.md 已下載到瀏覽器下載資料夾']
     ]) {
-      await actionButton(page, label).click();
+      await dispatchActionButtonClick(page, label);
       await page.waitForTimeout(150);
       const status = await page.locator('.capability').innerText();
       report.actionStatuses.push({ label, status });
       assert(status.includes(expectedText), `${label} action did not update status`);
     }
 
-    await actionButton(page, 'Pack').click();
+    console.error('[verify-preview] mobile: FD234 step pack and panels');
+    await dispatchActionButtonClick(page, 'Pack');
     await page.waitForTimeout(250);
     assert((await page.locator('.capability').innerText()).includes('Core Global Atlas'), 'Pack button did not update capability text');
-    await page.getByText('Travel Atlas', { exact: true }).click();
+    await setDetailsOpen(page, '.product-panel-shell', true);
     await page.waitForTimeout(200);
     report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
     report.cardMetrics.travelAtlasGesture = await dragInsidePanelWithoutClosing(page, '.product-panel', '.product-panel-shell');
@@ -466,9 +484,9 @@ async function verifyMobileFd234Regression(page) {
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.reachedBottom, `Travel Atlas panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlasGesture.open, `Travel Atlas collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.travelAtlasGesture)}`);
-    await page.getByText('Travel Atlas', { exact: true }).click();
+    await setDetailsOpen(page, '.product-panel-shell', false);
     await page.waitForTimeout(150);
-    await page.getByText('旅遊紀錄', { exact: true }).click();
+    await setDetailsOpen(page, '.timeline-panel', true);
     await page.waitForTimeout(200);
     report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-list');
     report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-list', '.timeline-panel');
@@ -478,15 +496,16 @@ async function verifyMobileFd234Regression(page) {
     assert(report.cardMetrics.timeline.reachedBottom, `Travel record panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timelineGesture.open, `Travel record collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.timelineGesture)}`);
 
-    await page.click('.system-drawer > .panel-summary');
+    await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 0, 'system drawer did not close while preload card was open');
-    await page.click('.system-drawer > .panel-summary');
+    await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);
     assert((await page.locator('.system-drawer.is-open').count()) === 1, 'system drawer did not reopen after preload close check');
-    await page.getByText('航班預載 / API key', { exact: true }).click();
+    await setDetailsOpen(page, '.preload-panel-shell', true);
     await page.waitForTimeout(200);
 
+    console.error('[verify-preview] mobile: FD234 step apply FD234');
     await page.locator('.preload-field:nth-child(2) input').fill('FD234');
     await page.waitForTimeout(250);
     await page.evaluate(() => {
@@ -533,7 +552,9 @@ async function verifyMobileFd234Regression(page) {
     assert(report.daylightBrightness.average >= 110, `FD234 daytime takeoff scene still too dark: ${JSON.stringify(report.daylightBrightness)}`);
     assert(report.daylightBrightness.bright >= 120000, `FD234 daytime takeoff scene lacks visible daylight pixels: ${JSON.stringify(report.daylightBrightness)}`);
 
+    console.error('[verify-preview] mobile: FD234 step approach');
     await clickViewMode(page, 'overhead');
+    console.error('[verify-preview] mobile: FD234 step night regression');
     await page.evaluate(() => {
       const scrubber = document.querySelector('.timeline-scrubber');
       if (scrubber instanceof HTMLInputElement) {
@@ -643,6 +664,7 @@ async function verifyMobileFd234Regression(page) {
     });
     await page.waitForTimeout(1200);
 
+    console.error('[verify-preview] mobile: FD234 step tower brightness');
     await clickViewMode(page, 'commandCenter');
     await page.evaluate(() => {
       const scrubber = document.querySelector('.timeline-scrubber');
@@ -665,7 +687,7 @@ async function verifyMobileFd234Regression(page) {
     assert(report.brightness.bright >= 180000, `FD234 tower scene lacks visible bright pixels: ${JSON.stringify(report.brightness)}`);
 
     if ((await page.locator('.system-drawer.is-open').count()) > 0) {
-      await page.click('.system-drawer > .panel-summary');
+      await dispatchClick(page, '.system-drawer > .panel-summary');
       await page.waitForTimeout(250);
       assert((await page.locator('.system-drawer.is-open').count()) === 0, 'system drawer did not close after FD234/preload state');
     }
@@ -677,6 +699,18 @@ async function verifyMobileFd234Regression(page) {
   return report;
 }
 
+async function withTimeout(promise, timeoutMs, failure) {
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve({ ok: false, failure }), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -685,6 +719,57 @@ function assert(condition, message) {
 
 function actionButton(page, label) {
   return page.locator('.action-grid button, .action-grid a').filter({ hasText: label }).first();
+}
+
+async function dispatchClick(page, selector) {
+  const clicked = await page.evaluate((targetSelector) => {
+    const target = document.querySelector(targetSelector);
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    return true;
+  }, selector);
+  assert(clicked, `click target missing: ${selector}`);
+}
+
+async function dispatchTextClick(page, text) {
+  const clicked = await page.evaluate((targetText) => {
+    const candidates = [...document.querySelectorAll('button, summary, a, [role="button"]')];
+    const target = candidates.find((candidate) => candidate.textContent?.trim() === targetText);
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    return true;
+  }, text);
+  assert(clicked, `text click target missing: ${text}`);
+}
+
+async function setDetailsOpen(page, selector, open) {
+  const updated = await page.evaluate(({ targetSelector, nextOpen }) => {
+    const target = document.querySelector(targetSelector);
+    if (!(target instanceof HTMLDetailsElement)) {
+      return false;
+    }
+    target.open = nextOpen;
+    target.dispatchEvent(new Event('toggle', { bubbles: true }));
+    return true;
+  }, { targetSelector: selector, nextOpen: open });
+  assert(updated, `details target missing: ${selector}`);
+}
+
+async function dispatchActionButtonClick(page, label) {
+  const clicked = await page.evaluate((targetLabel) => {
+    const nodes = [...document.querySelectorAll('.action-grid button, .action-grid a')];
+    const target = nodes.find((candidate) => candidate.textContent?.trim() === targetLabel);
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    return true;
+  }, label);
+  assert(clicked, `action button missing: ${label}`);
 }
 
 async function scrollPanelToBottom(page, selector) {

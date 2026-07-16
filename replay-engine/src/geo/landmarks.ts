@@ -1,6 +1,4 @@
 import landmarksJson from '../../../shared/fixtures/landmarks.json';
-import geographyRegionsJson from '../../../shared/offline-packs/core-global/geography-regions.json';
-import populatedPlacesJson from '../../../shared/offline-packs/core-global/populated-places.json';
 import type { GeographicPoint } from '../data/types';
 import { haversineDistanceMeters, initialBearingDegrees } from './geodesy';
 
@@ -15,33 +13,7 @@ export interface GeographicFeature extends GeographicPoint {
   countryCode?: string;
   admin1?: string;
   tourismHint?: string;
-}
-
-interface NaturalEarthPlace extends GeographicPoint {
-  id: string;
-  name: string;
-  nameZh?: string;
-  type: 'majorCity';
-  countryCode?: string;
-  admin1?: string;
-  population?: number;
-  scalerank: number;
-  labelRank: number;
-  minZoom: number;
-  isCapital: boolean;
-  isWorldCity: boolean;
-  isMegaCity: boolean;
-}
-
-interface NaturalEarthRegion extends GeographicPoint {
-  id: string;
-  name: string;
-  nameZh?: string;
-  type: 'landmark';
-  region?: string;
-  subregion?: string;
-  scalerank: number;
-  minZoom: number;
+  source?: string;
 }
 
 export interface LandmarkProximity {
@@ -51,12 +23,61 @@ export interface LandmarkProximity {
   relativeWindow: string;
 }
 
-export const curatedLandmarks = landmarksJson as GeographicFeature[];
-export const naturalEarthPlaces = (populatedPlacesJson.places as NaturalEarthPlace[]).map(toGeographicFeature);
-export const naturalEarthRegions = (geographyRegionsJson.regions as NaturalEarthRegion[]).map(toRegionFeature);
-export const fixtureLandmarks = mergeGeographicFeatures([...curatedLandmarks, ...naturalEarthPlaces, ...naturalEarthRegions]);
+interface GlobalPlacesIndex {
+  features: GeographicFeature[];
+}
+
+interface SpatialIndex {
+  cellDegrees: number;
+  cells: Record<string, { features?: string[] }>;
+}
+
+export let fixtureLandmarks = landmarksJson as GeographicFeature[];
 const ROUTE_LANDMARK_SAMPLE_LIMIT = 96;
 const ROUTE_LANDMARK_MAX_DISTANCE_METERS = 650_000;
+let spatialIndex: SpatialIndex | undefined;
+let featuresById = new Map(fixtureLandmarks.map((feature) => [feature.id, feature]));
+let globalLandmarkLoadPromise: Promise<void> | undefined;
+
+export async function loadGlobalLandmarkIndex(): Promise<void> {
+  if (globalLandmarkLoadPromise) {
+    return globalLandmarkLoadPromise;
+  }
+  globalLandmarkLoadPromise = loadGlobalLandmarkIndexOnce();
+  return globalLandmarkLoadPromise;
+}
+
+async function loadGlobalLandmarkIndexOnce(): Promise<void> {
+  if (typeof fetch === 'undefined') {
+    return;
+  }
+  const baseUrl = typeof document === 'undefined'
+    ? './offline-packs/core-global/'
+    : new URL('./offline-packs/core-global/', document.baseURI).toString();
+  try {
+    const [placesResponse, spatialResponse] = await Promise.all([
+      fetch(new URL('global-places.json', baseUrl)),
+      fetch(new URL('geo-spatial-index.json', baseUrl))
+    ]);
+    if (!placesResponse.ok || !spatialResponse.ok) {
+      throw new Error(`Unable to load global place assets: ${placesResponse.status}/${spatialResponse.status}`);
+    }
+    const places = await placesResponse.json() as GlobalPlacesIndex;
+    const nextSpatialIndex = await spatialResponse.json() as SpatialIndex;
+    if (!Array.isArray(places.features) || !Number.isFinite(nextSpatialIndex.cellDegrees)) {
+      throw new Error('Global place assets are malformed');
+    }
+    installLandmarkIndex(places.features, nextSpatialIndex);
+  } catch (error) {
+    console.warn(error instanceof Error ? error.message : 'Unable to load global place assets');
+  }
+}
+
+export function installLandmarkIndex(features: GeographicFeature[], nextSpatialIndex?: SpatialIndex): void {
+  fixtureLandmarks = features;
+  spatialIndex = nextSpatialIndex;
+  featuresById = new Map(fixtureLandmarks.map((feature) => [feature.id, feature]));
+}
 
 export function landmarkDisplayName(feature: GeographicFeature): string {
   return feature.nameZh ?? feature.name;
@@ -123,9 +144,44 @@ export function landmarksNearRoute(
     sampledRoute.push(last);
   }
 
-  return fixtureLandmarks.filter((feature) =>
+  const candidates = landmarkCandidatesForRoute(sampledRoute);
+  return candidates.filter((feature) =>
     sampledRoute.some((point) => haversineDistanceMeters(point, feature) <= maxDistanceMeters)
   );
+}
+
+function landmarkCandidatesForRoute(route: GeographicPoint[]): GeographicFeature[] {
+  const ids = new Set<string>();
+  if (!spatialIndex) {
+    return fixtureLandmarks;
+  }
+  for (const point of route) {
+    for (const key of nearbyCellKeys(point)) {
+      const cell = spatialIndex.cells[key];
+      for (const id of cell?.features ?? []) {
+        ids.add(id);
+      }
+    }
+  }
+  const candidates = [...ids]
+    .map((id) => featuresById.get(id))
+    .filter((feature): feature is GeographicFeature => feature !== undefined);
+  return candidates.length > 0 ? candidates : fixtureLandmarks;
+}
+
+function nearbyCellKeys(point: GeographicPoint): string[] {
+  const cellDegrees = spatialIndex?.cellDegrees ?? 5;
+  const latCell = Math.max(0, Math.min(35, Math.floor((point.latitude + 90) / cellDegrees)));
+  const lonCell = Math.max(0, Math.min(71, Math.floor((point.longitude + 180) / cellDegrees)));
+  const keys: string[] = [];
+  for (let lat = latCell - 2; lat <= latCell + 2; lat += 1) {
+    for (let lon = lonCell - 2; lon <= lonCell + 2; lon += 1) {
+      if (lat >= 0 && lat <= 35 && lon >= 0 && lon <= 71) {
+        keys.push(`${lat}:${lon}`);
+      }
+    }
+  }
+  return keys;
 }
 
 export function relativeWindowDirection(headingDegrees: number, bearingDegrees: number): string {
@@ -151,50 +207,6 @@ export function relativeWindowDirection(headingDegrees: number, bearingDegrees: 
   return 'left-front';
 }
 
-function toGeographicFeature(place: NaturalEarthPlace): GeographicFeature {
-  return {
-    id: place.id,
-    name: place.name,
-    nameZh: place.nameZh,
-    type: 'majorCity',
-    minZoomRank: Math.max(0, Math.round(place.minZoom)),
-    importance: importanceForPlace(place),
-    population: place.population,
-    countryCode: place.countryCode,
-    admin1: place.admin1,
-    latitude: place.latitude,
-    longitude: place.longitude,
-    tourismHint: place.isCapital ? '首都' : undefined
-  };
-}
-
-function toRegionFeature(region: NaturalEarthRegion): GeographicFeature {
-  return {
-    id: region.id,
-    name: region.name,
-    nameZh: region.nameZh,
-    type: 'landmark',
-    minZoomRank: Math.max(0, Math.round(region.minZoom)),
-    importance: Math.max(0.78, 1 - Math.min(8, region.scalerank) * 0.035),
-    latitude: region.latitude,
-    longitude: region.longitude,
-    tourismHint: region.subregion || region.region
-  };
-}
-
-function importanceForPlace(place: NaturalEarthPlace): number {
-  if (place.isWorldCity || place.isMegaCity || place.isCapital) {
-    return 0.96;
-  }
-  if ((place.population ?? 0) >= 3_000_000) {
-    return 0.92;
-  }
-  if (place.labelRank <= 3 || place.scalerank <= 3) {
-    return 0.88;
-  }
-  return 0.78;
-}
-
 function landmarkProximityScore(proximity: LandmarkProximity): number {
   const typeBonus = proximity.feature.type === 'airport'
     ? 60_000
@@ -203,23 +215,4 @@ function landmarkProximityScore(proximity: LandmarkProximity): number {
       : 150_000;
   const importanceBonus = proximity.feature.importance * 24_000;
   return proximity.distanceMeters - typeBonus - importanceBonus;
-}
-
-function mergeGeographicFeatures(features: GeographicFeature[]): GeographicFeature[] {
-  const seen = new Set<string>();
-  const merged: GeographicFeature[] = [];
-  for (const feature of features) {
-    const key = [
-      feature.countryCode ?? '',
-      feature.nameZh ?? feature.name,
-      feature.latitude.toFixed(2),
-      feature.longitude.toFixed(2)
-    ].join('|');
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    merged.push(feature);
-  }
-  return merged;
 }

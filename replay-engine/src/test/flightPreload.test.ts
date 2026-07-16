@@ -21,7 +21,8 @@ describe('flight preload', () => {
     expect(segment.origin.iataCode).toBe('TPE');
     expect(segment.destination.iataCode).toBe('NRT');
     expect(segment.statistics?.durationSeconds).toBe(185 * 60);
-    expect(segment.metadata.aircraftType).toBe('A350');
+    expect(segment.metadata.aircraftType).toBe('744');
+    expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
     expect(result.warnings[0]).toContain('CI100 已由離線班表解析為 TPE -> NRT');
   });
 
@@ -37,7 +38,8 @@ describe('flight preload', () => {
     expect(segment.destination.iataCode).toBe('HND');
     expect(segment.startTime).toBe(new Date('2026-07-11T09:30').toISOString());
     expect(segment.statistics?.durationSeconds).toBe(190 * 60);
-    expect(segment.metadata.aircraftType).toBe('B787');
+    expect(segment.metadata.aircraftType).toBe('333');
+    expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
   });
 
   it('resolves FD235 without replacing the selected departure time', () => {
@@ -53,7 +55,8 @@ describe('flight preload', () => {
     expect(segment.destination.iataCode).toBe('KHH');
     expect(segment.startTime).toBe(new Date('2026-07-11T10:15').toISOString());
     expect(segment.statistics?.durationSeconds).toBe(235 * 60);
-    expect(segment.metadata.aircraftType).toBe('A320');
+    expect(segment.metadata.aircraftType).toBe('321');
+    expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
   });
 
   it('builds a valid planned journey from flight form input', () => {

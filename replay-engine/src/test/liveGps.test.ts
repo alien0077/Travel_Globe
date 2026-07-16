@@ -3,7 +3,10 @@ import { sampleJourney } from '../data/sampleJourney';
 import { getPrimaryFlightSegment } from '../data/types';
 import { haversineDistanceMeters, initialBearingDegrees } from '../geo/geodesy';
 import { LiveGpsTracker, liveGpsPointFromNativeMessage } from '../live/liveGps';
-import { completeJourneyFromRecording } from '../live/completeJourneyFromRecording';
+import {
+  completeJourneyFromRecording,
+  createJourneyFromNativeRecording
+} from '../live/completeJourneyFromRecording';
 
 describe('live GPS native bridge', () => {
   const segment = getPrimaryFlightSegment(sampleJourney);
@@ -163,5 +166,98 @@ describe('live GPS native bridge', () => {
     expect(completedSegment.derivedReplayRoute.points).toHaveLength(2);
     expect(completedSegment.derivedReplayRoute.points.every((point) => point.source === 'gps')).toBe(true);
     expect(completed.events.some((event) => event.id === `event-${segment.id}-gps-stop`)).toBe(true);
+  });
+
+  it('creates a standalone replay journey from a GPS-only native recording', () => {
+    const journey = createJourneyFromNativeRecording({
+      nativeJourneyId: 'gps-only-1',
+      status: 'completed',
+      startedAt: '2026-07-14T12:00:00.000Z',
+      endedAt: '2026-07-14T12:00:10.000Z',
+      points: [
+        {
+          timestamp: '2026-07-14T12:00:00.000Z',
+          latitude: 35.77,
+          longitude: 140.38,
+          altitudeMeters: 300,
+          speedMetersPerSecond: 90,
+          courseDegrees: 220,
+          horizontalAccuracyMeters: 20,
+          verticalAccuracyMeters: 25,
+          source: 'gps'
+        },
+        {
+          timestamp: '2026-07-14T12:00:10.000Z',
+          latitude: 35.6,
+          longitude: 140.1,
+          altitudeMeters: 1800,
+          speedMetersPerSecond: 160,
+          courseDegrees: 222,
+          horizontalAccuracyMeters: 20,
+          verticalAccuracyMeters: 25,
+          source: 'gps'
+        }
+      ]
+    });
+
+    expect(journey?.id).toBe('native-gps-only-1');
+    expect(journey?.title).toBe('GPS Recording 2026-07-14');
+    expect(journey?.segments[0].id).toBe('segment-gps-only-1');
+    expect(journey?.segments[0].derivedReplayRoute.points).toHaveLength(2);
+    expect(journey?.segments[0].events).toEqual([
+      'event-segment-gps-only-1-gps-start',
+      'event-segment-gps-only-1-gps-stop'
+    ]);
+  });
+
+  it('keeps a one-point GPS-only native recording as a replayable journey', () => {
+    const journey = createJourneyFromNativeRecording({
+      nativeJourneyId: 'gps-one-point',
+      status: 'completed',
+      startedAt: '2026-07-14T12:00:00.000Z',
+      endedAt: '2026-07-14T12:00:30.000Z',
+      points: [
+        {
+          timestamp: '2026-07-14T12:00:00.000Z',
+          latitude: 35.77,
+          longitude: 140.38,
+          altitudeMeters: 300,
+          speedMetersPerSecond: 0,
+          courseDegrees: 220,
+          horizontalAccuracyMeters: 20,
+          verticalAccuracyMeters: 25,
+          source: 'gps'
+        }
+      ]
+    });
+
+    const points = journey?.segments[0].derivedReplayRoute.points ?? [];
+
+    expect(journey?.statistics?.gpsPointCount).toBe(1);
+    expect(journey?.metadata.replayRouteSynthetic).toBe(true);
+    expect(points).toHaveLength(2);
+    expect(points[0].source).toBe('gps');
+    expect(points[1].source).toBe('estimated');
+  });
+
+  it('uses an airport anchor for a zero-point native recording with flight metadata', () => {
+    const journey = createJourneyFromNativeRecording({
+      nativeJourneyId: 'gps-zero-point',
+      status: 'completed',
+      flightNumber: 'FD235',
+      originIata: 'NRT',
+      destinationIata: 'KHH',
+      startedAt: '2026-07-14T12:00:00.000Z',
+      endedAt: '2026-07-14T12:05:00.000Z',
+      points: []
+    });
+
+    const points = journey?.segments[0].derivedReplayRoute.points ?? [];
+
+    expect(journey?.statistics?.gpsPointCount).toBe(0);
+    expect(journey?.metadata.replayRouteSynthetic).toBe(true);
+    expect(journey?.segments[0].origin.iataCode).toBe('NRT');
+    expect(points).toHaveLength(2);
+    expect(points.every((point) => point.source === 'estimated')).toBe(true);
   });
 });

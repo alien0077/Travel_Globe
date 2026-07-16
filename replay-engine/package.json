@@ -11,6 +11,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "verify:preview": "node scripts/verify-preview.mjs",
     "prepare:airports": "node ../scripts/prepare-airport-index.mjs",
+    "prepare:geo": "node ../scripts/prepare-geo-data.mjs",
     "prepare:aircraft-models": "node ../scripts/download-aircraft-models.mjs",
     "import:aircraft-model": "node ../scripts/import-aircraft-model.mjs",
     "apply:alien-air-livery": "node ../scripts/apply-alien-air-livery.mjs",

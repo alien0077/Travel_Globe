@@ -5,7 +5,7 @@ import {
   interpolateGreatCircle
 } from '../geo/geodesy';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
-import { findAirportByIata, normalizeIata, type AirportRecord } from './airportIndex';
+import { findAirportByIata, findOpenFlightsRoute, normalizeIata, type AirportRecord } from './airportIndex';
 import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
 
 export interface PreloadFlightRequest {
@@ -65,6 +65,17 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
   const segmentId = `segment-${flightNumber.toLowerCase()}-${request.departureDate}`;
   const preloadSource: PreloadFlightResult['source'] =
     request.source ?? (schedule ? 'offline-schedule-index' : 'offline-airport-index');
+  const openFlightsRoute = findOpenFlightsRoute(origin.iataCode ?? originIata, destination.iataCode ?? destinationIata);
+  const openFlightsAircraftType = openFlightsRoute?.aircraftTypes[0];
+  const requestedAircraftType = request.aircraftType?.trim();
+  const aircraftType = requestedAircraftType || openFlightsAircraftType || schedule?.defaultAircraftType || DEFAULT_AIRCRAFT_TYPE;
+  const aircraftTypeSource = requestedAircraftType
+    ? preloadSource
+    : openFlightsAircraftType
+      ? 'openflights-route-graph'
+      : schedule?.defaultAircraftType
+        ? 'offline-schedule-index'
+        : 'default';
 
   const derivedReplayRoute = {
     kind: 'derivedReplay' as const,
@@ -145,15 +156,28 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     },
     metadata: {
       flightNumber,
-      aircraftType: request.aircraftType?.trim() || schedule?.defaultAircraftType || DEFAULT_AIRCRAFT_TYPE,
+      aircraftType,
       airlineName: request.airlineName?.trim() || schedule?.airlineName,
-      preloadSource
+      preloadSource,
+      routeFallbackSource: 'great-circle',
+      routeFallbackLabel: 'Great Circle estimate',
+      aircraftTypeSource,
+      openFlightsRouteCount: openFlightsRoute?.count,
+      openFlightsAircraftTypes: openFlightsRoute?.aircraftTypes
     }
   };
 
   return {
     source: preloadSource,
-    warnings: [buildPreloadWarning(flightNumber, origin, destination, preloadSource, Boolean(schedule))],
+    warnings: [buildPreloadWarning(
+      flightNumber,
+      origin,
+      destination,
+      preloadSource,
+      Boolean(schedule),
+      aircraftTypeSource === 'openflights-route-graph' ? aircraftType : undefined,
+      openFlightsRoute?.count
+    )],
     journey: {
       schemaVersion: '1.0.0',
       appVersion: '0.1.0',
@@ -180,7 +204,12 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       },
       metadata: {
         createdFor: 'Flight preload',
-        preloadSource
+        preloadSource,
+        routeFallbackSource: 'great-circle',
+        routeFallbackLabel: 'Great Circle estimate',
+        aircraftTypeSource,
+        openFlightsRouteCount: openFlightsRoute?.count,
+        openFlightsAircraftTypes: openFlightsRoute?.aircraftTypes
       }
     }
   };
@@ -191,19 +220,25 @@ function buildPreloadWarning(
   origin: AirportRecord,
   destination: AirportRecord,
   source: PreloadFlightResult['source'],
-  usedSchedule: boolean
+  usedSchedule: boolean,
+  openFlightsAircraftType?: string,
+  openFlightsRouteCount?: number
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
+  const routeNote = ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';
+  const aircraftNote = openFlightsAircraftType && openFlightsRouteCount
+    ? ` OpenFlights routes.dat 有 ${openFlightsRouteCount} 筆 ${routeLabel} 歷史航線，僅用其 equipment code 補機型 ${openFlightsAircraftType}；實際航跡以 iOS GPS 為準。`
+    : '';
   if (source === 'aviationstack') {
-    return `${flightNumber} 已由 aviationstack 帶入 ${routeLabel}，並已保存到本機快取；若之後 API 無法查詢，會用這筆歷史航班 fallback。`;
+    return `${flightNumber} 已由 aviationstack 帶入 ${routeLabel}，並已保存到本機快取；若之後 API 無法查詢，會用這筆歷史航班 fallback。${routeNote}${aircraftNote}`;
   }
   if (source === 'aviationstack-cache') {
-    return `${flightNumber} 使用本機 aviationstack 歷史快取帶入 ${routeLabel}。目前使用 Great Circle 預估航線；實際航跡仍以 GPS 記錄為準。`;
+    return `${flightNumber} 使用本機 aviationstack 歷史快取帶入 ${routeLabel}。${routeNote}${aircraftNote}`;
   }
   if (usedSchedule) {
-    return `${flightNumber} 已由離線班表解析為 ${routeLabel}。目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。`;
+    return `${flightNumber} 已由離線班表解析為 ${routeLabel}。${routeNote}${aircraftNote}`;
   }
-  return `目前使用 Great Circle 離線預估航線 ${routeLabel}；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。`;
+  return `${routeLabel} 已建立預載航線。${routeNote}${aircraftNote}`;
 }
 
 function routePoint(input: {

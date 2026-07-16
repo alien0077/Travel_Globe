@@ -1,4 +1,4 @@
-name: OurAirports Data Refresh
+name: Offline Data Refresh
 
 on:
   workflow_dispatch:
@@ -21,15 +21,16 @@ jobs:
       - run: npm --prefix replay-engine ci
       - run: scripts/download-geo-data.sh
       - run: npm --prefix replay-engine run prepare:airports
+      - run: npm --prefix replay-engine run prepare:geo
       - run: npm --prefix replay-engine run typecheck
       - run: npm --prefix replay-engine run test
       - run: npm --prefix replay-engine run build
       - name: Report data drift
         run: |
-          if git diff --quiet -- shared/source-data shared/offline-packs/core-global/airports-index.json; then
-            echo "OurAirports source and generated airport index are unchanged."
+          if git diff --quiet -- shared/source-data shared/offline-packs/core-global replay-engine/public/offline-packs/core-global; then
+            echo "Offline source data and generated core global pack are unchanged."
           else
-            echo "::warning::OurAirports data changed. Review the diff and commit regenerated source/index files."
-            git diff --stat -- shared/source-data shared/offline-packs/core-global/airports-index.json
-            git diff --exit-code -- shared/source-data shared/offline-packs/core-global/airports-index.json
+            echo "::warning::Offline data changed. Review the diff and commit regenerated source/index files."
+            git diff --stat -- shared/source-data shared/offline-packs/core-global replay-engine/public/offline-packs/core-global
+            git diff --exit-code -- shared/source-data shared/offline-packs/core-global replay-engine/public/offline-packs/core-global
           fi

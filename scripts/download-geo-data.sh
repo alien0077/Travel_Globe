@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_DIR="$ROOT_DIR/shared/source-data"
 MANIFEST="$SOURCE_DIR/source-manifest.tsv"
 
-mkdir -p "$SOURCE_DIR/natural-earth" "$SOURCE_DIR/ourairports" "$SOURCE_DIR/nasa"
+mkdir -p "$SOURCE_DIR/natural-earth" "$SOURCE_DIR/ourairports" "$SOURCE_DIR/nasa" "$SOURCE_DIR/geonames" "$SOURCE_DIR/openflights"
 
 download() {
   local url="$1"
@@ -55,6 +55,12 @@ download "https://threejs.org/examples/textures/planets/earth_clouds_1024.png" \
 download "https://threejs.org/examples/textures/planets/earth_specular_2048.jpg" \
   "$SOURCE_DIR/nasa/earth-specular-2048.jpg"
 
+download "https://download.geonames.org/export/dump/cities15000.zip" \
+  "$SOURCE_DIR/geonames/cities15000.zip"
+
+download "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat" \
+  "$SOURCE_DIR/openflights/routes.dat"
+
 {
   printf "sha256\tbytes\tpath\tsource\n"
   find "$SOURCE_DIR" -type f ! -name "$(basename "$MANIFEST")" | sort | while read -r file; do
@@ -65,6 +71,8 @@ download "https://threejs.org/examples/textures/planets/earth_specular_2048.jpg"
       *natural-earth*) source="Natural Earth" ;;
       *ourairports*) source="OurAirports" ;;
       *nasa*) source="NASA Visible Earth" ;;
+      *geonames*) source="GeoNames" ;;
+      *openflights*) source="OpenFlights" ;;
       *) source="unknown" ;;
     esac
     printf "%s\t%s\t%s\t%s\n" "$sha" "$bytes" "$relative" "$source"

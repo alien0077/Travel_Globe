@@ -1,7 +1,7 @@
 {
   "id": "core-global",
   "version": "1.0.0",
-  "generatedAt": "2026-07-15T05:01:08.671Z",
+  "generatedAt": "2026-07-16T08:34:51.196Z",
   "sources": [
     {
       "name": "Natural Earth",
@@ -43,12 +43,27 @@
           "sha256": "b9d63572202a36f3ff05b5557d84372d0602e348269c8c76e97299cefaec1335"
         }
       ]
+    },
+    {
+      "name": "GeoNames",
+      "license": "CC BY 4.0",
+      "attribution": "Contains GeoNames data available under CC BY 4.0.",
+      "sourceUrl": "https://download.geonames.org/export/dump/cities15000.zip",
+      "files": [
+        {
+          "path": "shared/source-data/geonames/cities15000.zip",
+          "bytes": 3299674,
+          "sha256": "3a61700e0cb7c62ed6f39472600112d98283e0761791ec1383febad749eb711e"
+        }
+      ]
     }
   ],
   "contents": {
     "landmarks": 46,
     "populatedPlaces": 7342,
     "geographyRegions": 235,
+    "geonamesCities": 33961,
+    "globalPlaces": 41583,
     "regionCodes": [
       "CN",
       "HK",
@@ -71,14 +86,49 @@
       "status": "prepared",
       "lines": 1429
     },
-    "rtreeIndex": {
-      "status": "not-built",
-      "productionReplacementRequired": true
+    "spatialIndex": {
+      "status": "prepared-grid",
+      "cellDegrees": 5,
+      "cells": 2187,
+      "indexedFeatures": 41583,
+      "indexedBoundaryLines": 3061,
+      "pointInPolygonQueryRequired": true
     }
   },
   "indexes": {
     "boundaries": "shared/offline-packs/core-global/geo-boundaries.json",
     "populatedPlaces": "shared/offline-packs/core-global/populated-places.json",
-    "geographyRegions": "shared/offline-packs/core-global/geography-regions.json"
+    "geographyRegions": "shared/offline-packs/core-global/geography-regions.json",
+    "globalPlaces": "shared/offline-packs/core-global/global-places.json",
+    "spatialIndex": "shared/offline-packs/core-global/geo-spatial-index.json"
+  },
+  "payloads": {
+    "coreGlobalAtlas": [
+      {
+        "path": "shared/offline-packs/core-global/geo-boundaries.json",
+        "bytes": 1146379,
+        "sha256": "38bf7b64ccc58fb471c5f00235cbfb63adfa8a871019e745e3043d6e80fb8442"
+      },
+      {
+        "path": "shared/offline-packs/core-global/populated-places.json",
+        "bytes": 2646638,
+        "sha256": "c6f61c801c82fe0f9c7db64bd20ffc33698683e4018e6ee73307b3d710e6e162"
+      },
+      {
+        "path": "shared/offline-packs/core-global/geography-regions.json",
+        "bytes": 59881,
+        "sha256": "5fa159662d48f1203e9a155cb31c57e6da1da6d3e92933c7522675118e81cf7f"
+      },
+      {
+        "path": "shared/offline-packs/core-global/global-places.json",
+        "bytes": 9708187,
+        "sha256": "1673e0b92a123ffcfc8b9c8bb697ebdd900c9b7e109bba1b0050349e90d3d2c7"
+      },
+      {
+        "path": "shared/offline-packs/core-global/geo-spatial-index.json",
+        "bytes": 1314868,
+        "sha256": "52d0c0f2d0a5657cc74e731998ea7b33537f97819b3a4c7118dc006627d04747"
+      }
+    ]
   }
 }

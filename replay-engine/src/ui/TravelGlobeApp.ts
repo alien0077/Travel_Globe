@@ -32,10 +32,11 @@ import {
   findAirportContextByIata,
   getAirportIndexSummary,
   listAirportSuggestions,
+  searchAirports,
   type AirportRecord
 } from '../flight-preload/airportIndex';
 import { findScheduleByFlightNumber } from '../flight-preload/flightScheduleIndex';
-import { landmarkDisplayName, windowDirectionLabel, type GeographicFeature } from '../geo/landmarks';
+import { landmarkDisplayName, loadGlobalLandmarkIndex, windowDirectionLabel, type GeographicFeature } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
 import { readJourneyFile } from '../import/readJourneyFile';
@@ -45,7 +46,10 @@ import {
   liveGpsPointFromNativeMessage,
   type LiveGpsStatus
 } from '../live/liveGps';
-import { completeJourneyFromRecording } from '../live/completeJourneyFromRecording';
+import {
+  completeJourneyFromRecording,
+  createJourneyFromNativeRecording
+} from '../live/completeJourneyFromRecording';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
@@ -99,6 +103,8 @@ export class TravelGlobeApp {
   private savedJourneys: SavedJourneySummary[] = [];
   private recordEditUndoStack: Journey[] = [];
   private scheduledNotificationIds = new Set<string>();
+  private airportBrowserQuery = '';
+  private airportBrowserScheduledOnly = true;
 
   private readonly viewport = document.createElement('section');
   private readonly playButton = document.createElement('button');
@@ -145,6 +151,7 @@ export class TravelGlobeApp {
     this.journey = journey;
     this.segment = getPrimaryFlightSegment(journey);
     this.flightOverlay = buildFlightOverlay(journey, this.segment);
+    await loadGlobalLandmarkIndex();
     this.routeLandmarks = landmarksForSegment(this.segment);
     this.travelRecords = buildTravelRecords(journey);
     this.activeRecordId = this.travelRecords[0]?.id;
@@ -565,7 +572,7 @@ export class TravelGlobeApp {
         return option;
       })
     );
-    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(stringValue(segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE));
+    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(stringValue(segment.metadata.aircraftType, ''));
 
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
@@ -595,7 +602,7 @@ export class TravelGlobeApp {
       const details = [`${known.originIata} -> ${known.destinationIata}`];
       const defaultDepartureTime = cached?.departureTime ?? schedule?.defaultDepartureTime;
       const defaultDurationMinutes = cached?.durationMinutes ?? schedule?.defaultDurationMinutes;
-      const defaultAircraftType = cached?.aircraftType ?? schedule?.defaultAircraftType;
+      const defaultAircraftType = cached?.aircraftType;
       if (defaultDepartureTime) {
         this.departureTimeInput.value = defaultDepartureTime;
         details.push(defaultDepartureTime);
@@ -607,6 +614,11 @@ export class TravelGlobeApp {
       if (defaultAircraftType) {
         this.aircraftTypeSelect.value = normalizeAircraftSelectValue(defaultAircraftType);
         details.push(defaultAircraftType);
+      } else {
+        this.aircraftTypeSelect.value = '';
+      }
+      if (!cached && schedule?.defaultAircraftType) {
+        details.push(`seed 機型 ${schedule.defaultAircraftType}`);
       }
       const sourceLabel = cached ? '本機歷史快取' : '離線 seed';
       this.preloadStatus.textContent = `${known.flightNumber} 已由${sourceLabel}帶入 ${details.join('、')}。請按「套用航線」更新地球與航跡。`;
@@ -641,7 +653,6 @@ export class TravelGlobeApp {
         required: false
       });
     apiKeyField.classList.add('preload-api-key-field');
-
     form.append(
       apiKeyField,
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
@@ -673,7 +684,7 @@ export class TravelGlobeApp {
       departureDate: this.departureDateInput.value,
       departureTime: this.departureTimeInput.value,
       durationMinutes: Number(this.durationInput.value) || undefined,
-      aircraftType: this.aircraftTypeSelect.value
+      aircraftType: this.aircraftTypeSelect.value || undefined
     };
     writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
 
@@ -1142,6 +1153,16 @@ export class TravelGlobeApp {
     if (!this.journey) {
       return;
     }
+    const activeElement = document.activeElement;
+    const shouldRestoreAirportSearch =
+      activeElement instanceof HTMLInputElement &&
+      activeElement.classList.contains('airport-browser-search');
+    const airportSearchSelection = shouldRestoreAirportSearch
+      ? {
+          start: activeElement.selectionStart ?? activeElement.value.length,
+          end: activeElement.selectionEnd ?? activeElement.value.length
+        }
+      : undefined;
 
     const summary = summarizeJourney(this.journey);
     const plan = buildPlanSummary(this.journey);
@@ -1269,16 +1290,25 @@ export class TravelGlobeApp {
       notificationTitle,
       textLine(notifications.length > 0 ? notifications.map((item) => item.body).join(' | ') : '目前沒有需要提醒的事件')
     );
+    const airportBrowser = this.renderAirportBrowser();
 
     this.productPanel.replaceChildren(
       list,
       regionBars,
       airportDetails,
+      airportBrowser,
       packControls,
       savedJourneyList,
       notificationList,
       packDescription
     );
+    if (shouldRestoreAirportSearch) {
+      const searchInput = this.productPanel.querySelector<HTMLInputElement>('.airport-browser-search');
+      searchInput?.focus();
+      if (airportSearchSelection && searchInput) {
+        searchInput.setSelectionRange(airportSearchSelection.start, airportSearchSelection.end);
+      }
+    }
   }
 
   private renderAirportDetailCard(iataCode: string, label: string): HTMLElement {
@@ -1304,6 +1334,75 @@ export class TravelGlobeApp {
     radio.textContent = `FREQ: ${frequencies} | NAVAID: ${navaids}`;
     card.append(title, summary, radio);
     return card;
+  }
+
+  private renderAirportBrowser(): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'atlas-section airport-browser';
+    const title = document.createElement('strong');
+    title.textContent = '機場資料庫';
+
+    const controls = document.createElement('div');
+    controls.className = 'airport-browser-controls';
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'airport-browser-search';
+    search.placeholder = '搜尋 IATA / ICAO / 城市 / 國家';
+    search.value = this.airportBrowserQuery;
+    search.addEventListener('input', () => {
+      this.airportBrowserQuery = search.value;
+      this.renderProductPanel();
+    });
+    const scheduledToggle = document.createElement('label');
+    scheduledToggle.className = 'airport-browser-toggle';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = this.airportBrowserScheduledOnly;
+    checkbox.addEventListener('change', () => {
+      this.airportBrowserScheduledOnly = checkbox.checked;
+      this.renderProductPanel();
+    });
+    const toggleText = document.createElement('span');
+    toggleText.textContent = '只看定期航班';
+    scheduledToggle.append(checkbox, toggleText);
+    controls.append(search, scheduledToggle);
+
+    const results = searchAirports(this.airportBrowserQuery, {
+      limit: 16,
+      scheduledOnly: this.airportBrowserScheduledOnly
+    });
+    const resultList = document.createElement('div');
+    resultList.className = 'airport-browser-results';
+    resultList.replaceChildren(
+      ...(results.length > 0
+        ? results.map((airport) => this.renderAirportBrowserRow(airport))
+        : [textLine('找不到符合條件的機場')])
+    );
+    section.append(title, controls, resultList);
+    return section;
+  }
+
+  private renderAirportBrowserRow(airport: AirportRecord): HTMLElement {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'airport-browser-row';
+    const context = airport.iataCode ? findAirportContextByIata(airport.iataCode) : undefined;
+    const code = document.createElement('strong');
+    code.textContent = airportDisplayCode(airport);
+    const body = document.createElement('span');
+    body.textContent = `${airport.name} | ${airport.municipality}, ${airport.countryCode}`;
+    const detail = document.createElement('small');
+    const routeGraph = context?.routeGraph;
+    const routeSummary = routeGraph
+      ? `${routeGraph.outgoingRoutes} outgoing | top ${routeGraph.topDestinations.slice(0, 4).map((item) => item.code).join(', ')}`
+      : 'no route graph';
+    detail.textContent = `${airport.type} | runways ${airport.runwayCount} | ${context?.frequencies.length ?? 0} freq | ${context?.navaids.length ?? 0} navaids | ${routeSummary}`;
+    row.append(code, body, detail);
+    row.addEventListener('click', () => {
+      this.airportBrowserQuery = airportDisplayCode(airport);
+      this.renderProductPanel();
+    });
+    return row;
   }
 
   private renderSavedJourneyRow(summary: SavedJourneySummary): HTMLElement {
@@ -1390,7 +1489,13 @@ export class TravelGlobeApp {
     const nativeMessage = (event as CustomEvent<unknown>).detail;
     const completed = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.completed');
     if (completed) {
-      const completedJourney = completeJourneyFromRecording(this.journey, completed);
+      const completedJourney = completed.webJourneyId === this.journey.id
+        ? completeJourneyFromRecording(this.journey, completed)
+        : createJourneyFromNativeRecording(completed);
+      if (!completedJourney) {
+        this.capability.textContent = 'Live GPS recording：GPS 點不足，無法建立 replay journey';
+        return;
+      }
       void this.loadJourney(completedJourney);
       this.capability.textContent = 'Live GPS recording：已完成並寫入旅遊紀錄';
       return;
@@ -1712,6 +1817,7 @@ function selectField(label: string, select: HTMLSelectElement): HTMLElement {
 }
 
 const aircraftTypeOptions = [
+  { value: '', label: '自動' },
   { value: 'A320', label: 'A320' },
   { value: 'A321', label: 'A321' },
   { value: 'B737', label: 'B737' },
@@ -1725,8 +1831,11 @@ const AIRPORT_MATCH_LIMIT = 12;
 
 function normalizeAircraftSelectValue(value: string): string {
   const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const match = aircraftTypeOptions.find((option) => normalized.includes(option.value));
-  return match?.value ?? DEFAULT_AIRCRAFT_TYPE;
+  if (!normalized) {
+    return '';
+  }
+  const match = aircraftTypeOptions.find((option) => option.value && normalized.includes(option.value));
+  return match?.value ?? '';
 }
 
 function airportField(
