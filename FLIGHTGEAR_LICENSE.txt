@@ -1,0 +1,48 @@
+GNU General Public License v2 — FlightGear Navdata
+
+The airway and navigation data distributed with this project
+(in shared/offline-packs/aviation/regions/global.airgraph.json)
+is derived from FlightGear navdata, which is made available under
+the terms of the GNU General Public License version 2.
+
+Original Copyright
+------------------
+Copyright (c) 2013, Robin A. Peel (robin@x-plane.com).
+This data is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+Source
+------
+FlightGear fgdata repository (release/2024.1 branch)
+  - fix.dat (global waypoints)
+  - nav.dat (global navaids: VOR/NDB/DME)
+  - awy.dat (global airways)
+
+Derived Data
+------------
+The file shared/offline-packs/aviation/regions/global.airgraph.json is a
+compiled/transformed version of awy.dat, containing only waypoints that
+form the main connected graph. The compilation is original work but the
+underlying data remains GPL v2.
+
+Other flight navigation data in this project comes from OurAirports
+(Public Domain / CC0).
+
+Full GPL v2 License Text
+-------------------------
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 2, June 1991
+
+ Copyright (C) 1989, 1991 Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+... (see https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt)

@@ -1,0 +1,30 @@
+To: ead.service@eurocontrol.int
+Subject: Request for AIXM 5.1 Sample Data Export (non-commercial evaluation)
+
+Dear EAD Service Team,
+
+I am writing to request a sample AIXM 5.1 data export from the European AIS Database (EAD) for evaluation purposes, as described in the AIXM Confluence page.
+
+Organization: Independent Developer (non-commercial)
+Contact Name: Alien Chang
+Email: alien0077@gmail.com
+EUROCONTROL OneSky Online Username: alien0077
+EAD Basic Username: alien0077
+
+Purpose of evaluation:
+I am developing a non-commercial, open-source personal travel visualization application (Travel Globe) that needs aeronautical route data to display flight paths on a 3D globe. The application requires:
+- DesignatedPoint coordinates (ICAO 5-letter waypoints)
+- Navaid positions (VOR, DME, NDB)
+- Route segment topology
+
+I have already been using the EAD Basic public access service and have successfully retrieved Upper Routes reports. However, the Designated Points report cannot be reliably downloaded through the EAD Basic interface due to data volume limitations.
+
+Could you please provide access to a sample AIXM 5.1 export containing Designated Points for the ECAC/European region?
+
+If a Test AIXM 5.1 Data User Agreement needs to be signed, please send the document and I will return it promptly.
+
+Thank you for your assistance.
+
+Best regards,
+Alien Chang
+alien0077@gmail.com

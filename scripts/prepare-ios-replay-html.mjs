@@ -13,7 +13,6 @@ const html = fs.readFileSync(htmlPath, 'utf8');
 const cssPath = path.join(path.dirname(htmlPath), 'index.css');
 const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf8') : '';
 const preparedHtml = html
-  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
   .replace(/\.\/assets\/index\.css/g, './index.css')
   .replace(/<link\b[^>]*href=["']\.\/index\.css(?:\?v=[^"']*)?["'][^>]*>/g, `<style>\n${css}\n</style>`)
   .replace(/[ \t]+$/gm, '');

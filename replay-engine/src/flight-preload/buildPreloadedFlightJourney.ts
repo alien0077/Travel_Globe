@@ -5,6 +5,7 @@ import {
   interpolateGreatCircle
 } from '../geo/geodesy';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
+import { findAirgraphRoute, type AirgraphRouteResult } from './airgraphIndex';
 import { findAirportByIata, findOpenFlightsRoute, normalizeIata, type AirportRecord } from './airportIndex';
 import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
 
@@ -76,55 +77,94 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       : schedule?.defaultAircraftType
         ? 'offline-schedule-index'
         : 'default';
+  const airgraphRoute = findAirgraphRoute(origin, destination);
+  const hasAirwayRoute = airgraphRoute?.method === 'airway_graph';
+  const routeDistanceMeters = hasAirwayRoute && airgraphRoute ? airgraphRoute.distanceMeters : distanceMeters;
 
-  const derivedReplayRoute = {
-    kind: 'derivedReplay' as const,
-    points: replayFractions.map((fraction, index) =>
-      routePoint({
-        id: `replay-${index + 1}`,
-        journeyId,
-        segmentId,
-        origin,
-        destination,
-        startMs,
-        durationSeconds,
-        fraction,
-        source: index === 0 || index === replayFractions.length - 1 ? 'planned' : 'interpolated'
-      })
-    )
-  };
-  const processedRoute = {
-    kind: 'processed' as const,
-    points: processedFractions.map((fraction, index) =>
-      routePoint({
-        id: `processed-${index + 1}`,
-        journeyId,
-        segmentId,
-        origin,
-        destination,
-        startMs,
-        durationSeconds,
-        fraction,
-        source: 'planned'
-      })
-    )
-  };
-  const rawRoute = {
-    kind: 'raw' as const,
-    points: rawFractions.map((fraction, index) =>
-      routePoint({
-        id: `raw-${index + 1}`,
-        journeyId,
-        segmentId,
-        origin,
-        destination,
-        startMs,
-        durationSeconds,
-        fraction,
-        source: 'planned'
-      })
-    )
-  };
+  const derivedReplayRoute = hasAirwayRoute && airgraphRoute
+    ? {
+        kind: 'derivedReplay' as const,
+        points: routePointsFromAirgraph({
+          airgraphRoute,
+          journeyId,
+          segmentId,
+          startMs,
+          durationSeconds,
+          distanceMeters: routeDistanceMeters
+        })
+      }
+    : {
+        kind: 'derivedReplay' as const,
+        points: replayFractions.map((fraction, index) =>
+          routePoint({
+            id: `replay-${index + 1}`,
+            journeyId,
+            segmentId,
+            origin,
+            destination,
+            startMs,
+            durationSeconds,
+            fraction,
+            source: index === 0 || index === replayFractions.length - 1 ? 'planned' : 'interpolated'
+          })
+        )
+      };
+  const processedRoute = hasAirwayRoute && airgraphRoute
+    ? {
+        kind: 'processed' as const,
+        points: routePointsFromAirgraph({
+          airgraphRoute,
+          journeyId,
+          segmentId,
+          startMs,
+          durationSeconds,
+          distanceMeters: routeDistanceMeters
+        })
+      }
+    : {
+        kind: 'processed' as const,
+        points: processedFractions.map((fraction, index) =>
+          routePoint({
+            id: `processed-${index + 1}`,
+            journeyId,
+            segmentId,
+            origin,
+            destination,
+            startMs,
+            durationSeconds,
+            fraction,
+            source: 'planned'
+          })
+        )
+      };
+  const rawRoute = hasAirwayRoute && airgraphRoute
+    ? {
+        kind: 'raw' as const,
+        points: routePointsFromAirgraph({
+          airgraphRoute,
+          journeyId,
+          segmentId,
+          startMs,
+          durationSeconds,
+          distanceMeters: routeDistanceMeters
+        })
+      }
+    : {
+        kind: 'raw' as const,
+        points: rawFractions.map((fraction, index) =>
+          routePoint({
+            id: `raw-${index + 1}`,
+            journeyId,
+            segmentId,
+            origin,
+            destination,
+            startMs,
+            durationSeconds,
+            fraction,
+            source: 'planned'
+          })
+        )
+      };
 
   const events = createEvents({
     journeyId,
@@ -149,18 +189,22 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
     derivedReplayRoute,
     events: events.map((event) => event.id),
     statistics: {
-      distanceMeters,
+      distanceMeters: routeDistanceMeters,
       durationSeconds,
-      maxAltitudeMeters: cruiseAltitudeMeters(distanceMeters),
-      maxSpeedMetersPerSecond: cruiseSpeedMetersPerSecond(distanceMeters)
+      maxAltitudeMeters: cruiseAltitudeMeters(routeDistanceMeters),
+      maxSpeedMetersPerSecond: cruiseSpeedMetersPerSecond(routeDistanceMeters)
     },
     metadata: {
       flightNumber,
       aircraftType,
       airlineName: request.airlineName?.trim() || schedule?.airlineName,
       preloadSource,
-      routeFallbackSource: 'great-circle',
-      routeFallbackLabel: 'Great Circle estimate',
+      routeMethod: airgraphRoute?.method ?? 'great_circle_fallback',
+      routeSource: airgraphRoute?.source ?? 'great-circle',
+      routeFallbackSource: airgraphRoute ? undefined : 'great-circle',
+      routeFallbackLabel: airgraphRoute ? undefined : 'Great Circle estimate',
+      airgraphRegion: airgraphRoute?.region,
+      airgraphWaypoints: airgraphRoute?.waypoints,
       aircraftTypeSource,
       openFlightsRouteCount: openFlightsRoute?.count,
       openFlightsAircraftTypes: openFlightsRoute?.aircraftTypes
@@ -176,7 +220,8 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       preloadSource,
       Boolean(schedule),
       aircraftTypeSource === 'openflights-route-graph' ? aircraftType : undefined,
-      openFlightsRoute?.count
+      openFlightsRoute?.count,
+      airgraphRoute
     )],
     journey: {
       schemaVersion: '1.0.0',
@@ -193,7 +238,7 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       media: [],
       journal: [],
       statistics: {
-        distanceMeters,
+        distanceMeters: routeDistanceMeters,
         durationSeconds,
         countriesVisited: [...new Set([origin.countryCode, destination.countryCode].filter(Boolean))],
         transportModes: ['flight']
@@ -205,8 +250,12 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       metadata: {
         createdFor: 'Flight preload',
         preloadSource,
-        routeFallbackSource: 'great-circle',
-        routeFallbackLabel: 'Great Circle estimate',
+        routeMethod: airgraphRoute?.method ?? 'great_circle_fallback',
+        routeSource: airgraphRoute?.source ?? 'great-circle',
+        routeFallbackSource: airgraphRoute ? undefined : 'great-circle',
+        routeFallbackLabel: airgraphRoute ? undefined : 'Great Circle estimate',
+        airgraphRegion: airgraphRoute?.region,
+        airgraphWaypoints: airgraphRoute?.waypoints,
         aircraftTypeSource,
         openFlightsRouteCount: openFlightsRoute?.count,
         openFlightsAircraftTypes: openFlightsRoute?.aircraftTypes
@@ -222,10 +271,13 @@ function buildPreloadWarning(
   source: PreloadFlightResult['source'],
   usedSchedule: boolean,
   openFlightsAircraftType?: string,
-  openFlightsRouteCount?: number
+  openFlightsRouteCount?: number,
+  airgraphRoute?: AirgraphRouteResult
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
-  const routeNote = ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';
+  const routeNote = airgraphRoute
+    ? ` 已使用 AviationDB ${airgraphRoute.region} airway graph 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線航路圖近似，尚非正式 filed route。`
+    : ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';
   const aircraftNote = openFlightsAircraftType && openFlightsRouteCount
     ? ` OpenFlights routes.dat 有 ${openFlightsRouteCount} 筆 ${routeLabel} 歷史航線，僅用其 equipment code 補機型 ${openFlightsAircraftType}；實際航跡以 iOS GPS 為準。`
     : '';
@@ -266,6 +318,42 @@ function routePoint(input: {
     courseDegrees: initialBearingDegrees(point, next),
     source: input.source
   };
+}
+
+function routePointsFromAirgraph(input: {
+  airgraphRoute: AirgraphRouteResult;
+  journeyId: string;
+  segmentId: string;
+  startMs: number;
+  durationSeconds: number;
+  distanceMeters: number;
+}): LocationPoint[] {
+  const cumulativeMeters = input.airgraphRoute.points.map((_point, index, points) =>
+    index === 0
+      ? 0
+      : points
+          .slice(1, index + 1)
+          .reduce((total, current, currentIndex) => total + haversineDistanceMeters(points[currentIndex], current), 0)
+  );
+  const totalMeters = Math.max(1, cumulativeMeters[cumulativeMeters.length - 1] ?? input.distanceMeters);
+  return input.airgraphRoute.points.map((point, index, points) => {
+    const fraction = Math.min(1, Math.max(0, cumulativeMeters[index] / totalMeters));
+    const next = points[Math.min(index + 1, points.length - 1)];
+    const previous = points[Math.max(index - 1, 0)];
+    const bearingTarget = index < points.length - 1 ? next : previous;
+    return {
+      id: `airgraph-${index + 1}-${point.ident.toLowerCase()}`,
+      journeyId: input.journeyId,
+      segmentId: input.segmentId,
+      timestamp: new Date(input.startMs + input.durationSeconds * fraction * 1000).toISOString(),
+      latitude: point.latitude,
+      longitude: point.longitude,
+      altitudeMeters: altitudeMetersAt(fraction, input.distanceMeters),
+      speedMetersPerSecond: speedMetersPerSecondAt(fraction, input.distanceMeters),
+      courseDegrees: initialBearingDegrees(point, bearingTarget),
+      source: 'planned'
+    };
+  });
 }
 
 function createEvents(input: {

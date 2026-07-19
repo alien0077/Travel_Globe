@@ -102,7 +102,8 @@ describe('flight overlay analytics', () => {
     });
     const routeSegment = getPrimaryFlightSegment(preloaded.journey);
 
-    expect(routeSegment.metadata.routeFallbackSource).toBe('great-circle');
+    expect(routeSegment.metadata.routeMethod).toBe('airway_graph');
+    expect(routeSegment.metadata.routeSource).toBe('aviationdb-airgraph');
     expect(routeSegment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
     expect(routeSegment.metadata.aircraftType).toBe('744');
     expect(routeSegment.metadata.openFlightsRouteCount).toBeGreaterThan(0);
@@ -121,7 +122,8 @@ describe('flight overlay analytics', () => {
     });
     const routeSegment = getPrimaryFlightSegment(preloaded.journey);
 
-    expect(routeSegment.metadata.routeFallbackSource).toBe('great-circle');
+    expect(routeSegment.metadata.routeMethod).toBe('airway_graph');
+    expect(routeSegment.metadata.routeSource).toBe('aviationdb-airgraph');
     expect(routeSegment.metadata.aircraftTypeSource).toBe('aviationstack');
     expect(routeSegment.metadata.aircraftType).toBe('A350');
     expect(routeSegment.metadata.openFlightsAircraftTypes).toContain('744');

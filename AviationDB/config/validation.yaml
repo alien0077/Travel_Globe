@@ -1,0 +1,6 @@
+{
+  "max_connector_nm": 450,
+  "max_distance_warning_nm": 700,
+  "release_fails_on_error": true
+}
+

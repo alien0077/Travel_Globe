@@ -14,7 +14,8 @@ struct OfflinePackDownloadService {
     func availablePacks() -> [OfflinePackDescriptor] {
         [
             OfflinePackDescriptor(id: "core-global", name: "Core Global Atlas", sizeBytes: 44_700_000),
-            OfflinePackDescriptor(id: "east-asia-flight", name: "East Asia Flight Context", sizeBytes: 4_000_000)
+            OfflinePackDescriptor(id: "east-asia-flight", name: "East Asia Flight Context", sizeBytes: 4_000_000),
+            OfflinePackDescriptor(id: "aviation-airgraph", name: "Aviation Airway Graph", sizeBytes: 1_000_000)
         ]
     }
 
@@ -39,17 +40,17 @@ struct OfflinePackDownloadService {
             downloadedBytes += data.count
         }
 
-        let manifests = [remote.geoManifest, remote.aviationManifest]
+        let manifests = [remote.geoManifest, remote.aviationManifest, remote.airgraphManifest]
         for manifest in manifests {
             try write(manifest.data, to: stagingURL.appendingPathComponent(manifest.relativePath))
             downloadedBytes += manifest.data.count
             for payload in manifest.payloadFiles {
-                let relativePath = "offline-packs/core-global/\(payload.filename)"
+                let relativePath = payload.remoteRelativePath
                 let data = try await download(relativePath: relativePath)
                 if sha256(data) != payload.sha256 {
                     throw OfflinePackUpdateError.checksumMismatch(payload.filename)
                 }
-                try write(data, to: stagingURL.appendingPathComponent(relativePath))
+                try write(data, to: stagingURL.appendingPathComponent(payload.localRelativePath))
                 downloadedBytes += data.count
             }
         }
@@ -71,7 +72,8 @@ struct OfflinePackDownloadService {
             revision: remote.revision,
             updatedAt: Date(),
             geoGeneratedAt: remote.geoManifest.generatedAt,
-            aviationGeneratedFrom: remote.aviationManifest.generatedFrom
+            aviationGeneratedFrom: remote.aviationManifest.generatedFrom,
+            airgraphGeneratedAt: remote.airgraphManifest.generatedAt
         ))
         return OfflinePackUpdateResult(status: .updated, revision: remote.revision, downloadedBytes: downloadedBytes)
     }
@@ -120,18 +122,22 @@ struct OfflinePackDownloadService {
     private func remoteRevision() async throws -> RemoteReplayRevision {
         async let geoManifest = fetchManifest("offline-packs/core-global/manifest.json")
         async let aviationManifest = fetchManifest("offline-packs/core-global/ourairports-manifest.json")
+        async let airgraphManifest = fetchManifest("offline-packs/aviation/aviation-pack-manifest.json")
         async let runtimeSignature = headSignature(relativePath: "index.js")
         let remoteGeo = try await geoManifest
         let remoteAviation = try await aviationManifest
+        let remoteAirgraph = try await airgraphManifest
         let signature = [
             remoteGeo.contentSignature,
             remoteAviation.contentSignature,
+            remoteAirgraph.contentSignature,
             try await runtimeSignature
         ].joined(separator: "|")
         return RemoteReplayRevision(
             revision: sha256(Data(signature.utf8)),
             geoManifest: remoteGeo,
-            aviationManifest: remoteAviation
+            aviationManifest: remoteAviation,
+            airgraphManifest: remoteAirgraph
         )
     }
 
@@ -228,6 +234,7 @@ struct OfflinePackUpdateState: Codable {
     var updatedAt: Date
     var geoGeneratedAt: String?
     var aviationGeneratedFrom: String?
+    var airgraphGeneratedAt: String?
 }
 
 struct OfflinePackUpdateResult {
@@ -245,6 +252,7 @@ private struct RemoteReplayRevision {
     var revision: String
     var geoManifest: RemotePackManifest
     var aviationManifest: RemotePackManifest
+    var airgraphManifest: RemotePackManifest
 }
 
 private struct RemotePackManifest {
@@ -281,6 +289,20 @@ private struct RemotePackPayloadFile: Decodable {
 
     var filename: String {
         URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    var remoteRelativePath: String {
+        if path.hasPrefix("shared/offline-packs/") {
+            return String(path.dropFirst("shared/".count))
+        }
+        if path.hasPrefix("offline-packs/") {
+            return path
+        }
+        return "offline-packs/core-global/\(filename)"
+    }
+
+    var localRelativePath: String {
+        remoteRelativePath
     }
 }
 

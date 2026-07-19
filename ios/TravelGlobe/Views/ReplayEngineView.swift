@@ -31,10 +31,10 @@ struct ReplayEngineView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         appModel.bridge.configure(webView)
 
-        if let url = TravelGlobeAppModel.replayEngineIndexURL() {
-            let readAccessURL = url.deletingLastPathComponent()
+        if TravelGlobeAppModel.replayEngineIndexURL() != nil,
+           let url = URL(string: "\(Self.replayAssetBaseURL)index.html") {
             appModel.updateReplayEngineStatus("loading index.html")
-            webView.loadFileURL(url, allowingReadAccessTo: readAccessURL)
+            webView.load(URLRequest(url: url))
         } else {
             appModel.updateReplayEngineStatus("missing index.html")
             webView.loadHTMLString("""

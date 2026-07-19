@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "travel-globe-aviationdb"
+version = "0.1.0"
+description = "Canonical aviation route database and compact Travel Globe app pack builder."
+requires-python = ">=3.12"
+dependencies = [
+  "PyMuPDF>=1.27",
+  "pypdf>=6.0",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[project.scripts]
+aviationdb = "aviationdb.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"

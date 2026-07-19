@@ -23,6 +23,8 @@ describe('flight preload', () => {
     expect(segment.statistics?.durationSeconds).toBe(185 * 60);
     expect(segment.metadata.aircraftType).toBe('744');
     expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
+    expect(segment.metadata.routeMethod).toBe('airway_graph');
+    expect(segment.metadata.airgraphWaypoints).toEqual(['KUDOS', 'LEKOS', 'PABSO', 'BORDO', 'ENTOK', 'BISIS', 'ONC', 'DONAN', 'POMAS', 'SABAN', 'GURAR', 'DEMPA', 'TAPOP', 'GULEG', 'HCE', 'SANGO', 'PQE', 'TYE']);
     expect(result.warnings[0]).toContain('CI100 已由離線班表解析為 TPE -> NRT');
   });
 
@@ -78,7 +80,7 @@ describe('flight preload', () => {
     expect(result.journey.title).toBe('XX901 TPE to HND');
     expect(segment.origin.iataCode).toBe('TPE');
     expect(segment.destination.iataCode).toBe('HND');
-    expect(segment.derivedReplayRoute.points).toHaveLength(7);
+    expect(segment.derivedReplayRoute.points).toHaveLength(20);
     expect(result.journey.events.map((event) => event.type)).toEqual([
       'flightTakeoff',
       'flightCruise',

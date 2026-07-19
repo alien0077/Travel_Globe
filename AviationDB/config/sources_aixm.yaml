@@ -1,0 +1,254 @@
+# AIXM Data Sources Inventory for European Countries
+# Based on EUROCONTROL AIXM Data Sources Inventory and national AIS portals
+# Last updated: 2026-07-19
+
+sources:
+  germany:
+    country: DE
+    icao: ED
+    ansp: DFS
+    aixm_version: "5.1.1"
+    url: "https://aip.dfs.de/datasets"
+    data_sets:
+      - designated_points
+      - navaids
+      - routes
+    auth_required: false
+    license: "Copyright DFS - aviation use only"
+    status: available
+    notes: >
+      AIXM 5.1.1 format with BASELINE TimeSlices.
+      Accessible via NOW/NEXT/AFTER menu. Also offers Excel format.
+      REST API available. Automated download explicitly permitted.
+
+  spain:
+    country: ES
+    icao: LE
+    ansp: ENAIRE
+    aixm_version: "5.1"
+    url: "https://aip.enaire.es/AIP/"
+    data_sets:
+      - designated_points
+      - navaids
+      - routes
+    auth_required: false
+    license: "CC BY-NC 4.0 (OpenAIP compatible)"
+    status: available
+    notes: >
+      AIXM 5.1 data sets downloadable by amendment.
+      Also offers CSV format resembling AIP section tables.
+
+  france:
+    country: FR
+    icao: LF
+    ansp: DSNA/SIA
+    aixm_version: "5.1"
+    url: "https://www.sia.aviation-civile.gouv.fr/"
+    data_sets:
+      - designated_points
+      - navaids
+    auth_required: false
+    license: "Evaluation/demo only - not certified"
+    status: experimental
+    notes: >
+      Sample AIXM 5.1 data set from experimental converter.
+      Not suitable for operational use. AIXM 4.5 available via NOPIA.
+
+  netherlands_dc:
+    country: DC (Dutch Caribbean)
+    icao: TN
+    ansp: DC-ANSP
+    aixm_version: "5.1"
+    url: "https://dc-ansp.org/eAIS/aerodb/"
+    data_sets:
+      - aip_dataset
+    auth_required: false
+    license: "Public"
+    status: available
+    notes: >
+      Full AIP data set per AIRAC cycle.
+      Direct XML download with SHA-256 checksum.
+
+  belgium:
+    country: BE
+    icao: EB
+    ansp: skeyes
+    aixm_version: "4.5 (SDO)"
+    url: "https://www.skeyes.be/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data maintained in EAD SDO (AIXM 4.5) via iNM.
+      Not publicly downloadable. Requires EAD Pro/MyEAD access.
+
+  netherlands:
+    country: NL
+    icao: EH
+    ansp: LVNL
+    aixm_version: "5.1 (SDD)"
+    url: "https://www.lvnl.nl/"
+    data_sets:
+      - sdd_aixm51
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Transition in progress Q4 2024.
+      Data through EAD SDD (AIXM 5.1). Not publicly downloadable.
+
+  austria:
+    country: AT
+    icao: LO
+    ansp: Austro Control
+    aixm_version: "4.5 (SDO)"
+    url: "https://eaip.austrocontrol.at/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO. Not publicly downloadable.
+
+  italy:
+    country: IT
+    icao: LI
+    ansp: ENAV
+    aixm_version: "4.5 (SDO)"
+    url: "https://www.enav.it/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO. Not publicly downloadable.
+      Separate ITAF data in iNM.
+
+  sweden:
+    country: SE
+    icao: ES
+    ansp: LFV
+    aixm_version: "4.5 (SDO)"
+    url: "https://aro.lfv.se/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO. Not publicly downloadable.
+
+  norway:
+    country: NO
+    icao: EN
+    ansp: AVINOR
+    aixm_version: "4.5 (SDO)"
+    url: "https://avinor.no/ais"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO. Not publicly downloadable.
+
+  switzerland:
+    country: CH
+    icao: LS
+    ansp: Skyguide
+    aixm_version: "5.1 (SDD)"
+    url: "https://www.skybriefing.com/"
+    data_sets:
+      - sdd_aixm51
+    auth_required: true
+    license: "EAD User Agreement required / Paid eAIP"
+    status: transitional
+    notes: >
+      Transition to SDD in progress Q2 2025.
+      Currently through EAD. eAIP is paid (CHF 92.50).
+
+  lithuania:
+    country: LT
+    icao: EY
+    ansp: Oro Navigacija
+    aixm_version: "5.1 (SDD)"
+    url: "https://www.ans.lt/"
+    data_sets:
+      - sdd_aixm51
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: transitional
+    notes: >
+      Transition to SDD in progress Q2 2025.
+      Data through EAD.
+
+  malta:
+    country: MT
+    icao: LM
+    ansp: MATS
+    aixm_version: "4.5 (SDO)"
+    url: "https://www.transport.gov.mt/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO via iNM. Not publicly downloadable.
+
+  slovakia:
+    country: SK
+    icao: LZ
+    ansp: LPS
+    aixm_version: "4.5 (SDO)"
+    url: "https://aim.lps.sk/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO. Not publicly downloadable.
+
+  turkey:
+    country: TR
+    icao: LT
+    ansp: DHMI
+    aixm_version: "4.5 (SDO)"
+    url: "https://www.dhmi.gov.tr/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    license: "EAD User Agreement required"
+    status: ead_only
+    notes: >
+      Data in EAD SDO via iNM. Not publicly downloadable.
+
+  # Countries already available via AIXM or with direct downloads
+  poland:
+    country: PL
+    icao: EP
+    ansp: PANSA
+    aixm_version: "4.5 (SDO)"
+    url: "https://www.ais.pansa.pl/"
+    data_sets:
+      - sdo_aixm45
+    auth_required: true
+    status: ead_only
+
+  united_kingdom:
+    country: GB
+    icao: EG
+    ansp: NATS
+    aixm_version: "5.1 (SDD)"
+    url: "https://nats-uk.ead-it.com/"
+    data_sets:
+      - sdd_aixm51
+    auth_required: true
+    status: ead_only
+    notes: >
+      eEAD migration TBD. Data through EAD.
