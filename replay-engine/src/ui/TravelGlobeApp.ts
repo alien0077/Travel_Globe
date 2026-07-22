@@ -119,6 +119,7 @@ export class TravelGlobeApp {
   private readonly capability = document.createElement('div');
   private readonly timelineList = document.createElement('div');
   private readonly recordFilterBar = document.createElement('div');
+  private readonly recordPanelActions = document.createElement('div');
   private readonly recordPreview = document.createElement('article');
   private readonly viewRail = document.createElement('nav');
   private readonly pilotHud = document.createElement('div');
@@ -241,10 +242,11 @@ export class TravelGlobeApp {
     timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = '旅遊紀錄';
     this.recordFilterBar.className = 'record-filters';
+    this.recordPanelActions.className = 'record-panel-actions record-actions';
     this.timelineList.className = 'timeline-list';
     this.recordPreview.className = 'record-preview';
-    timeline.append(timelineTitle, this.recordFilterBar, this.timelineList, this.recordPreview);
-    keepDetailsOpenDuringContentGestures(this.recordFilterBar, this.timelineList, this.recordPreview);
+    timeline.append(timelineTitle, this.recordFilterBar, this.recordPanelActions, this.timelineList, this.recordPreview);
+    keepDetailsOpenDuringContentGestures(this.recordFilterBar, this.recordPanelActions, this.timelineList, this.recordPreview);
 
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
@@ -265,9 +267,11 @@ export class TravelGlobeApp {
     preloadSummary.textContent = '航班預載 / API key';
     preloadShell.append(preloadSummary, this.preloadPanel);
     const syncDrawerPanelState = (activePanel?: HTMLDetailsElement): void => {
-      if (activePanel?.open) {
+      const openPanels = [preloadShell, productShell, timeline].filter((panel) => panel.open);
+      const primaryPanel = activePanel?.open ? activePanel : openPanels[0];
+      if (primaryPanel) {
         for (const panel of [preloadShell, productShell, timeline]) {
-          if (panel !== activePanel) {
+          if (panel !== primaryPanel) {
             panel.open = false;
           }
         }
@@ -279,9 +283,9 @@ export class TravelGlobeApp {
     bindDetailsSummaryToggle(timelineTitle, timeline, () => syncDrawerPanelState(timeline));
     bindDetailsSummaryToggle(productSummary, productShell, () => syncDrawerPanelState(productShell));
     bindDetailsSummaryToggle(preloadSummary, preloadShell, () => syncDrawerPanelState(preloadShell));
-    timeline.addEventListener('toggle', () => syncDrawerPanelState(timeline));
-    productShell.addEventListener('toggle', () => syncDrawerPanelState(productShell));
-    preloadShell.addEventListener('toggle', () => syncDrawerPanelState(preloadShell));
+    timeline.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(timeline)));
+    productShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(productShell)));
+    preloadShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(preloadShell)));
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -790,10 +794,12 @@ export class TravelGlobeApp {
     const record =
       this.travelRecords.find((candidate) => candidate.id === this.activeRecordId) ?? this.travelRecords[0];
     if (!record) {
+      this.renderRecordPanelActions();
       this.recordPreview.replaceChildren();
       return;
     }
 
+    this.renderRecordPanelActions(record);
     this.recordPreview.style.setProperty('--record-accent', record.accent);
 
     const image = document.createElement('div');
@@ -856,6 +862,28 @@ export class TravelGlobeApp {
     this.capability.textContent = requested
       ? '已要求 iOS 載入 SQLite 最新旅程；收到 native 回傳後會更新旅遊紀錄。'
       : '瀏覽器模式沒有 iOS SQLite；請用下方本機歷史旅程載入已保存 journey。';
+  }
+
+  private renderRecordPanelActions(record?: TravelRecord): void {
+    const buttons = [
+      recordActionButton('新增', () => void this.addManualTravelRecord()),
+      recordActionButton('載入最新', () => this.requestLatestNativeJourney())
+    ];
+    if (record) {
+      buttons.splice(
+        1,
+        0,
+        recordActionButton('修改', () => void this.editActiveTravelRecord(record)),
+        recordActionButton('分類/時間', () => void this.editRecordDetails(record)),
+        recordActionButton('附加照片', () => this.mediaInput.click()),
+        recordActionButton('隱藏/刪除', () => void this.hideActiveTravelRecord(record))
+      );
+    }
+    buttons.push(
+      recordActionButton('復原', () => void this.undoRecordEdit()),
+      recordActionButton('編輯航線', () => void this.editFlightSummary())
+    );
+    this.recordPanelActions.replaceChildren(...buttons);
   }
 
   private async addManualTravelRecord(): Promise<void> {
@@ -1417,6 +1445,8 @@ export class TravelGlobeApp {
     row.className = 'saved-journey-row';
     const body = document.createElement('span');
     body.textContent = `${summary.title} | ${summary.status} | ${formatShortDate(summary.startTime)}`;
+    const actions = document.createElement('div');
+    actions.className = 'saved-journey-actions';
     const loadButton = document.createElement('button');
     loadButton.type = 'button';
     loadButton.className = 'record-action-button';
@@ -1427,7 +1457,8 @@ export class TravelGlobeApp {
     deleteButton.className = 'record-action-button';
     deleteButton.textContent = '刪除';
     bindTouchAction(deleteButton, () => void this.deleteSavedJourney(summary.id));
-    row.append(body, loadButton, deleteButton);
+    actions.append(loadButton, deleteButton);
+    row.append(body, actions);
     return row;
   }
 

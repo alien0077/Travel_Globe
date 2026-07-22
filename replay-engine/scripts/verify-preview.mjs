@@ -490,10 +490,15 @@ async function verifyMobileFd234Regression(page) {
     await setDetailsOpen(page, '.product-panel-shell', true);
     await page.waitForTimeout(200);
     console.error('[verify-preview] mobile: FD234 product panel open');
+    report.cardMetrics.travelAtlasDrawerState = await drawerPanelState(page, '.product-panel-shell', '.timeline-panel');
     report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
     console.error('[verify-preview] mobile: FD234 product panel scrolled');
     report.cardMetrics.travelAtlasGesture = await dragInsidePanelWithoutClosing(page, '.product-panel', '.product-panel-shell');
     console.error('[verify-preview] mobile: FD234 product panel gesture ok');
+    assert(report.cardMetrics.travelAtlasDrawerState.shellOpen, `Travel Atlas details is not open: ${JSON.stringify(report.cardMetrics.travelAtlasDrawerState)}`);
+    assert(!report.cardMetrics.travelAtlasDrawerState.actionGridVisible, `Travel Atlas did not hide drawer actions: ${JSON.stringify(report.cardMetrics.travelAtlasDrawerState)}`);
+    assert(!report.cardMetrics.travelAtlasDrawerState.preloadVisible, `Travel Atlas did not hide preload panel: ${JSON.stringify(report.cardMetrics.travelAtlasDrawerState)}`);
+    assert(!report.cardMetrics.travelAtlasDrawerState.otherPanelVisible, `Travel Atlas did not hide travel record panel: ${JSON.stringify(report.cardMetrics.travelAtlasDrawerState)}`);
     assert(report.cardMetrics.travelAtlas.visible, `Travel Atlas panel is not visible: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.height >= 360, `Travel Atlas panel is still too small: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
@@ -508,17 +513,27 @@ async function verifyMobileFd234Regression(page) {
     await setDetailsOpen(page, '.timeline-panel', true);
     await page.waitForTimeout(200);
     console.error('[verify-preview] mobile: FD234 timeline panel open');
+    report.cardMetrics.timelineDrawerState = await drawerPanelState(page, '.timeline-panel', '.product-panel-shell');
     report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-panel');
     console.error('[verify-preview] mobile: FD234 timeline panel scrolled');
     report.cardMetrics.recordPreview = await scrollPanelToBottom(page, '.record-preview');
     console.error('[verify-preview] mobile: FD234 record preview scrolled');
+    report.cardMetrics.recordPanelActionsText = await page.locator('.record-panel-actions').innerText().catch(() => '');
     report.cardMetrics.recordHistoryText = await page.locator('.record-history-section').innerText().catch(() => '');
     console.error('[verify-preview] mobile: FD234 record history read');
     report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-panel', '.timeline-panel');
     console.error('[verify-preview] mobile: FD234 timeline gesture ok');
+    assert(report.cardMetrics.timelineDrawerState.shellOpen, `Travel record details is not open: ${JSON.stringify(report.cardMetrics.timelineDrawerState)}`);
+    assert(!report.cardMetrics.timelineDrawerState.actionGridVisible, `Travel record did not hide drawer actions: ${JSON.stringify(report.cardMetrics.timelineDrawerState)}`);
+    assert(!report.cardMetrics.timelineDrawerState.preloadVisible, `Travel record did not hide preload panel: ${JSON.stringify(report.cardMetrics.timelineDrawerState)}`);
+    assert(!report.cardMetrics.timelineDrawerState.otherPanelVisible, `Travel record did not hide Travel Atlas panel: ${JSON.stringify(report.cardMetrics.timelineDrawerState)}`);
     assert(report.cardMetrics.timeline.visible, `Travel record panel is not visible: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.height >= 360, `Travel record panel is still too small: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.recordPreview.visible, `Travel record editor preview is not visible: ${JSON.stringify(report.cardMetrics.recordPreview)}`);
+    assert(report.cardMetrics.recordPanelActionsText.includes('新增'), `Travel record add control is missing: ${JSON.stringify(report.cardMetrics.recordPanelActionsText)}`);
+    assert(report.cardMetrics.recordPanelActionsText.includes('修改'), `Travel record edit control is missing: ${JSON.stringify(report.cardMetrics.recordPanelActionsText)}`);
+    assert(report.cardMetrics.recordPanelActionsText.includes('隱藏/刪除'), `Travel record delete/hide control is missing: ${JSON.stringify(report.cardMetrics.recordPanelActionsText)}`);
+    assert(report.cardMetrics.recordPanelActionsText.includes('載入最新'), `Travel record load latest control is missing: ${JSON.stringify(report.cardMetrics.recordPanelActionsText)}`);
     assert(report.cardMetrics.recordHistoryText.includes('本機歷史旅程'), `Travel record history controls are missing: ${JSON.stringify(report.cardMetrics.recordHistoryText)}`);
     assert(report.cardMetrics.timeline.bottom <= report.cardMetrics.timeline.drawerBottom + 1, `Travel record panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.reachedBottom, `Travel record panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.timeline)}`);
@@ -827,6 +842,30 @@ async function scrollPanelToBottom(page, selector) {
       controlsTop: Math.round(controls.top)
     };
   }, selector);
+}
+
+async function drawerPanelState(page, shellSelector, otherPanelSelector) {
+  return page.evaluate(({ targetShellSelector, targetOtherPanelSelector }) => {
+    const isVisible = (selector) => {
+      const element = document.querySelector(selector);
+      if (!(element instanceof HTMLElement)) {
+        return false;
+      }
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    const shell = document.querySelector(targetShellSelector);
+    const dock = document.querySelector('.info-dock');
+    return {
+      shellOpen: shell instanceof HTMLDetailsElement ? shell.open : false,
+      dockClassName: dock instanceof HTMLElement ? dock.className : '',
+      actionGridVisible: isVisible('.action-grid'),
+      preloadVisible: isVisible('.preload-panel-shell'),
+      otherPanelVisible: isVisible(targetOtherPanelSelector),
+      hasSelectorSupported: CSS.supports('selector(:has(*))')
+    };
+  }, { targetShellSelector: shellSelector, targetOtherPanelSelector: otherPanelSelector });
 }
 
 async function dragInsidePanelWithoutClosing(page, panelSelector, shellSelector) {
