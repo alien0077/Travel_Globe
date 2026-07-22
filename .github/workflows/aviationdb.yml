@@ -1,0 +1,43 @@
+name: AviationDB
+
+on:
+  push:
+    paths:
+      - 'AviationDB/**'
+      - 'shared/offline-packs/aviation/**'
+      - 'replay-engine/src/flight-preload/**'
+      - '.github/workflows/aviationdb.yml'
+  pull_request:
+    paths:
+      - 'AviationDB/**'
+      - 'shared/offline-packs/aviation/**'
+      - 'replay-engine/src/flight-preload/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -e "AviationDB[dev]"
+      - run: pytest
+        working-directory: AviationDB
+      - run: ruff check .
+        working-directory: AviationDB
+      - run: mypy src
+        working-directory: AviationDB
+      - run: PYTHONPATH=src python -m aviationdb --help
+        working-directory: AviationDB
+      - run: scripts/prepare-aviation-data.sh
+      - name: Report aviation pack drift
+        run: |
+          if git diff --quiet -- shared/offline-packs/aviation replay-engine/public/offline-packs/aviation AviationDB/data/reports; then
+            echo "AviationDB generated reports and public app pack are unchanged."
+          else
+            echo "::warning::AviationDB generated outputs changed. Review and commit regenerated reports/app pack."
+            git diff --stat -- shared/offline-packs/aviation replay-engine/public/offline-packs/aviation AviationDB/data/reports
+            git diff --exit-code -- shared/offline-packs/aviation replay-engine/public/offline-packs/aviation AviationDB/data/reports
+          fi

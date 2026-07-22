@@ -240,7 +240,6 @@ export class TravelGlobeApp {
     const timelineTitle = document.createElement('summary');
     timelineTitle.className = 'panel-summary panel-title';
     timelineTitle.textContent = '旅遊紀錄';
-    bindDetailsSummaryToggle(timelineTitle, timeline);
     this.recordFilterBar.className = 'record-filters';
     this.timelineList.className = 'timeline-list';
     this.recordPreview.className = 'record-preview';
@@ -254,7 +253,6 @@ export class TravelGlobeApp {
     const productSummary = document.createElement('summary');
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
-    bindDetailsSummaryToggle(productSummary, productShell);
     productShell.append(productSummary, this.productPanel);
     keepDetailsOpenDuringContentGestures(this.productPanel);
 
@@ -265,13 +263,25 @@ export class TravelGlobeApp {
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載 / API key';
-    bindDetailsSummaryToggle(preloadSummary, preloadShell, () => {
-      dock.classList.toggle('has-open-preload', preloadShell.open);
-    });
     preloadShell.append(preloadSummary, this.preloadPanel);
-    preloadShell.addEventListener('toggle', () => {
+    const syncDrawerPanelState = (activePanel?: HTMLDetailsElement): void => {
+      if (activePanel?.open) {
+        for (const panel of [preloadShell, productShell, timeline]) {
+          if (panel !== activePanel) {
+            panel.open = false;
+          }
+        }
+      }
       dock.classList.toggle('has-open-preload', preloadShell.open);
-    });
+      dock.classList.toggle('has-open-product', productShell.open);
+      dock.classList.toggle('has-open-timeline', timeline.open);
+    };
+    bindDetailsSummaryToggle(timelineTitle, timeline, () => syncDrawerPanelState(timeline));
+    bindDetailsSummaryToggle(productSummary, productShell, () => syncDrawerPanelState(productShell));
+    bindDetailsSummaryToggle(preloadSummary, preloadShell, () => syncDrawerPanelState(preloadShell));
+    timeline.addEventListener('toggle', () => syncDrawerPanelState(timeline));
+    productShell.addEventListener('toggle', () => syncDrawerPanelState(productShell));
+    preloadShell.addEventListener('toggle', () => syncDrawerPanelState(preloadShell));
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -414,7 +424,7 @@ export class TravelGlobeApp {
     systemSummary.addEventListener('pointerup', toggleSystemDrawer);
     systemSummary.addEventListener('touchend', toggleSystemDrawer, { passive: false });
     systemSummary.addEventListener('click', toggleSystemDrawer);
-    dock.classList.toggle('has-open-preload', preloadShell.open);
+    syncDrawerPanelState(preloadShell.open ? preloadShell : undefined);
     drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
     systemDrawer.append(systemSummary, drawerBody);
 
@@ -831,13 +841,21 @@ export class TravelGlobeApp {
       recordActionButton('修改紀錄', () => void this.editActiveTravelRecord(record)),
       recordActionButton('分類/時間', () => void this.editRecordDetails(record)),
       recordActionButton('附加照片', () => this.mediaInput.click()),
+      recordActionButton('載入最新', () => this.requestLatestNativeJourney()),
       recordActionButton('復原上次', () => void this.undoRecordEdit()),
       recordActionButton('隱藏紀錄', () => void this.hideActiveTravelRecord(record)),
       recordActionButton('編輯航線摘要', () => void this.editFlightSummary())
     );
-    content.append(meta, title, subtitle, tags, mediaGallery, actions);
+    content.append(meta, title, subtitle, tags, mediaGallery, actions, this.renderSavedJourneySection('record-history-section'));
 
     this.recordPreview.replaceChildren(image, content);
+  }
+
+  private requestLatestNativeJourney(): void {
+    const requested = postNativeMessage('recording.loadLatest', { requestedAt: new Date().toISOString() });
+    this.capability.textContent = requested
+      ? '已要求 iOS 載入 SQLite 最新旅程；收到 native 回傳後會更新旅遊紀錄。'
+      : '瀏覽器模式沒有 iOS SQLite；請用下方本機歷史旅程載入已保存 journey。';
   }
 
   private async addManualTravelRecord(): Promise<void> {
@@ -1255,8 +1273,8 @@ export class TravelGlobeApp {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'record-action-button';
-        button.textContent = installed ? '刪除' : '安裝';
-        button.addEventListener('click', () => {
+        button.textContent = installed ? '移除標記' : '標記離線';
+        bindTouchAction(button, () => {
           if (installed) {
             this.deleteOfflinePack(pack.id);
           } else {
@@ -1269,18 +1287,7 @@ export class TravelGlobeApp {
     );
     packControls.append(packTitle, packList);
 
-    const savedJourneyList = document.createElement('div');
-    savedJourneyList.className = 'atlas-section';
-    const savedTitle = document.createElement('strong');
-    savedTitle.textContent = '本機歷史旅程';
-    const savedRows = document.createElement('div');
-    savedRows.className = 'saved-journey-list';
-    savedRows.replaceChildren(
-      ...(this.savedJourneys.length > 0
-        ? this.savedJourneys.slice(0, 6).map((summary) => this.renderSavedJourneyRow(summary))
-        : [textLine('尚無本機歷史旅程')])
-    );
-    savedJourneyList.append(savedTitle, savedRows);
+    const savedJourneyList = this.renderSavedJourneySection();
 
     const notificationList = document.createElement('div');
     notificationList.className = 'atlas-section';
@@ -1414,14 +1421,30 @@ export class TravelGlobeApp {
     loadButton.type = 'button';
     loadButton.className = 'record-action-button';
     loadButton.textContent = '載入';
-    loadButton.addEventListener('click', () => void this.loadSavedJourney(summary.id));
+    bindTouchAction(loadButton, () => void this.loadSavedJourney(summary.id));
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.className = 'record-action-button';
     deleteButton.textContent = '刪除';
-    deleteButton.addEventListener('click', () => void this.deleteSavedJourney(summary.id));
+    bindTouchAction(deleteButton, () => void this.deleteSavedJourney(summary.id));
     row.append(body, loadButton, deleteButton);
     return row;
+  }
+
+  private renderSavedJourneySection(extraClass?: string): HTMLElement {
+    const savedJourneyList = document.createElement('div');
+    savedJourneyList.className = `atlas-section${extraClass ? ` ${extraClass}` : ''}`;
+    const savedTitle = document.createElement('strong');
+    savedTitle.textContent = '本機歷史旅程';
+    const savedRows = document.createElement('div');
+    savedRows.className = 'saved-journey-list';
+    savedRows.replaceChildren(
+      ...(this.savedJourneys.length > 0
+        ? this.savedJourneys.slice(0, 8).map((summary) => this.renderSavedJourneyRow(summary))
+        : [textLine('尚無本機歷史旅程')])
+    );
+    savedJourneyList.append(savedTitle, savedRows);
+    return savedJourneyList;
   }
 
   private installOfflinePack(packId: string): void {
@@ -1431,16 +1454,18 @@ export class TravelGlobeApp {
     }
     this.packState = installPack(this.packState, pack);
     saveOfflinePackState(this.packState);
-    this.capability.textContent = `${pack.name} 已安裝到本機離線資料狀態。`;
+    this.capability.textContent = `${pack.name} 已標記為可離線使用；資料檔已隨目前 Replay build / iOS bundle 提供。`;
     this.renderProductPanel();
+    this.renderRecordPreview();
   }
 
   private deleteOfflinePack(packId: string): void {
     const pack = coreOfflinePacks.find((candidate) => candidate.id === packId);
     this.packState = deletePack(this.packState, packId);
     saveOfflinePackState(this.packState);
-    this.capability.textContent = `${pack?.name ?? packId} 已從本機離線資料狀態移除。`;
+    this.capability.textContent = `${pack?.name ?? packId} 已從本機離線狀態標記移除；不會刪除 bundle 內建資料檔。`;
     this.renderProductPanel();
+    this.renderRecordPreview();
   }
 
   private async loadSavedJourney(journeyId: string): Promise<void> {
@@ -1464,6 +1489,7 @@ export class TravelGlobeApp {
     await this.adapter.deleteJourney(journeyId);
     this.savedJourneys = await this.adapter.listSavedJourneys();
     this.renderProductPanel();
+    this.renderRecordPreview();
   }
 
   private scheduleNativeNotifications(notifications: TravelNotification[]): void {
@@ -1721,7 +1747,7 @@ function recordActionButton(label: string, onClick: () => void): HTMLElement {
   button.type = 'button';
   button.className = 'record-action-button';
   button.textContent = label;
-  button.addEventListener('click', onClick);
+  bindTouchAction(button, onClick);
   return button;
 }
 

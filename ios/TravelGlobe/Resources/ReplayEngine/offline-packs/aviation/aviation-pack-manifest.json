@@ -1,0 +1,55 @@
+{
+  "id": "aviation-airgraph",
+  "version": "0.1.0",
+  "generatedAt": "2026-07-16T16:51:42.636655+00:00",
+  "regions": [
+    {
+      "id": "asia-east",
+      "countries": [
+        "HK",
+        "JP",
+        "KR",
+        "TW"
+      ],
+      "points": 5,
+      "segments": 4,
+      "airways": 1
+    }
+  ],
+  "sources": [
+    {
+      "sourceId": "fixture",
+      "provider": "Travel Globe Fixture",
+      "country": null,
+      "redistributionStatus": "redistribution_allowed",
+      "airacCycle": null
+    }
+  ],
+  "payloads": {
+    "airgraph": [
+      {
+        "path": "shared/offline-packs/aviation/regions/asia-east.airgraph.json.gz",
+        "bytes": 460,
+        "sha256": "26016ed7c6b1b52659e69fcd6960aca142ac7c54087da3172fb9eefd9d189d2d",
+        "contentType": "application/json+gzip",
+        "public": true
+      }
+    ],
+    "reports": [
+      {
+        "path": "shared/offline-packs/aviation/coverage_report.json",
+        "bytes": 2041,
+        "sha256": "4e65785a3fe10fa5a76a24d60762ae3ec52f5c26e99515dfdaf463872743ff38",
+        "contentType": "application/json",
+        "public": true
+      },
+      {
+        "path": "shared/offline-packs/aviation/validation_report.json",
+        "bytes": 19,
+        "sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc",
+        "contentType": "application/json",
+        "public": true
+      }
+    ]
+  }
+}

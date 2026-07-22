@@ -1,4 +1,4 @@
-import globalAirgraph from '../../../shared/offline-packs/aviation/regions/global.airgraph.json';
+import globalAirgraphJson from '../../../shared/offline-packs/aviation/regions/global.airgraph.json?raw';
 import type { GeographicPoint, PlaceReference } from '../data/types';
 import { haversineDistanceMeters } from '../geo/geodesy';
 
@@ -31,7 +31,7 @@ interface AirgraphPack {
   segments: AirgraphSegmentRow[];
 }
 
-const packs = [globalAirgraph as unknown as AirgraphPack];
+const packs = [JSON.parse(globalAirgraphJson) as AirgraphPack];
 
 // Spatial grid index for fast nearest-point lookup
 interface GridPoint { index: number; lat: number; lon: number }
@@ -214,5 +214,4 @@ function polylineDistanceMeters(points: GeographicPoint[]): number {
     0
   );
 }
-
 

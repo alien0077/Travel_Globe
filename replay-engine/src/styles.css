@@ -1268,22 +1268,77 @@ select.preload-input {
     min-height: 0;
   }
 
+  .info-dock.has-open-product .drawer-body,
+  .info-dock.has-open-timeline .drawer-body {
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .info-dock.has-open-product .action-grid,
+  .info-dock.has-open-product .capability,
+  .info-dock.has-open-product .below-me,
+  .info-dock.has-open-product .preload-panel-shell,
+  .info-dock.has-open-product .timeline-panel,
+  .info-dock.has-open-timeline .action-grid,
+  .info-dock.has-open-timeline .capability,
+  .info-dock.has-open-timeline .below-me,
+  .info-dock.has-open-timeline .preload-panel-shell,
+  .info-dock.has-open-timeline .product-panel-shell {
+    display: none;
+  }
+
+  .info-dock.has-open-product .product-panel-shell,
+  .info-dock.has-open-timeline .timeline-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+  }
+
   .product-panel-shell[open] .product-panel {
-    max-height: 260px;
-    max-height: min(260px, calc(100svh - 584px));
+    max-height: 56svh;
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-bottom: 6px;
     -webkit-overflow-scrolling: touch;
   }
 
+  .info-dock.has-open-product .product-panel-shell[open] .product-panel {
+    height: 100%;
+    max-height: none;
+  }
+
+  .info-dock.has-open-timeline .timeline-panel {
+    display: block;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .timeline-panel[open] .timeline-list {
-    max-height: 160px;
-    max-height: min(160px, calc(100svh - 674px));
+    max-height: 34svh;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-bottom: 6px;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .info-dock.has-open-timeline .timeline-panel[open] .timeline-list {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .info-dock.has-open-timeline .record-preview {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .record-history-section {
+    margin-top: 2px;
   }
 
   .info-dock.has-open-preload .drawer-body {

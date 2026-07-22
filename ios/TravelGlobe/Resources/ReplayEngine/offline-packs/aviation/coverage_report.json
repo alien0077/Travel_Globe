@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-07-16 16:51:42",
+  "countries": {
+    "JP": {
+      "waypoints": 3,
+      "airports": 2,
+      "airways": 0,
+      "segments": 0
+    },
+    "TW": {
+      "waypoints": 193,
+      "airports": 1,
+      "airways": 46,
+      "segments": 244
+    },
+    "US": {
+      "waypoints": 4,
+      "airports": 2,
+      "airways": 1,
+      "segments": 3
+    }
+  },
+  "known_points": {
+    "ELATO": {
+      "found": true,
+      "matches": [
+        {
+          "uid": "pt-198ea991e552d79d",
+          "latitude": 29.333333333333332,
+          "longitude": 128.5,
+          "source_id": "fixture"
+        },
+        {
+          "uid": "pt-0e6f2db600886b71",
+          "latitude": 22.333333333333332,
+          "longitude": 117.5,
+          "source_id": "taiwan"
+        }
+      ]
+    },
+    "MAKOT": {
+      "found": true,
+      "matches": [
+        {
+          "uid": "pt-a7afaad943fd424c",
+          "latitude": 26.75,
+          "longitude": 124.0,
+          "source_id": "fixture"
+        }
+      ]
+    },
+    "KAPLI": {
+      "found": true,
+      "matches": [
+        {
+          "uid": "pt-6e23650f00df90bf",
+          "latitude": 32.5,
+          "longitude": 134.0,
+          "source_id": "fixture"
+        },
+        {
+          "uid": "pt-0bf4496e3bd8fb87",
+          "latitude": 21.166666666666668,
+          "longitude": 117.5,
+          "source_id": "taiwan"
+        }
+      ]
+    },
+    "TONGA": {
+      "found": true,
+      "matches": [
+        {
+          "uid": "pt-d6c7184754a7e0f4",
+          "latitude": 25.5,
+          "longitude": 122.0,
+          "source_id": "fixture"
+        },
+        {
+          "uid": "pt-055a44a9a724eee6",
+          "latitude": 23.177500000000002,
+          "longitude": 119.5911111111111,
+          "source_id": "taiwan"
+        },
+        {
+          "uid": "pt-c95ec5d9fd86c901",
+          "latitude": 23.177500000000002,
+          "longitude": 119.5911111111111,
+          "source_id": "taiwan"
+        }
+      ]
+    }
+  },
+  "validation": {
+    "errors": 0,
+    "warnings": 0
+  }
+}

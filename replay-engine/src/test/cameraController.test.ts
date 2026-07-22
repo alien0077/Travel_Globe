@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { CameraController, type CameraMode } from '../camera/CameraController';
+import { firstPersonRouteLookAheadMeters, sceneObjectScaleForAltitude } from '../camera/flightPerspective';
 
 describe('camera controller interaction', () => {
   it('zooms global view toward the globe while keeping free orbit control', () => {
@@ -67,10 +68,10 @@ describe('camera controller interaction', () => {
     expect(distances.get('totalRoute')).toBeGreaterThan(distances.get('flightPreview') ?? 0);
   });
 
-  it('tilts pilot view low enough for terrain to stay above the controls', () => {
+  it('keeps low-altitude pilot view close to the horizon with a narrow local scale', () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const controller = new CameraController(camera);
-    const point = { latitude: 25.1, longitude: 121.6, altitudeMeters: 4_000 };
+    const point = { latitude: 25.1, longitude: 121.6, altitudeMeters: 450 };
     controller.setMode('pilotView');
 
     for (let index = 0; index < 48; index += 1) {
@@ -82,7 +83,26 @@ describe('camera controller interaction', () => {
     camera.getWorldDirection(direction);
     const horizonBias = direction.dot(normal);
 
-    expect(horizonBias).toBeGreaterThan(-0.58);
-    expect(horizonBias).toBeLessThan(-0.38);
+    expect(horizonBias).toBeGreaterThan(-0.12);
+    expect(horizonBias).toBeLessThan(-0.02);
+    expect(camera.fov).toBeLessThan(43);
+  });
+
+  it('widens pilot view and shrinks scene objects as altitude increases', () => {
+    const lowCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const highCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const lowController = new CameraController(lowCamera);
+    const highController = new CameraController(highCamera);
+    const lowPoint = { latitude: 25.1, longitude: 121.6, altitudeMeters: 450 };
+    const highPoint = { latitude: 25.1, longitude: 121.6, altitudeMeters: 11_200 };
+
+    lowController.setMode('pilotView');
+    highController.setMode('pilotView');
+    lowController.update(lowPoint, 52, { snap: true });
+    highController.update(highPoint, 52, { snap: true });
+
+    expect(highCamera.fov).toBeGreaterThan(lowCamera.fov + 10);
+    expect(firstPersonRouteLookAheadMeters(highPoint)).toBeGreaterThan(firstPersonRouteLookAheadMeters(lowPoint) * 10);
+    expect(sceneObjectScaleForAltitude(highPoint)).toBeLessThan(sceneObjectScaleForAltitude(lowPoint));
   });
 });

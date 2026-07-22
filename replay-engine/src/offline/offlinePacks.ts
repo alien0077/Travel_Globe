@@ -121,7 +121,7 @@ export function formatBytes(bytes: number): string {
 
 export function describeInstalledPacks(state: OfflinePackState): string {
   if (state.packs.length === 0) {
-    return 'No offline data installed';
+    return '資料檔已隨目前 Replay build 提供；尚未標記任何離線資料包';
   }
   return state.packs.map((pack) => `${pack.name}: ${pack.dataLayers.length} layers`).join(' | ');
 }

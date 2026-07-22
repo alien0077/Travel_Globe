@@ -309,6 +309,8 @@ final class TravelGlobeAppModel: ObservableObject {
             scheduleNotificationMessage(message)
         case "file.export":
             exportFileMessage(message)
+        case "recording.loadLatest":
+            Task { await loadLatestJourneyInReplay() }
         default:
             break
         }

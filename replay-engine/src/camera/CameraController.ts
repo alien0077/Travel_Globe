@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
+import { pilotViewPerspective } from './flightPerspective';
 
 export type FlightSystemCameraMode = 'flightPreview' | 'totalRoute' | 'midFlight' | 'overhead' | 'commandCenter' | 'pilotView';
 export type LegacyCameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
@@ -50,6 +51,9 @@ export class CameraController {
     }
     const normal = this.target.clone().normalize();
     const forward = this.forwardVector(normal, bearingDegrees);
+    if (this.mode !== 'pilotView') {
+      this.setFieldOfView(45);
+    }
 
     if (this.mode === 'totalRoute') {
       const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
@@ -85,16 +89,18 @@ export class CameraController {
     }
 
     if (this.mode === 'pilotView') {
+      const perspective = pilotViewPerspective(point);
+      this.setFieldOfView(perspective.fieldOfViewDegrees);
       this.desired
         .copy(this.target)
-        .add(forward.clone().multiplyScalar(0.025))
-        .add(normal.clone().multiplyScalar(0.045));
+        .add(forward.clone().multiplyScalar(perspective.eyeForwardOffset))
+        .add(normal.clone().multiplyScalar(perspective.eyeHeightOffset));
       this.camera.position.lerp(this.desired, lerpAmount ?? 0.18);
       this.camera.up.copy(normal);
       const horizonLookTarget = this.camera.position
         .clone()
-        .add(forward.clone().multiplyScalar(2.0))
-        .add(normal.clone().multiplyScalar(-1.05));
+        .add(forward.clone().multiplyScalar(perspective.lookAhead))
+        .add(normal.clone().multiplyScalar(perspective.lookVerticalOffset));
       this.camera.lookAt(horizonLookTarget);
       return;
     }
@@ -164,6 +170,14 @@ export class CameraController {
     const localNorth = new THREE.Vector3().crossVectors(normal, east).normalize();
     const bearing = THREE.MathUtils.degToRad(bearingDegrees);
     return localNorth.multiplyScalar(Math.cos(bearing)).add(east.multiplyScalar(Math.sin(bearing))).normalize();
+  }
+
+  private setFieldOfView(fieldOfViewDegrees: number): void {
+    if (Math.abs(this.camera.fov - fieldOfViewDegrees) < 0.05) {
+      return;
+    }
+    this.camera.fov = fieldOfViewDegrees;
+    this.camera.updateProjectionMatrix();
   }
 }
 

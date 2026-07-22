@@ -16,5 +16,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "../shared/**/*.json", "../contracts/**/*.json"]
+  "include": ["src", "../contracts/**/*.json"]
 }

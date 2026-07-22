@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { LocationPoint } from '../data/types';
+import { haversineDistanceMeters } from '../geo/geodesy';
+import { visibleRouteWindowForCameraMode } from '../globe/TravelGlobeScene';
 import { createRouteTrack, splitRouteByAltitudePhase, updateRouteTrack } from '../route/createRouteLine';
 
 describe('route track rendering', () => {
@@ -27,6 +29,21 @@ describe('route track rendering', () => {
     expect(track.userData.routeTrack.climb.children.length).toBe(0);
     expect(track.userData.routeTrack.descent.children.length).toBe(0);
   });
+
+  it('limits first-person remaining route to a local low-altitude window', () => {
+    const current = {
+      ...route[0],
+      altitudeMeters: 450,
+      timestamp: new Date(Date.parse(route[0].timestamp) + 60_000).toISOString()
+    };
+    const pilotRoute = visibleRouteWindowForCameraMode(route, current, 'pilotView');
+    const totalRoute = visibleRouteWindowForCameraMode(route, current, 'totalRoute');
+
+    expect(totalRoute).toBe(route);
+    expect(routeDistanceMeters(pilotRoute)).toBeLessThan(32_000);
+    expect(routeDistanceMeters(pilotRoute)).toBeGreaterThan(20_000);
+    expect(routeDistanceMeters(route)).toBeGreaterThan(routeDistanceMeters(pilotRoute) * 20);
+  });
 });
 
 function makeRoute(altitudes: number[]): LocationPoint[] {
@@ -46,4 +63,10 @@ function makeRoute(altitudes: number[]): LocationPoint[] {
 
 function positionCount(trackSegment: THREE.Mesh): number {
   return trackSegment.geometry.getAttribute('position').count;
+}
+
+function routeDistanceMeters(points: LocationPoint[]): number {
+  return points.reduce((total, point, index) => (
+    index === 0 ? total : total + haversineDistanceMeters(points[index - 1], point)
+  ), 0);
 }

@@ -167,8 +167,10 @@ for (const viewport of [
         recordPreviewVisible &&
         previewText.includes('新增事件') &&
         previewText.includes('修改紀錄') &&
+        previewText.includes('載入最新') &&
         previewText.includes('隱藏紀錄') &&
         previewText.includes('編輯航線摘要') &&
+        previewText.includes('本機歷史旅程') &&
         productText.includes('0 B') &&
         (window.innerWidth <= 640 || centerShowsGlobe) &&
         (window.innerWidth <= 640 || pageHasNoVerticalScroll),
@@ -481,20 +483,32 @@ async function verifyMobileFd234Regression(page) {
     report.cardMetrics.travelAtlasGesture = await dragInsidePanelWithoutClosing(page, '.product-panel', '.product-panel-shell');
     await page.screenshot({ path: report.travelAtlasScreenshotPath, fullPage: false });
     assert(report.cardMetrics.travelAtlas.visible, `Travel Atlas panel is not visible: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
+    assert(report.cardMetrics.travelAtlas.height >= 360, `Travel Atlas panel is still too small: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.reachedBottom, `Travel Atlas panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlasGesture.open, `Travel Atlas collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.travelAtlasGesture)}`);
+    await dispatchTextClick(page, '標記離線');
+    await page.waitForTimeout(180);
+    assert((await page.locator('.capability').innerText()).includes('已標記為可離線使用'), 'Travel Atlas offline marker button did not update status');
     await setDetailsOpen(page, '.product-panel-shell', false);
     await page.waitForTimeout(150);
     await setDetailsOpen(page, '.timeline-panel', true);
     await page.waitForTimeout(200);
-    report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-list');
-    report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-list', '.timeline-panel');
+    report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-panel');
+    report.cardMetrics.recordPreview = await scrollPanelToBottom(page, '.record-preview');
+    report.cardMetrics.recordHistoryText = await page.locator('.record-history-section').innerText().catch(() => '');
+    report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-panel', '.timeline-panel');
     await page.screenshot({ path: report.timelineScreenshotPath, fullPage: false });
     assert(report.cardMetrics.timeline.visible, `Travel record panel is not visible: ${JSON.stringify(report.cardMetrics.timeline)}`);
+    assert(report.cardMetrics.timeline.height >= 360, `Travel record panel is still too small: ${JSON.stringify(report.cardMetrics.timeline)}`);
+    assert(report.cardMetrics.recordPreview.visible, `Travel record editor preview is not visible: ${JSON.stringify(report.cardMetrics.recordPreview)}`);
+    assert(report.cardMetrics.recordHistoryText.includes('本機歷史旅程'), `Travel record history controls are missing: ${JSON.stringify(report.cardMetrics.recordHistoryText)}`);
     assert(report.cardMetrics.timeline.bottom <= report.cardMetrics.timeline.drawerBottom + 1, `Travel record panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.reachedBottom, `Travel record panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timelineGesture.open, `Travel record collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.timelineGesture)}`);
+    await dispatchTextClick(page, '載入最新');
+    await page.waitForTimeout(180);
+    assert((await page.locator('.capability').innerText()).includes('瀏覽器模式沒有 iOS SQLite'), 'Travel record load latest button did not update status');
 
     await dispatchClick(page, '.system-drawer > .panel-summary');
     await page.waitForTimeout(250);

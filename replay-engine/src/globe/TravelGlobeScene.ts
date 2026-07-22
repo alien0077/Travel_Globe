@@ -1,9 +1,19 @@
 import * as THREE from 'three';
 import { CameraController, type CameraMode } from '../camera/CameraController';
+import {
+  altitudePerspectiveFactor,
+  firstPersonRouteLookAheadMeters,
+  sceneObjectScaleForAltitude
+} from '../camera/flightPerspective';
 import type { JourneySegment, LocationPoint, PlaceReference } from '../data/types';
 import type { FlightOverlay } from '../flight/flightAnalytics';
 import { landmarkDisplayName, type GeographicFeature } from '../geo/landmarks';
-import { EARTH_RADIUS_METERS, geographicToVector3, haversineDistanceMeters } from '../geo/geodesy';
+import {
+  EARTH_RADIUS_METERS,
+  geographicToVector3,
+  haversineDistanceMeters,
+  interpolateGreatCircle
+} from '../geo/geodesy';
 import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
 import { simulatedCloudCoverFraction } from '../weather/simulatedCloudCover';
@@ -138,8 +148,15 @@ export class TravelGlobeScene {
     placeAircraftMarker(this.aircraft, point, bearingDegrees);
     this.aircraft.scale.setScalar(lerp(1, 0.095, nearGroundStrength));
     this.aircraft.visible = cameraMode !== 'pilotView';
-    this.updateAirportMarkers(nearGroundStrength);
-    updateRouteTrack(this.routeTrack, this.segment.derivedReplayRoute.points, actualRoutePoints, 180000);
+    this.updateAirportMarkers(point, nearGroundStrength, cameraMode);
+    const visibleRoutePoints = visibleRouteWindowForCameraMode(
+      this.segment.derivedReplayRoute.points,
+      point,
+      cameraMode
+    );
+    const visibleActualRoutePoints = isFirstPersonCameraMode(cameraMode) ? [point] : actualRoutePoints;
+    updateRouteTrack(this.routeTrack, visibleRoutePoints, visibleActualRoutePoints, 180000);
+    this.updateRouteAppearance(point, cameraMode);
     this.updateDayNight(point);
     this.cameraController.setMode(cameraMode);
     this.cameraController.update(point, bearingDegrees, {
@@ -363,8 +380,11 @@ export class TravelGlobeScene {
     hideLabel(this.focusedAirportLabel);
   }
 
-  private updateAirportMarkers(nearGroundStrength: number): void {
-    const nearScale = lerp(1, 0.34, nearGroundStrength);
+  private updateAirportMarkers(point: LocationPoint, nearGroundStrength: number, cameraMode: CameraMode): void {
+    const altitudeMarkerScale = lerp(0.4, 0.28, altitudePerspectiveFactor(point));
+    const nearScale = lerp(altitudeMarkerScale, 0.34, nearGroundStrength);
+    const isFirstPerson = isFirstPersonCameraMode(cameraMode);
+    const firstPersonVisibleMeters = firstPersonRouteLookAheadMeters(point) * 1.18;
     this.container.dataset.airportMarkerScale = nearScale.toFixed(3);
     for (const marker of this.airportMarkers.children) {
       if (!(marker instanceof THREE.Mesh)) {
@@ -372,6 +392,27 @@ export class TravelGlobeScene {
       }
       const baseScale = typeof marker.userData.baseScale === 'number' ? marker.userData.baseScale : 0.05;
       marker.scale.set(baseScale * nearScale, baseScale * nearScale, 1);
+      let opacity = 1;
+      if (isFirstPerson && marker.userData.kind === 'destination') {
+        const destinationDistanceMeters = haversineDistanceMeters(point, this.segment.destination);
+        opacity = 1 - smoothstep(firstPersonVisibleMeters, firstPersonVisibleMeters * 1.45, destinationDistanceMeters);
+      }
+      marker.visible = opacity > 0.04;
+      if (marker.material instanceof THREE.MeshBasicMaterial) {
+        marker.material.opacity = opacity;
+      }
+    }
+  }
+
+  private updateRouteAppearance(point: LocationPoint, cameraMode: CameraMode): void {
+    const { flown, remaining } = this.routeTrack.userData.routeTrack;
+    const isFirstPerson = isFirstPersonCameraMode(cameraMode);
+    flown.visible = !isFirstPerson;
+    remaining.visible = true;
+    if (remaining.material instanceof THREE.MeshBasicMaterial) {
+      remaining.material.opacity = isFirstPerson
+        ? lerp(0.2, 0.44, altitudePerspectiveFactor(point))
+        : 0.58;
     }
   }
 
@@ -441,6 +482,7 @@ function createAirportSurfaceMarkers(origin: PlaceReference, destination: PlaceR
     const vector = geographicToVector3(place, 2.006, 900000);
     marker.position.set(vector.x, vector.y, vector.z);
     orientSurfacePlane(marker);
+    marker.userData.kind = index === 1 ? 'destination' : 'origin';
     marker.userData.baseScale = index === 1 ? 0.082 : 0.068;
     marker.scale.set(marker.userData.baseScale, marker.userData.baseScale, 1);
     marker.renderOrder = 8;
@@ -645,7 +687,7 @@ function labelDistanceLimitMeters(point: LocationPoint, cameraMode: CameraMode):
       return Math.min(680000, Math.max(180000, horizonMeters + 160000));
     case 'pilotView':
     case 'cockpit':
-      return Math.min(420000, Math.max(65000, horizonMeters + 60000));
+      return Math.min(360000, Math.max(18000, firstPersonRouteLookAheadMeters(point) * 0.86));
     case 'global':
     case 'orbit':
       return Math.min(1100000, Math.max(500000, horizonMeters + 320000));
@@ -660,8 +702,8 @@ function labelScaleForFeature(feature: GeographicFeature, distanceMeters: number
   }
   const altitudeMeters = Math.max(0, point?.altitudeMeters ?? 0);
   const distanceScale = 1 - Math.min(0.46, distanceMeters / 180000);
-  const altitudeScale = 1 - Math.min(0.34, altitudeMeters / 14000);
-  return Math.max(0.62, Math.min(1.45, 1.36 * distanceScale * altitudeScale));
+  const altitudeScale = point ? sceneObjectScaleForAltitude(point) : 1 - Math.min(0.34, altitudeMeters / 14000);
+  return Math.max(0.52, Math.min(1.65, 1.22 * distanceScale * altitudeScale));
 }
 
 function labelOpacityForDistance(distanceMeters: number, maxDistanceMeters: number): number {
@@ -688,6 +730,64 @@ function labelCountLimit(cameraMode: CameraMode): number {
     default:
       return 12;
   }
+}
+
+export function visibleRouteWindowForCameraMode(
+  fullRoute: LocationPoint[],
+  current: LocationPoint,
+  cameraMode: CameraMode
+): LocationPoint[] {
+  if (!isFirstPersonCameraMode(cameraMode)) {
+    return fullRoute;
+  }
+  return routeWindowAhead(fullRoute, current, firstPersonRouteLookAheadMeters(current));
+}
+
+function routeWindowAhead(fullRoute: LocationPoint[], current: LocationPoint, maxDistanceMeters: number): LocationPoint[] {
+  const currentMs = Date.parse(current.timestamp);
+  const futurePoints = fullRoute.filter((point) => Date.parse(point.timestamp) > currentMs);
+  const window: LocationPoint[] = [current];
+  let previous = current;
+  let distanceMeters = 0;
+
+  for (const point of futurePoints) {
+    const segmentDistanceMeters = haversineDistanceMeters(previous, point);
+    if (distanceMeters + segmentDistanceMeters > maxDistanceMeters) {
+      const remainingMeters = Math.max(0, maxDistanceMeters - distanceMeters);
+      if (segmentDistanceMeters > 1 && remainingMeters > 200) {
+        window.push(interpolateLocationPoint(previous, point, remainingMeters / segmentDistanceMeters));
+      }
+      break;
+    }
+    window.push(point);
+    distanceMeters += segmentDistanceMeters;
+    previous = point;
+  }
+
+  return window;
+}
+
+function interpolateLocationPoint(a: LocationPoint, b: LocationPoint, fraction: number): LocationPoint {
+  const point = interpolateGreatCircle(a, b, fraction);
+  const startMs = Date.parse(a.timestamp);
+  const endMs = Date.parse(b.timestamp);
+  const timestamp = Number.isFinite(startMs) && Number.isFinite(endMs)
+    ? new Date(startMs + (endMs - startMs) * fraction).toISOString()
+    : a.timestamp;
+  return {
+    ...a,
+    id: `${a.id}-${b.id}-visible-cutoff`,
+    timestamp,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    altitudeMeters: point.altitudeMeters,
+    speedMetersPerSecond: lerp(a.speedMetersPerSecond ?? 0, b.speedMetersPerSecond ?? 0, fraction),
+    courseDegrees: b.courseDegrees ?? a.courseDegrees
+  };
+}
+
+function isFirstPersonCameraMode(cameraMode: CameraMode): boolean {
+  return cameraMode === 'pilotView' || cameraMode === 'cockpit';
 }
 
 function shouldSnapCamera(
