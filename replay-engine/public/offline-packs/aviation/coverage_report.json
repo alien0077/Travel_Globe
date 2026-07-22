@@ -1,6 +1,18 @@
 {
-  "generated_at": "2026-07-16 16:51:42",
+  "generated_at": "1970-01-01T00:00:00+00:00",
   "countries": {
+    "CA": {
+      "waypoints": 2869,
+      "airports": 257,
+      "airways": 212,
+      "segments": 1389
+    },
+    "EEU": {
+      "waypoints": 12,
+      "airports": 0,
+      "airways": 0,
+      "segments": 0
+    },
     "JP": {
       "waypoints": 3,
       "airports": 2,
@@ -13,11 +25,17 @@
       "airways": 46,
       "segments": 244
     },
+    "UNKNOWN": {
+      "waypoints": 1220,
+      "airports": 50,
+      "airways": 122,
+      "segments": 707
+    },
     "US": {
-      "waypoints": 4,
-      "airports": 2,
-      "airways": 1,
-      "segments": 3
+      "waypoints": 30716,
+      "airports": 2276,
+      "airways": 1205,
+      "segments": 15460
     }
   },
   "known_points": {

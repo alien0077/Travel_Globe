@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -74,7 +75,7 @@ def coverage_report(repository: AviationRepository) -> dict[str, object]:
         row["severity"] for row in repository.rows("SELECT severity FROM validation_issue")
     )
     return {
-        "generated_at": repository.scalar("SELECT datetime('now')"),
+        "generated_at": os.environ.get("AVIATIONDB_GENERATED_AT") or repository.scalar("SELECT datetime('now')"),
         "countries": countries,
         "known_points": known_points,
         "validation": {

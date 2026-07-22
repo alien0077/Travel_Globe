@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import os
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -65,7 +66,7 @@ def export_app_pack(
     json_path = region_dir / f"{region}.airgraph.json"
     gzip_path = region_dir / f"{region}.airgraph.json.gz"
     json_path.write_bytes(payload_bytes + b"\n")
-    gzip_path.write_bytes(gzip.compress(payload_bytes))
+    gzip_path.write_bytes(gzip.compress(payload_bytes, mtime=0))
 
     payload_sha = sha256(gzip_path.read_bytes()).hexdigest()
     coverage = coverage_report(repository)
@@ -99,7 +100,7 @@ def export_app_pack(
     manifest = {
         "id": "aviation-airgraph",
         "version": "0.1.0",
-        "generatedAt": datetime.now(UTC).isoformat(),
+        "generatedAt": _generated_at(),
         "licenseMode": "private" if include_private else "public",
         "regions": [
             {
@@ -194,22 +195,32 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
                 ]
             )
 
+    airport_rows = repository.rows(
+        f"""
+        SELECT a.*
+        FROM airport a
+        JOIN source_metadata s ON s.source_id = a.source_id
+        WHERE a.country IN ({placeholders})
+          {source_filter}
+        ORDER BY COALESCE(a.iata, a.icao)
+        """,
+        filter_args,
+    )
     airports = [
         [row["icao"], row["iata"], row["name"], round(row["latitude"], 6), round(row["longitude"], 6), row["country"]]
-        for row in repository.rows(
-            f"""
-            SELECT a.*
-            FROM airport a
-            JOIN source_metadata s ON s.source_id = a.source_id
-            WHERE a.country IN ({placeholders})
-              {source_filter}
-            ORDER BY COALESCE(a.iata, a.icao)
-            """,
-            filter_args,
-        )
+        for row in airport_rows
     ]
+    exported_source_ids = sorted(
+        {
+            row["source_id"]
+            for rows in (points_rows, airways_rows)
+            for row in rows
+        }
+        | {row["source_id"] for row in airport_rows}
+    )
+    source_placeholders = ",".join("?" for _ in exported_source_ids) or "''"
     source_metadata_filter = "" if include_private else "AND redistribution_status = ? AND allow_app_bundle = 1"
-    source_metadata_args: tuple[object, ...] = tuple(countries)
+    source_metadata_args: tuple[object, ...] = tuple(exported_source_ids)
     if not include_private:
         source_metadata_args = source_metadata_args + (REDISTRIBUTION_ALLOWED,)
     sources = [
@@ -224,7 +235,7 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
             f"""
             SELECT source_id, provider, country, redistribution_status, airac_cycle
             FROM source_metadata
-            WHERE country IN ({placeholders})
+            WHERE source_id IN ({source_placeholders})
               {source_metadata_filter}
             ORDER BY source_id
             """,
@@ -234,13 +245,17 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
     return {
         "schemaVersion": 1,
         "region": region,
-        "generatedAt": datetime.now(UTC).isoformat(),
+        "generatedAt": _generated_at(),
         "sources": sources,
         "airports": airports,
         "points": points,
         "airways": airways,
         "segments": segments,
     }
+
+
+def _generated_at() -> str:
+    return os.environ.get("AVIATIONDB_GENERATED_AT") or datetime.now(UTC).isoformat()
 
 
 def _json_entry(path: str, local_path: Path, *, public: bool) -> dict[str, Any]:

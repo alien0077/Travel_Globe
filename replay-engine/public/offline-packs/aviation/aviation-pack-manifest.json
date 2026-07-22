@@ -1,7 +1,8 @@
 {
   "id": "aviation-airgraph",
   "version": "0.1.0",
-  "generatedAt": "2026-07-16T16:51:42.636655+00:00",
+  "generatedAt": "1970-01-01T00:00:00+00:00",
+  "licenseMode": "public",
   "regions": [
     {
       "id": "asia-east",
@@ -11,6 +12,7 @@
         "KR",
         "TW"
       ],
+      "airports": 3,
       "points": 5,
       "segments": 4,
       "airways": 1
@@ -29,8 +31,8 @@
     "airgraph": [
       {
         "path": "shared/offline-packs/aviation/regions/asia-east.airgraph.json.gz",
-        "bytes": 460,
-        "sha256": "26016ed7c6b1b52659e69fcd6960aca142ac7c54087da3172fb9eefd9d189d2d",
+        "bytes": 451,
+        "sha256": "854bdd1ffaef7f89aa4be7fb54b8256d56e14e4e11ccd05d9cb70c3de6daa905",
         "contentType": "application/json+gzip",
         "public": true
       }
@@ -38,8 +40,8 @@
     "reports": [
       {
         "path": "shared/offline-packs/aviation/coverage_report.json",
-        "bytes": 2041,
-        "sha256": "4e65785a3fe10fa5a76a24d60762ae3ec52f5c26e99515dfdaf463872743ff38",
+        "bytes": 2392,
+        "sha256": "9fe3d0bcc9eda2ae2b8e7e33fe88636d433bd84bb9fb9f15bd41d6109a297f3c",
         "contentType": "application/json",
         "public": true
       },
