@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from aviationdb.download import extract_faa_cifp_products, extract_swim_aip_services
 from aviationdb.parsers.chile import parse_chile_pdf_documents
 from aviationdb.parsers.denmark import parse_denmark_text_documents
@@ -405,9 +407,15 @@ def test_parse_romania_pdf_text_points_navaids_and_route_segments() -> None:
 
 def test_parse_chile_pdf_blocks_points_and_route_segments() -> None:
     raw_dir = Path(__file__).resolve().parent.parent / "data" / "raw" / "chile" / "current"
+    required_pdfs = [
+        raw_dir / "bENR 3 CONVENCIONAL B.pdf",
+        raw_dir / "zENR 3 RNAV Q.pdf",
+    ]
+    if not all(path.exists() for path in required_pdfs):
+        pytest.skip("Chile raw AIP PDFs are not redistributed with the public repository.")
     documents = {
-        "bENR 3 CONVENCIONAL B": (raw_dir / "bENR 3 CONVENCIONAL B.pdf").read_bytes(),
-        "zENR 3 RNAV Q": (raw_dir / "zENR 3 RNAV Q.pdf").read_bytes(),
+        "bENR 3 CONVENCIONAL B": required_pdfs[0].read_bytes(),
+        "zENR 3 RNAV Q": required_pdfs[1].read_bytes(),
     }
 
     dataset = parse_chile_pdf_documents(documents, "chile")
