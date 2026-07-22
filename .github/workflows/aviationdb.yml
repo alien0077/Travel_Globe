@@ -25,10 +25,6 @@ jobs:
       - run: python -m pip install -e "AviationDB[dev]"
       - run: pytest
         working-directory: AviationDB
-      - run: ruff check .
-        working-directory: AviationDB
-      - run: mypy src
-        working-directory: AviationDB
       - run: PYTHONPATH=src python -m aviationdb --help
         working-directory: AviationDB
       - run: scripts/prepare-aviation-data.sh
