@@ -1,6 +1,6 @@
 # Offline Data
 
-The current offline data layer uses NASA Blue Marble imagery, bundled Earth lights/cloud/specular textures, Natural Earth 50m coastline/country boundary geometry, Natural Earth 10m populated places and geography region points, GeoNames cities15000 global city data, OurAirports airport/frequency/navaid indexes, OpenFlights historical route graph context, small fixture landmarks, and deterministic source manifests.
+The current offline data layer uses NASA Blue Marble imagery, bundled Earth lights/cloud/specular textures, Natural Earth 50m coastline/country boundary geometry, Natural Earth 10m populated places and geography region points, GeoNames cities15000 global city data, OurAirports airport/frequency/navaid indexes, FlightGear GPL v2-or-later global airway graph data, OpenFlights historical route graph context for equipment fallback, small fixture landmarks, and deterministic source manifests.
 
 Run:
 
@@ -8,9 +8,10 @@ Run:
 scripts/download-geo-data.sh
 npm --prefix replay-engine run prepare:geo
 npm --prefix replay-engine run prepare:airports
+npm --prefix replay-engine run prepare:aviation
 ```
 
-The download script writes source archives, CSVs, route data, and texture source copies to `shared/source-data/`. The geo prepare script writes `shared/offline-packs/core-global/manifest.json`, `shared/offline-packs/core-global/geo-boundaries.json`, `shared/offline-packs/core-global/populated-places.json`, `shared/offline-packs/core-global/geography-regions.json`, `shared/offline-packs/core-global/global-places.json`, and `shared/offline-packs/core-global/geo-spatial-index.json`. The airport prepare script transforms OurAirports CSVs and OpenFlights routes into `shared/offline-packs/core-global/airports-index.json`, `shared/offline-packs/core-global/aviation-context-index.json`, and `shared/offline-packs/core-global/ourairports-manifest.json` for offline flight preload, airport lookup, aviation context, and historical route graph summaries.
+The download script writes source archives, CSVs, route data, and texture source copies to `shared/source-data/`. The geo prepare script writes `shared/offline-packs/core-global/manifest.json`, `shared/offline-packs/core-global/geo-boundaries.json`, `shared/offline-packs/core-global/populated-places.json`, `shared/offline-packs/core-global/geography-regions.json`, `shared/offline-packs/core-global/global-places.json`, and `shared/offline-packs/core-global/geo-spatial-index.json`. The airport prepare script transforms OurAirports CSVs and OpenFlights routes into `shared/offline-packs/core-global/airports-index.json`, `shared/offline-packs/core-global/aviation-context-index.json`, and `shared/offline-packs/core-global/ourairports-manifest.json` for offline flight preload, airport lookup, aviation context, and historical route graph summaries. The aviation prepare script publishes only the FlightGear-derived `global.airgraph` pack plus GPL v2 notices under `shared/offline-packs/aviation` and `replay-engine/public/offline-packs/aviation`.
 
 ## Offline Refresh Cadence
 
@@ -31,6 +32,10 @@ Keep the GeoNames attribution when global places are surfaced:
 Keep the OpenFlights route graph attribution when airport route context is surfaced:
 
 `Historical route graph derived from OpenFlights routes.dat; not live schedule or navigation data.`
+
+Keep the FlightGear attribution and GPL v2 notice when airway graph routing is surfaced:
+
+`FlightGear navdata is distributed under GNU GPL v2. See FLIGHTGEAR_LICENSE.txt and licenses/GPL-2.0.txt.`
 
 
 Future data sources must be evaluated for:

@@ -29,8 +29,10 @@ FlightGear navdata 是 **GPL v2** 授權，允許：
 - ✅ 修改
 - ✅ 再散布（需保留版權聲明）
 - ✅ 包含在 GitHub 公開儲存庫中
-- ✅ 包含在 App Store 應用程式中
+- ✅ 包含在個人 sideload / 本機部署的 iOS app bundle 中（需保留 GPL v2 聲明）
 - ✅ 商業使用（需遵守 GPL 條款）
+
+注意：App Store 發布可能與 GPL v2 的再散布條款產生額外相容性問題；本專案目前不以上架 App Store 為目標。
 
 ## 資料週期
 

@@ -352,14 +352,14 @@
 
           <section id="offline">
             <h2>離線使用</h2>
-            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、GeoNames 全球城市、OurAirports 機場/頻率/導航台索引、航線、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
-            <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key 查詢航班；成功後會寫入本機航班快取。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 planned route、事件、ETA 和旅遊紀錄。航線線段仍使用 Great Circle estimate；OpenFlights <code>routes.dat</code> 只在 aviationstack 或使用者沒有提供機型時，用相同起降機場的 equipment code 補機型。</p>
+            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、GeoNames 全球城市、OurAirports 機場/頻率/導航台索引、FlightGear 全球航路圖、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
+            <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key 查詢航班；成功後會寫入本機航班快取。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 planned route、事件、ETA 和旅遊紀錄。航線會優先使用 FlightGear GPL v2 全球 airway graph 連接起降機場附近航路點；找不到可連接路徑時才退回 Great Circle estimate。OpenFlights <code>routes.dat</code> 只在 aviationstack 或使用者沒有提供機型時，用相同起降機場的 equipment code 補機型。</p>
           </section>
 
           <section id="updates">
             <h2>離線資料自動更新</h2>
             <p>Web 版的離線資料跟著 GitHub Pages 部署更新。iOS app 也會在啟動或回到前景時檢查 <code>https://alien0077.github.io/Travel_Globe/</code> 上的 Replay Engine 與 <code>offline-packs/core-global</code> manifest；若遠端資料比本機新，會在有網路時下載到 app sandbox，驗證 SHA256 後切換成新版。</p>
-            <p>iOS 下載內容包含 <code>index.html</code>、<code>index.js</code>、<code>index.css</code>、<code>readme.html</code>，以及 Core Global Atlas 的 geo/airport/aviation context JSON。下載失敗或校驗失敗時會保留 app bundle 內建版本，不會破壞原本可離線使用的 Replay Engine。</p>
+            <p>iOS 下載內容包含 <code>index.html</code>、<code>index.js</code>、<code>index.css</code>、<code>readme.html</code>，以及 Core Global Atlas 的 geo/airport/aviation context JSON、FlightGear 全球航路圖與 GPL v2 授權聲明。下載失敗或校驗失敗時會保留 app bundle 內建版本，不會破壞原本可離線使用的 Replay Engine。</p>
             <p>若想立刻檢查，可在 iOS 主畫面 Replay 卡片按 <code>更新離線資料</code>。更新完成後重新打開 Replay Engine，即會優先使用下載版；沒有網路時仍使用上次成功下載版或 app 內建版。</p>
           </section>
 
@@ -398,6 +398,7 @@
               <li>Made with Natural Earth. Natural Earth 提供 50m 國界/海岸線、10m populated places 與 geography region points。</li>
               <li>Contains GeoNames data available under CC BY 4.0. GeoNames cities15000 提供全球城市/地名候選，並由 Travel Globe 轉成離線 global places 與 spatial grid index。</li>
               <li>NASA Visible Earth / Blue Marble 與 Earth lights/cloud/specular texture 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
+              <li>FlightGear navdata 提供全球航路圖與航路點，依 GNU GPL v2 散布；完整聲明位於 <code>offline-packs/aviation/FLIGHTGEAR_LICENSE.txt</code> 與 <code>offline-packs/aviation/licenses/GPL-2.0.txt</code>。</li>
               <li>OpenFlights <code>routes.dat</code> 提供歷史 airline route graph 與 equipment code；Replay Engine 只用它補缺失的機型代碼與 Travel Atlas route context，不使用它覆蓋 aviationstack 的起降、時間、航空公司或航線。routes.dat 不包含 waypoint 或實際 filed route geometry，因此畫面線段仍以起訖機場插值呈現，真實飛行位置以 iOS GPS 為準。</li>
               <li>飛機模型庫只接受 CC0 或 CC BY、可商業使用、可修改、非 Editorial 的 GLB/glTF 模型；若模型來自 Sketchfab，App 會保留作者、授權、模型連結與 Sketchfab 來源標示，並可套用 Travel Globe 中性塗裝。</li>
               <li>Bundled aircraft model attribution: A320 Airbus A320-200 V2 by Dlourine; A321 Airbus +A321Neo Wizzair by CloudHubOmniTeam; A350 Airbus A350 by jhag; A380 Airbus A380 - 800 by Nobilis 2; B737 Indonesian Government Boeing 737-800 by Muhamad Mirza Arrafi; B767 boeing 767(american) by 1883; B777 Boeing 777-300ER Model by hakai315; B787 Boeing 787-9 by Nobilis 2. All are listed as Creative Commons Attribution via Sketchfab in the bundled <code>license.json</code> files.</li>

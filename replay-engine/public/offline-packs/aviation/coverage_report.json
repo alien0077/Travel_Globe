@@ -1,95 +1,26 @@
 {
-  "generated_at": "1970-01-01T00:00:00+00:00",
-  "countries": {
-    "JP": {
-      "waypoints": 6,
-      "airports": 4,
-      "airways": 0,
-      "segments": 0
-    },
-    "TW": {
-      "waypoints": 4,
-      "airports": 2,
-      "airways": 2,
-      "segments": 8
-    },
-    "US": {
-      "waypoints": 4,
-      "airports": 2,
-      "airways": 1,
-      "segments": 3
+  "generated_at": "2026-07-22T07:21:56.968425+00:00",
+  "sourceMode": "flightgear-gpl-2.0",
+  "license": {
+    "spdx": "GPL-2.0-or-later",
+    "name": "GNU General Public License version 2",
+    "noticePath": "shared/offline-packs/aviation/FLIGHTGEAR_LICENSE.txt",
+    "licenseTextPath": "shared/offline-packs/aviation/licenses/GPL-2.0.txt",
+    "source": "FlightGear fgdata navdata",
+    "sourceUrl": "https://sourceforge.net/p/flightgear/fgdata/ci/release/2024.1/tree/"
+  },
+  "regions": {
+    "global": {
+      "countries": [
+        "GLOBAL"
+      ],
+      "airports": 0,
+      "points": 26742,
+      "airways": 8541,
+      "segments": 57217
     }
   },
-  "known_points": {
-    "ELATO": {
-      "found": true,
-      "matches": [
-        {
-          "uid": "pt-198ea991e552d79d",
-          "latitude": 29.333333333333332,
-          "longitude": 128.5,
-          "source_id": "fixture"
-        },
-        {
-          "uid": "pt-55d956301d3fcc72",
-          "latitude": 29.333333333333332,
-          "longitude": 128.5,
-          "source_id": "taiwan"
-        }
-      ]
-    },
-    "MAKOT": {
-      "found": true,
-      "matches": [
-        {
-          "uid": "pt-a7afaad943fd424c",
-          "latitude": 26.75,
-          "longitude": 124.0,
-          "source_id": "fixture"
-        },
-        {
-          "uid": "pt-f9ffa1551e3cf65a",
-          "latitude": 26.75,
-          "longitude": 124.0,
-          "source_id": "taiwan"
-        }
-      ]
-    },
-    "KAPLI": {
-      "found": true,
-      "matches": [
-        {
-          "uid": "pt-6e23650f00df90bf",
-          "latitude": 32.5,
-          "longitude": 134.0,
-          "source_id": "fixture"
-        },
-        {
-          "uid": "pt-19e11a17d3cc9efc",
-          "latitude": 32.5,
-          "longitude": 134.0,
-          "source_id": "taiwan"
-        }
-      ]
-    },
-    "TONGA": {
-      "found": true,
-      "matches": [
-        {
-          "uid": "pt-d6c7184754a7e0f4",
-          "latitude": 25.5,
-          "longitude": 122.0,
-          "source_id": "fixture"
-        },
-        {
-          "uid": "pt-55efe1c2b3a3f222",
-          "latitude": 25.5,
-          "longitude": 122.0,
-          "source_id": "taiwan"
-        }
-      ]
-    }
-  },
+  "known_points": {},
   "validation": {
     "errors": 0,
     "warnings": 0

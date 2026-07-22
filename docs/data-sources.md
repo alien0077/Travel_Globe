@@ -8,6 +8,7 @@ Travel Globe should support every useful geographic layer, but production packs 
 - NASA Blue Marble / NASA Earth imagery and Three.js example Earth textures: globe, night-lights, cloud, and specular texture candidates. NASA media generally may be used for factual, educational, and informational purposes, but the app must not imply NASA endorsement and must avoid NASA marks as branding.
 - OurAirports: airports, runways, frequencies, navaids, countries, and regions. Public domain; credit is not required, but Travel Globe should still show `Airport and runway data provided by OurAirports.` in About / Data Sources.
 - GeoNames cities15000: global city/place labels for offline route-nearby lookup. GeoNames data is available under CC BY 4.0 and requires attribution such as `Contains GeoNames data available under CC BY 4.0.`
+- FlightGear navdata: global airway graph and enroute waypoint geometry. Distributed under GNU GPL v2 or later; public packs must include `FLIGHTGEAR_LICENSE.txt`, `licenses/GPL-2.0.txt`, source URL, no-warranty notice, and source/transform metadata.
 - OpenFlights routes.dat: historical airline route graph for airport context and aircraft/equipment-code fallback. ODbL/DbCL attribution and share-alike obligations apply, so it must be labeled as historical route graph data and never presented as live schedules, filed routes, waypoint geometry, or navigation data.
 
 ## Optional / Isolated Pack
@@ -26,6 +27,9 @@ Travel Globe should support every useful geographic layer, but production packs 
 - GeoNames export: https://download.geonames.org/export/dump/
 - GeoNames license/credits: https://www.geonames.org/
 - OpenFlights data: https://openflights.org/data.php
+- FlightGear project policy: https://www.flightgear.org/about/policy/
+- FlightGear license: https://www.flightgear.org/about/license/
+- GNU GPL v2 text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 - NOAA AviationWeather Data API: https://aviationweather.gov/data/api/
 - Open-Meteo forecast API: https://open-meteo.com/en/docs
 - NASA GIBS API docs: https://nasa-gibs.github.io/gibs-api-docs/
@@ -35,6 +39,7 @@ Travel Globe should support every useful geographic layer, but production packs 
 ## Pack Policy
 
 - Each pack must include `source`, `license`, `attribution`, `downloadedAt`, and `sourceUrl` metadata.
+- FlightGear-derived aviation packs are deployable to the public repo and GitHub Pages only when the generated pack includes GPL v2 notice files and source metadata.
 - Each transformed dataset must keep raw source data separate from processed app indexes.
 - OSM-derived data must never be silently mixed into non-ODbL datasets.
 - Production builds must include an attribution surface for every installed pack.
@@ -47,6 +52,7 @@ The current repository includes a downloaded source baseline under `shared/sourc
 - OurAirports airports, runways, frequencies, navaids, countries, and regions CSV files
 - GeoNames `cities15000.zip`
 - OpenFlights `routes.dat`
+- FlightGear-derived `global.airgraph` app pack and GPL v2 notice files
 - NASA Visible Earth Blue Marble `land_ocean_ice_2048.jpg`
 - Bundled Earth lights, clouds, and specular textures from the Three.js example texture set
 
@@ -59,6 +65,6 @@ OSM is intentionally not downloaded into the baseline yet. It remains an optiona
 ## Flight And Weather Boundary
 
 - Do not scrape airline, OTA, FlightRadar24, FlightAware, or airport web pages into committed fallback data unless their terms explicitly allow redistribution and product use.
-- aviationstack remains the user-key live lookup path for flight-number origin/destination, airline, timing, and aircraft data. When OpenFlights has a matching origin-destination pair, Replay Engine may use its equipment code only if no aircraft type was provided by aviationstack, cache, or the user. It does not override origin/destination/time/airline, and the planned route remains Great Circle endpoint interpolation until a filed-route provider is added.
+- aviationstack remains the user-key live lookup path for flight-number origin/destination, airline, timing, and aircraft data. Replay Engine uses the FlightGear global airway graph for planned route geometry when the origin and destination can connect to the graph, then falls back to Great Circle endpoint interpolation when no graph path is available. When OpenFlights has a matching origin-destination pair, Replay Engine may use its equipment code only if no aircraft type was provided by aviationstack, cache, or the user. It does not override origin/destination/time/airline or provide waypoint geometry.
 - NOAA AviationWeather METAR/TAF and Open-Meteo are the preferred free weather candidates. NASA GIBS is better for visual satellite layers than structured per-airport weather.
 - Current runtime cloud variation is simulated from replay position/time; it must be labeled as simulated until a live weather provider is wired.

@@ -46,6 +46,7 @@ The production build uses relative asset paths so `replay-engine/dist` can be se
 
 - Airports: the preload airport picker uses the generated OurAirports scheduled-service index with IATA codes only. It is intended for commercial-flight airports, not every heliport, closed airport, or private strip.
 - Aviation context: the core offline pack includes OurAirports frequencies and navaids for airport context and product stats.
+- Airway graph: public Web/iOS builds use the FlightGear global airgraph pack under GNU GPL v2 or later, with the notice in `FLIGHTGEAR_LICENSE.txt` and full license text in `LICENSES/GPL-2.0.txt`.
 - Places and labels: route labels/HUD nearby guidance use curated East Asia/Southeast Asia landmarks plus Natural Earth 10m populated places and 10m geography region points. Route filtering and label ranking keep high-value natural/tourism features ahead of generic nearby city names.
 - Globe geography: Natural Earth 50m coastlines and country borders render on the globe.
 - Route filtering: globe labels and HUD nearby places are filtered to landmarks/cities near the active route so an Alaska/Europe route does not pull unrelated East Asia labels.

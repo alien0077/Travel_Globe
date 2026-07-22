@@ -1,7 +1,8 @@
-GNU General Public License v2 — FlightGear Navdata
+GNU General Public License v2 - FlightGear Navdata Notice
 
 The airway and navigation data distributed with this project
-(in shared/offline-packs/aviation/regions/global.airgraph.json)
+(in shared/offline-packs/aviation/regions/global.airgraph.json and
+shared/offline-packs/aviation/regions/global.airgraph.json.gz)
 is derived from FlightGear navdata, which is made available under
 the terms of the GNU General Public License version 2.
 
@@ -35,14 +36,11 @@ underlying data remains GPL v2.
 Other flight navigation data in this project comes from OurAirports
 (Public Domain / CC0).
 
-Full GPL v2 License Text
--------------------------
-                    GNU GENERAL PUBLIC LICENSE
-                       Version 2, June 1991
+Included License Text
+---------------------
+The complete GNU GPL v2 text is distributed with this repository and
+the deployed Replay Engine bundle at:
 
- Copyright (C) 1989, 1991 Free Software Foundation, Inc.,
- 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
-
-... (see https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt)
+  shared/offline-packs/aviation/licenses/GPL-2.0.txt
+  replay-engine/public/offline-packs/aviation/licenses/GPL-2.0.txt
+  LICENSES/GPL-2.0.txt

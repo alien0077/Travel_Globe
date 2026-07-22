@@ -5,5 +5,4 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PYTHON_BIN="${PYTHON_BIN:-python3.12}"
-cd "$ROOT_DIR/AviationDB"
-PYTHONPATH=src "$PYTHON_BIN" -m aviationdb build-all
+"$PYTHON_BIN" "$ROOT_DIR/scripts/prepare-flightgear-aviation-pack.py"

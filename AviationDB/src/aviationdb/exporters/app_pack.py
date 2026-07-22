@@ -14,6 +14,7 @@ from aviationdb.repository import AviationRepository
 from aviationdb.validation import coverage_report
 
 REGION_COUNTRIES = {
+    "global": {"XX"},
     "asia-east": {"TW", "JP", "KR", "HK"},
     "north-america": {"US", "CA"},
     "central-america": {"BZ", "CR", "CS", "GT", "HN", "NI", "PA", "SV"},

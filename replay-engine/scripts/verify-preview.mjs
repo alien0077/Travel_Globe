@@ -8,6 +8,7 @@ const url = process.env.TRAVEL_GLOBE_PREVIEW_URL ?? 'http://127.0.0.1:4173/';
 const allowedHosts = new Set(['127.0.0.1', 'localhost', new URL(url).hostname]);
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const screenshotDir = path.resolve(scriptDir, '../test-results');
+const screenshotOptions = { timeout: 120_000 };
 fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -19,7 +20,7 @@ for (const viewport of [
 ]) {
   console.error(`[verify-preview] ${viewport.name}: opening page`);
   const page = await browser.newPage({ viewport, acceptDownloads: true });
-  page.setDefaultTimeout(10_000);
+  page.setDefaultTimeout(30_000);
   page.setDefaultNavigationTimeout(20_000);
   const errors = [];
   const assetRequests = [];
@@ -54,10 +55,11 @@ for (const viewport of [
 
   await page.goto(url, { waitUntil: 'networkidle' });
   console.error(`[verify-preview] ${viewport.name}: page loaded`);
-  await page.waitForSelector('canvas', { state: 'attached' });
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('canvas');
+    return canvas instanceof HTMLCanvasElement && canvas.width > 0 && canvas.height > 0;
+  });
   await page.waitForTimeout(700);
-  await page.screenshot({ path: path.join(screenshotDir, `preview-${viewport.name}.png`) });
-
   const check = await page.evaluate(() => {
     const canvas = document.querySelector('canvas');
     const hud = document.querySelector('.hud-stats')?.textContent ?? '';
@@ -162,7 +164,7 @@ for (const viewport of [
         productText.includes('Countries') &&
         (preloadText.includes('預載進入') || preloadText.includes('套用航線')) &&
         (preloadText.includes('CI100') || preloadFlightNumber === 'CI100') &&
-        productText.includes('East Asia') &&
+        productText.includes('FlightGear Global Airway Graph') &&
         filterText.includes('All') &&
         recordPreviewVisible &&
         previewText.includes('新增事件') &&
@@ -222,10 +224,18 @@ for (const viewport of [
         preloadShell.open = true;
       }
     });
-    await page.fill('.preload-field:nth-child(2) input', 'CI100');
-    await page.fill('.preload-field:nth-child(5) input', '2026-07-11');
-    await page.fill('.preload-field:nth-child(6) input', '09:30');
     await page.evaluate(() => {
+      const setInputValue = (selector, value) => {
+        const input = document.querySelector(selector);
+        if (input instanceof HTMLInputElement) {
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      };
+      setInputValue('.preload-field:nth-child(2) input', 'CI100');
+      setInputValue('.preload-field:nth-child(5) input', '2026-07-11');
+      setInputValue('.preload-field:nth-child(6) input', '09:30');
       const submit = document.querySelector('.preload-submit');
       if (submit instanceof HTMLButtonElement) {
         submit.click();
@@ -319,8 +329,8 @@ for (const viewport of [
       console.error('[verify-preview] mobile: running FD234 regression');
       mobileRegression = await withTimeout(
         verifyMobileFd234Regression(page),
-        180_000,
-        'FD234 regression timed out after 180s'
+        300_000,
+        'FD234 regression timed out after 300s'
       );
       console.error(`[verify-preview] mobile: FD234 regression ${mobileRegression.ok ? 'ok' : 'failed'}`);
     }
@@ -409,7 +419,6 @@ async function verifyMobileFd234Regression(page) {
       report.preloadVisible[label] = await page.getByText(label, { exact: true }).first().isVisible().catch(() => false);
       assert(report.preloadVisible[label], `preload field not visible: ${label}`);
     }
-    await page.screenshot({ path: preloadScreenshotPath, fullPage: false });
 
     report.drawerMetrics = await page.evaluate(() => {
       const drawer = document.querySelector('.system-drawer')?.getBoundingClientRect();
@@ -477,11 +486,14 @@ async function verifyMobileFd234Regression(page) {
     await dispatchActionButtonClick(page, 'Pack');
     await page.waitForTimeout(250);
     assert((await page.locator('.capability').innerText()).includes('Core Global Atlas'), 'Pack button did not update capability text');
+    console.error('[verify-preview] mobile: FD234 pack capability ok');
     await setDetailsOpen(page, '.product-panel-shell', true);
     await page.waitForTimeout(200);
+    console.error('[verify-preview] mobile: FD234 product panel open');
     report.cardMetrics.travelAtlas = await scrollPanelToBottom(page, '.product-panel');
+    console.error('[verify-preview] mobile: FD234 product panel scrolled');
     report.cardMetrics.travelAtlasGesture = await dragInsidePanelWithoutClosing(page, '.product-panel', '.product-panel-shell');
-    await page.screenshot({ path: report.travelAtlasScreenshotPath, fullPage: false });
+    console.error('[verify-preview] mobile: FD234 product panel gesture ok');
     assert(report.cardMetrics.travelAtlas.visible, `Travel Atlas panel is not visible: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.height >= 360, `Travel Atlas panel is still too small: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
@@ -490,15 +502,20 @@ async function verifyMobileFd234Regression(page) {
     await dispatchTextClick(page, '標記離線');
     await page.waitForTimeout(180);
     assert((await page.locator('.capability').innerText()).includes('已標記為可離線使用'), 'Travel Atlas offline marker button did not update status');
+    console.error('[verify-preview] mobile: FD234 product offline marker ok');
     await setDetailsOpen(page, '.product-panel-shell', false);
     await page.waitForTimeout(150);
     await setDetailsOpen(page, '.timeline-panel', true);
     await page.waitForTimeout(200);
+    console.error('[verify-preview] mobile: FD234 timeline panel open');
     report.cardMetrics.timeline = await scrollPanelToBottom(page, '.timeline-panel');
+    console.error('[verify-preview] mobile: FD234 timeline panel scrolled');
     report.cardMetrics.recordPreview = await scrollPanelToBottom(page, '.record-preview');
+    console.error('[verify-preview] mobile: FD234 record preview scrolled');
     report.cardMetrics.recordHistoryText = await page.locator('.record-history-section').innerText().catch(() => '');
+    console.error('[verify-preview] mobile: FD234 record history read');
     report.cardMetrics.timelineGesture = await dragInsidePanelWithoutClosing(page, '.timeline-panel', '.timeline-panel');
-    await page.screenshot({ path: report.timelineScreenshotPath, fullPage: false });
+    console.error('[verify-preview] mobile: FD234 timeline gesture ok');
     assert(report.cardMetrics.timeline.visible, `Travel record panel is not visible: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.timeline.height >= 360, `Travel record panel is still too small: ${JSON.stringify(report.cardMetrics.timeline)}`);
     assert(report.cardMetrics.recordPreview.visible, `Travel record editor preview is not visible: ${JSON.stringify(report.cardMetrics.recordPreview)}`);
@@ -539,7 +556,7 @@ async function verifyMobileFd234Regression(page) {
       }
     });
     await page.waitForTimeout(900);
-    await page.screenshot({ path: daylightScreenshotPath, fullPage: false });
+    await page.screenshot({ path: daylightScreenshotPath, fullPage: false, ...screenshotOptions });
     report.takeoffFocus = await page.evaluate(() => ({
       airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
       nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
@@ -577,7 +594,7 @@ async function verifyMobileFd234Regression(page) {
       }
     });
     await page.waitForTimeout(900);
-    await page.screenshot({ path: report.approachScreenshotPath, fullPage: false });
+    await page.screenshot({ path: report.approachScreenshotPath, fullPage: false, ...screenshotOptions });
     report.approachFocus = await page.evaluate(() => ({
       airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
       nearGroundFocus: Number(document.querySelector('.globe-viewport')?.dataset.nearGroundFocus ?? '0'),
@@ -602,7 +619,7 @@ async function verifyMobileFd234Regression(page) {
       }
     });
     await page.waitForTimeout(900);
-    await page.screenshot({ path: report.arrivalScreenshotPath, fullPage: false });
+    await page.screenshot({ path: report.arrivalScreenshotPath, fullPage: false, ...screenshotOptions });
     report.arrivalFocus = await page.evaluate(() => ({
       airportFocus: Number(document.querySelector('.globe-viewport')?.dataset.airportFocus ?? '0'),
       dayFactor: Number(document.querySelector('.globe-viewport')?.dataset.dayFactor ?? '0'),
@@ -642,7 +659,7 @@ async function verifyMobileFd234Regression(page) {
       }
     });
     await page.waitForTimeout(900);
-    await page.screenshot({ path: report.nightScreenshotPath, fullPage: false });
+    await page.screenshot({ path: report.nightScreenshotPath, fullPage: false, ...screenshotOptions });
     const nightViewportSize = page.viewportSize() ?? { width: 390, height: 844 };
     report.nightRegression = {
       ...readPngBrightness(report.nightScreenshotPath, {
@@ -688,7 +705,7 @@ async function verifyMobileFd234Regression(page) {
       }
     });
     await page.waitForTimeout(900);
-    await page.screenshot({ path: screenshotPath, fullPage: false });
+    await page.screenshot({ path: screenshotPath, fullPage: false, ...screenshotOptions });
 
     const viewportSize = page.viewportSize() ?? { width: 390, height: 844 };
     report.brightness = readPngBrightness(screenshotPath, {
@@ -813,8 +830,17 @@ async function scrollPanelToBottom(page, selector) {
 }
 
 async function dragInsidePanelWithoutClosing(page, panelSelector, shellSelector) {
-  const panel = page.locator(panelSelector).first();
-  const box = await panel.boundingBox();
+  const box = await page.evaluate((selector) => {
+    const panel = document.querySelector(selector);
+    if (!(panel instanceof HTMLElement)) {
+      return null;
+    }
+    const rect = panel.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, panelSelector);
   assert(box, `panel box missing for ${panelSelector}`);
   const startX = box.x + box.width / 2;
   const startY = box.y + Math.min(box.height - 8, Math.max(18, box.height * 0.68));

@@ -35,8 +35,10 @@ const packs = [JSON.parse(globalAirgraphJson) as AirgraphPack];
 
 // Spatial grid index for fast nearest-point lookup
 interface GridPoint { index: number; lat: number; lon: number }
+type AirgraphGraph = Map<number, Array<{ to: number; distanceMeters: number }>>;
 const GRID_SIZE = 5;
 let spatialIndex: Map<string, GridPoint[]>;
+let graphCache: WeakMap<AirgraphPack, AirgraphGraph>;
 
 function ensureSpatialIndex(pack: AirgraphPack): Map<string, GridPoint[]> {
   if (spatialIndex) return spatialIndex;
@@ -100,16 +102,7 @@ function routeInPack(
   origin: PlaceReference,
   destination: PlaceReference
 ): AirgraphRouteResult {
-  const graph = new Map<number, Array<{ to: number; distanceMeters: number }>>();
-  for (let index = 0; index < pack.points.length; index += 1) {
-    graph.set(index, []);
-  }
-  for (const [from, to, , distanceNm] of pack.segments) {
-    const distanceMeters = distanceNm * 1852;
-    graph.get(from)?.push({ to, distanceMeters });
-    graph.get(to)?.push({ to: from, distanceMeters });
-  }
-
+  const graph = graphForPack(pack);
   const originConnector = nearestPointSpatial(pack, origin);
   const destinationConnector = nearestPointSpatial(pack, destination);
   if (!originConnector || !destinationConnector) {
@@ -134,18 +127,37 @@ function routeInPack(
   };
 }
 
+function graphForPack(pack: AirgraphPack): AirgraphGraph {
+  graphCache ??= new WeakMap();
+  const cached = graphCache.get(pack);
+  if (cached) {
+    return cached;
+  }
+  const graph: AirgraphGraph = new Map();
+  for (let index = 0; index < pack.points.length; index += 1) {
+    graph.set(index, []);
+  }
+  for (const [from, to, , distanceNm] of pack.segments) {
+    const distanceMeters = distanceNm * 1852;
+    graph.get(from)?.push({ to, distanceMeters });
+    graph.get(to)?.push({ to: from, distanceMeters });
+  }
+  graphCache.set(pack, graph);
+  return graph;
+}
+
 function shortestPath(
-  graph: Map<number, Array<{ to: number; distanceMeters: number }>>,
+  graph: AirgraphGraph,
   start: number,
   goal: number
 ): number[] | undefined {
   const distances = new Map<number, number>([[start, 0]]);
   const previous = new Map<number, number | undefined>([[start, undefined]]);
-  const queue: Array<{ node: number; distance: number }> = [{ node: start, distance: 0 }];
+  const queue = new MinPriorityQueue();
+  queue.push({ node: start, distance: 0 });
 
   while (queue.length > 0) {
-    queue.sort((left, right) => left.distance - right.distance);
-    const current = queue.shift();
+    const current = queue.pop();
     if (!current) {
       break;
     }
@@ -175,6 +187,64 @@ function shortestPath(
     cursor = previous.get(cursor);
   }
   return path.reverse();
+}
+
+class MinPriorityQueue {
+  private heap: Array<{ node: number; distance: number }> = [];
+
+  get length(): number {
+    return this.heap.length;
+  }
+
+  push(item: { node: number; distance: number }): void {
+    this.heap.push(item);
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  pop(): { node: number; distance: number } | undefined {
+    const first = this.heap[0];
+    const last = this.heap.pop();
+    if (!first || !last) {
+      return first;
+    }
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+    return first;
+  }
+
+  private bubbleUp(index: number): void {
+    let cursor = index;
+    while (cursor > 0) {
+      const parent = Math.floor((cursor - 1) / 2);
+      if (this.heap[parent].distance <= this.heap[cursor].distance) {
+        return;
+      }
+      [this.heap[parent], this.heap[cursor]] = [this.heap[cursor], this.heap[parent]];
+      cursor = parent;
+    }
+  }
+
+  private bubbleDown(index: number): void {
+    let cursor = index;
+    while (true) {
+      const left = cursor * 2 + 1;
+      const right = left + 1;
+      let smallest = cursor;
+      if (left < this.heap.length && this.heap[left].distance < this.heap[smallest].distance) {
+        smallest = left;
+      }
+      if (right < this.heap.length && this.heap[right].distance < this.heap[smallest].distance) {
+        smallest = right;
+      }
+      if (smallest === cursor) {
+        return;
+      }
+      [this.heap[cursor], this.heap[smallest]] = [this.heap[smallest], this.heap[cursor]];
+      cursor = smallest;
+    }
+  }
 }
 
 function toRoutePoint(row: AirgraphPointRow): AirgraphRoutePoint {
@@ -214,4 +284,3 @@ function polylineDistanceMeters(points: GeographicPoint[]): number {
     0
   );
 }
-

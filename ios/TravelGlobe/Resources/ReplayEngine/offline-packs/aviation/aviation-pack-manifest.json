@@ -1,54 +1,81 @@
 {
   "id": "aviation-airgraph",
-  "version": "0.1.0",
-  "generatedAt": "1970-01-01T00:00:00+00:00",
-  "licenseMode": "public",
+  "version": "0.2.0",
+  "generatedAt": "2026-07-22T07:21:56.968425+00:00",
+  "generatedFrom": "sha256:c58141daae01f2c580e697929daf2298227211509f4e3c3095f54b4b5fe78894",
+  "sourceMode": "flightgear-gpl-2.0",
+  "licenseMode": "gpl-2.0-or-later",
+  "license": {
+    "spdx": "GPL-2.0-or-later",
+    "name": "GNU General Public License version 2",
+    "noticePath": "shared/offline-packs/aviation/FLIGHTGEAR_LICENSE.txt",
+    "licenseTextPath": "shared/offline-packs/aviation/licenses/GPL-2.0.txt",
+    "source": "FlightGear fgdata navdata",
+    "sourceUrl": "https://sourceforge.net/p/flightgear/fgdata/ci/release/2024.1/tree/"
+  },
   "regions": [
     {
-      "id": "asia-east",
+      "id": "global",
       "countries": [
-        "HK",
-        "JP",
-        "KR",
-        "TW"
+        "GLOBAL"
       ],
-      "airports": 3,
-      "points": 5,
-      "segments": 4,
-      "airways": 1
+      "airports": 0,
+      "points": 26742,
+      "airways": 8541,
+      "segments": 57217
     }
   ],
   "sources": [
     {
-      "sourceId": "fixture",
-      "provider": "Travel Globe Fixture",
+      "sourceId": "flightgear",
+      "provider": "FlightGear navdata",
       "country": null,
       "redistributionStatus": "redistribution_allowed",
-      "airacCycle": null
+      "airacCycle": "2013.10",
+      "license": "GPL-2.0-or-later",
+      "licenseUrl": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
+      "sourceUrl": "https://sourceforge.net/p/flightgear/fgdata/ci/release/2024.1/tree/",
+      "noticePath": "shared/offline-packs/aviation/FLIGHTGEAR_LICENSE.txt"
     }
   ],
   "payloads": {
     "airgraph": [
       {
-        "path": "shared/offline-packs/aviation/regions/asia-east.airgraph.json.gz",
-        "bytes": 451,
-        "sha256": "b7c3096b1a044f1a997c7a36edce1720bdb8a6e5448d1ccf250ecf80b5b77458",
+        "path": "shared/offline-packs/aviation/regions/global.airgraph.json.gz",
+        "bytes": 942138,
+        "sha256": "f6bf426980fb34fba3f20dde4f5b8d99d94f92370d849835228a8dc3b62d9ede",
         "contentType": "application/json+gzip",
+        "public": true
+      }
+    ],
+    "notices": [
+      {
+        "path": "shared/offline-packs/aviation/FLIGHTGEAR_LICENSE.txt",
+        "bytes": 1771,
+        "sha256": "9dea2f17dd61c8c20669d2cdc969383f45c21fad4e8c492f4d7283d07105942b",
+        "contentType": "text/plain",
+        "public": true
+      },
+      {
+        "path": "shared/offline-packs/aviation/licenses/GPL-2.0.txt",
+        "bytes": 17984,
+        "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+        "contentType": "text/plain",
         "public": true
       }
     ],
     "reports": [
       {
         "path": "shared/offline-packs/aviation/coverage_report.json",
-        "bytes": 1977,
-        "sha256": "16071131501ab683516b7e3876bb33e39dd514aef8bf9b531ecbfd4ec9c7d565",
+        "bytes": 740,
+        "sha256": "dd1e822e758c422c6a8954646fedd294ef650b7b8616985c9af90da1e4988a6f",
         "contentType": "application/json",
         "public": true
       },
       {
         "path": "shared/offline-packs/aviation/validation_report.json",
-        "bytes": 19,
-        "sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc",
+        "bytes": 283,
+        "sha256": "a87d247c1b8c83ce96f847702d4ead4d6e0d7275f07d25733ee91a1b7775e83e",
         "contentType": "application/json",
         "public": true
       }

@@ -14,8 +14,7 @@ struct OfflinePackDownloadService {
     func availablePacks() -> [OfflinePackDescriptor] {
         [
             OfflinePackDescriptor(id: "core-global", name: "Core Global Atlas", sizeBytes: 44_700_000),
-            OfflinePackDescriptor(id: "east-asia-flight", name: "East Asia Flight Context", sizeBytes: 4_000_000),
-            OfflinePackDescriptor(id: "aviation-airgraph", name: "Aviation Airway Graph", sizeBytes: 1_000_000)
+            OfflinePackDescriptor(id: "aviation-airgraph", name: "FlightGear Global Airway Graph", sizeBytes: 1_000_000)
         ]
     }
 

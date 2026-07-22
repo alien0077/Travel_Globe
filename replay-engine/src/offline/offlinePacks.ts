@@ -1,3 +1,4 @@
+import aviationManifest from '../../../shared/offline-packs/aviation/aviation-pack-manifest.json';
 import geoManifest from '../../../shared/offline-packs/core-global/manifest.json';
 import ourAirportsManifest from '../../../shared/offline-packs/core-global/ourairports-manifest.json';
 
@@ -44,14 +45,20 @@ export const coreOfflinePacks: OfflinePack[] = [
     ]
   },
   {
-    id: 'east-asia-flight',
-    name: 'East Asia Flight Context',
-    version: ourAirportsManifest.version,
-    regionCodes: ['TW', 'JP'],
-    sizeBytes: Math.round(manifestSizeBytes(ourAirportsManifest) * 0.18),
-    checksum: checksumFromGeneratedSources([ourAirportsManifest.generatedFrom, 'TW-JP']),
-    dataLayers: ['TPE/NRT/HND airport context', 'nearby radio frequencies', 'associated navaids'],
-    attribution: ['Airport and runway data provided by OurAirports.']
+    id: aviationManifest.id,
+    name: 'FlightGear Global Airway Graph',
+    version: aviationManifest.version,
+    regionCodes: ['GLOBAL'],
+    sizeBytes: manifestSizeBytes(aviationManifest),
+    checksum: checksumFromGeneratedSources([
+      aviationManifest.generatedFrom,
+      aviationManifest.payloads.airgraph[0]?.sha256 ?? ''
+    ]),
+    dataLayers: ['FlightGear global ATS airway graph', 'global enroute waypoints', 'airway route lookup'],
+    attribution: [
+      'FlightGear navdata is distributed under GNU GPL v2 or later.',
+      'See offline-packs/aviation/FLIGHTGEAR_LICENSE.txt and offline-packs/aviation/licenses/GPL-2.0.txt.'
+    ]
   }
 ];
 
@@ -128,13 +135,26 @@ export function describeInstalledPacks(state: OfflinePackState): string {
 
 function manifestSizeBytes(manifest: {
   files?: Array<{ bytes: number }>;
-  sources?: Array<{ files: Array<{ bytes: number }> }>;
+  sources?: unknown[];
   payloads?: Record<string, Array<{ bytes: number }>>;
 }): number {
   const directFiles = manifest.files ?? [];
-  const sourceFiles = manifest.sources?.flatMap((source) => source.files) ?? [];
+  const sourceFiles = manifest.sources?.flatMap(filesFromManifestSource) ?? [];
   const payloadFiles = Object.values(manifest.payloads ?? {}).flat();
   return [...directFiles, ...sourceFiles, ...payloadFiles].reduce((total, file) => total + file.bytes, 0);
+}
+
+function filesFromManifestSource(source: unknown): Array<{ bytes: number }> {
+  if (!source || typeof source !== 'object' || !('files' in source)) {
+    return [];
+  }
+  const files = (source as { files?: unknown }).files;
+  if (!Array.isArray(files)) {
+    return [];
+  }
+  return files.filter((file): file is { bytes: number } => {
+    return Boolean(file) && typeof file === 'object' && typeof (file as { bytes?: unknown }).bytes === 'number';
+  });
 }
 
 function checksumFromGeneratedSources(parts: string[]): string {

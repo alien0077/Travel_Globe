@@ -81,7 +81,7 @@ describe('complete product mode services', () => {
   it('persists offline pack install and delete state locally', () => {
     const installed = installPack({ packs: [] }, coreOfflinePacks[1], '2026-07-10T00:00:00Z');
     saveOfflinePackState(installed);
-    expect(loadOfflinePackState().packs.map((pack) => pack.id)).toEqual(['east-asia-flight']);
+    expect(loadOfflinePackState().packs.map((pack) => pack.id)).toEqual(['aviation-airgraph']);
 
     saveOfflinePackState(deletePack(installed, coreOfflinePacks[1].id));
     expect(loadOfflinePackState().packs).toHaveLength(0);

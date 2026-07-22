@@ -1,3 +1,13 @@
 {
+  "generatedAt": "2026-07-22T07:21:56.968425+00:00",
+  "sourceMode": "flightgear-gpl-2.0",
+  "checks": {
+    "onlyFlightGearRows": true,
+    "globalRegion": true,
+    "noMixedAirportRows": true,
+    "points": 26742,
+    "airways": 8541,
+    "segments": 57217
+  },
   "issues": []
 }
