@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import io
 import json
 import os
 from datetime import UTC, datetime
@@ -66,7 +67,7 @@ def export_app_pack(
     json_path = region_dir / f"{region}.airgraph.json"
     gzip_path = region_dir / f"{region}.airgraph.json.gz"
     json_path.write_bytes(payload_bytes + b"\n")
-    gzip_path.write_bytes(gzip.compress(payload_bytes, mtime=0))
+    gzip_path.write_bytes(_gzip_bytes(payload_bytes))
 
     payload_sha = sha256(gzip_path.read_bytes()).hexdigest()
     coverage = coverage_report(repository)
@@ -256,6 +257,13 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
 
 def _generated_at() -> str:
     return os.environ.get("AVIATIONDB_GENERATED_AT") or datetime.now(UTC).isoformat()
+
+
+def _gzip_bytes(payload: bytes) -> bytes:
+    output = io.BytesIO()
+    with gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0) as handle:
+        handle.write(payload)
+    return output.getvalue()
 
 
 def _json_entry(path: str, local_path: Path, *, public: bool) -> dict[str, Any]:

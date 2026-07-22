@@ -32,7 +32,7 @@
       {
         "path": "shared/offline-packs/aviation/regions/asia-east.airgraph.json.gz",
         "bytes": 451,
-        "sha256": "854bdd1ffaef7f89aa4be7fb54b8256d56e14e4e11ccd05d9cb70c3de6daa905",
+        "sha256": "b7c3096b1a044f1a997c7a36edce1720bdb8a6e5448d1ccf250ecf80b5b77458",
         "contentType": "application/json+gzip",
         "public": true
       }
