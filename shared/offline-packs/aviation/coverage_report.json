@@ -1,41 +1,23 @@
 {
   "generated_at": "1970-01-01T00:00:00+00:00",
   "countries": {
-    "CA": {
-      "waypoints": 2869,
-      "airports": 257,
-      "airways": 212,
-      "segments": 1389
-    },
-    "EEU": {
-      "waypoints": 12,
-      "airports": 0,
-      "airways": 0,
-      "segments": 0
-    },
     "JP": {
-      "waypoints": 3,
-      "airports": 2,
+      "waypoints": 6,
+      "airports": 4,
       "airways": 0,
       "segments": 0
     },
     "TW": {
-      "waypoints": 193,
-      "airports": 1,
-      "airways": 46,
-      "segments": 244
-    },
-    "UNKNOWN": {
-      "waypoints": 1220,
-      "airports": 50,
-      "airways": 122,
-      "segments": 707
+      "waypoints": 4,
+      "airports": 2,
+      "airways": 2,
+      "segments": 8
     },
     "US": {
-      "waypoints": 30716,
-      "airports": 2276,
-      "airways": 1205,
-      "segments": 15460
+      "waypoints": 4,
+      "airports": 2,
+      "airways": 1,
+      "segments": 3
     }
   },
   "known_points": {
@@ -49,9 +31,9 @@
           "source_id": "fixture"
         },
         {
-          "uid": "pt-0e6f2db600886b71",
-          "latitude": 22.333333333333332,
-          "longitude": 117.5,
+          "uid": "pt-55d956301d3fcc72",
+          "latitude": 29.333333333333332,
+          "longitude": 128.5,
           "source_id": "taiwan"
         }
       ]
@@ -64,6 +46,12 @@
           "latitude": 26.75,
           "longitude": 124.0,
           "source_id": "fixture"
+        },
+        {
+          "uid": "pt-f9ffa1551e3cf65a",
+          "latitude": 26.75,
+          "longitude": 124.0,
+          "source_id": "taiwan"
         }
       ]
     },
@@ -77,9 +65,9 @@
           "source_id": "fixture"
         },
         {
-          "uid": "pt-0bf4496e3bd8fb87",
-          "latitude": 21.166666666666668,
-          "longitude": 117.5,
+          "uid": "pt-19e11a17d3cc9efc",
+          "latitude": 32.5,
+          "longitude": 134.0,
           "source_id": "taiwan"
         }
       ]
@@ -94,15 +82,9 @@
           "source_id": "fixture"
         },
         {
-          "uid": "pt-055a44a9a724eee6",
-          "latitude": 23.177500000000002,
-          "longitude": 119.5911111111111,
-          "source_id": "taiwan"
-        },
-        {
-          "uid": "pt-c95ec5d9fd86c901",
-          "latitude": 23.177500000000002,
-          "longitude": 119.5911111111111,
+          "uid": "pt-55efe1c2b3a3f222",
+          "latitude": 25.5,
+          "longitude": 122.0,
           "source_id": "taiwan"
         }
       ]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import os
 import zipfile
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -79,6 +80,13 @@ def build_all(repository: AviationRepository, reset: bool = True) -> dict[str, P
 
 def _parse_source(source_id: str, config: dict[str, object]) -> ParsedDataset:
     fixture_files = config.get("fixture_files")
+    if os.environ.get("AVIATIONDB_FORCE_FIXTURES") == "1" and isinstance(fixture_files, dict):
+        if source_id == "taiwan":
+            html = _read_fixture(str(fixture_files["taiwan_eaip"]))
+            return parse_taiwan_eaip_fixture(html, source_id)
+        if source_id == "faa":
+            text = _read_fixture(str(fixture_files["faa_cifp"]))
+            return parse_minimal_cifp_fixture(text, source_id)
     if source_id == "hongkong":
         official_documents = _read_existing_raw_files(config)
         if official_documents:

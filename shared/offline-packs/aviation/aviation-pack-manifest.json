@@ -40,8 +40,8 @@
     "reports": [
       {
         "path": "shared/offline-packs/aviation/coverage_report.json",
-        "bytes": 2392,
-        "sha256": "9fe3d0bcc9eda2ae2b8e7e33fe88636d433bd84bb9fb9f15bd41d6109a297f3c",
+        "bytes": 1977,
+        "sha256": "16071131501ab683516b7e3876bb33e39dd514aef8bf9b531ecbfd4ec9c7d565",
         "contentType": "application/json",
         "public": true
       },
