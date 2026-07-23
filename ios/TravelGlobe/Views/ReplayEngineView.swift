@@ -160,7 +160,11 @@ struct ReplayEngineView: UIViewRepresentable {
             do {
                 let source = try String(contentsOf: scriptURL, encoding: .utf8)
                 let assetBaseLiteral = ReplayEngineView.javascriptStringLiteral(ReplayEngineView.replayAssetBaseURL)
-                let bootstrappedSource = "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);\n" + source
+                let bootstrappedSource = """
+                window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);
+                \(source)
+                void 0;
+                """
                 Task { @MainActor in
                     appModel.updateReplayEngineStatus("injecting")
                 }
