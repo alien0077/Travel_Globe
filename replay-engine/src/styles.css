@@ -1050,6 +1050,7 @@ select.preload-input {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 7px;
   align-items: center;
+  touch-action: manipulation;
 }
 
 .airport-browser-search {
@@ -1062,6 +1063,10 @@ select.preload-input {
   font: inherit;
   font-size: 12px;
   padding: 0 9px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .airport-browser-search:focus {
@@ -1075,8 +1080,15 @@ select.preload-input {
   gap: 5px;
   align-items: center;
   color: #a7c7c8;
+  cursor: pointer;
   font-size: 10px;
+  min-height: 34px;
+  touch-action: manipulation;
   white-space: nowrap;
+}
+
+.airport-browser-toggle input {
+  pointer-events: auto;
 }
 
 .airport-detail-card {

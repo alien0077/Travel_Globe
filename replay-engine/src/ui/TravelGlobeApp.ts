@@ -317,7 +317,14 @@ export class TravelGlobeApp {
     bindDetailsSummaryToggle(productSummary, productShell, () => syncDrawerPanelState(productShell), renderSignal);
     bindDetailsSummaryToggle(preloadSummary, preloadShell, () => syncDrawerPanelState(preloadShell), renderSignal);
     timeline.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(timeline)), { signal: renderSignal });
-    productShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(productShell)), { signal: renderSignal });
+    productShell.addEventListener('toggle', () => {
+      requestAnimationFrame(() => {
+        if (productShell.open) {
+          this.renderProductPanel();
+        }
+        syncDrawerPanelState(productShell);
+      });
+    }, { signal: renderSignal });
     preloadShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(preloadShell)), { signal: renderSignal });
 
     const controls = document.createElement('section');
@@ -568,7 +575,14 @@ export class TravelGlobeApp {
         speedMetersPerSecond: point.speedMetersPerSecond ?? 0
       }
     );
-    this.renderProductPanel(sample.point);
+    if (!this.isProductPanelOpen()) {
+      this.renderProductPanel(sample.point);
+    }
+  }
+
+  private isProductPanelOpen(): boolean {
+    const shell = this.productPanel.closest('details');
+    return shell instanceof HTMLDetailsElement && shell.open;
   }
 
   private syncPlayButton(): void {
@@ -1548,6 +1562,12 @@ export class TravelGlobeApp {
     const resultList = document.createElement('div');
     resultList.className = 'airport-browser-results';
     const renderResults = (): void => {
+      const hasQuery = this.airportBrowserQuery.trim().length > 0;
+      resultList.hidden = !hasQuery;
+      if (!hasQuery) {
+        resultList.replaceChildren();
+        return;
+      }
       const results = searchAirports(this.airportBrowserQuery, {
         limit: 16,
         scheduledOnly: this.airportBrowserScheduledOnly
