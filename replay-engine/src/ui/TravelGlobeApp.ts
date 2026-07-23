@@ -294,7 +294,7 @@ export class TravelGlobeApp {
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
     preloadShell.className = 'dock-panel preload-panel-shell';
-    preloadShell.open = isCompactViewport;
+    preloadShell.open = false;
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載 / API key';
