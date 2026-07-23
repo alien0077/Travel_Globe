@@ -260,11 +260,11 @@
               </div>
               <div class="card">
                 <h3>2. 播放或暫停</h3>
-                <p>按 <code>Play</code> 或 <code>Pause</code> 控制飛行回放。時間軸可拖曳到任意進度。</p>
+                <p>按 <code>播放</code> 或 <code>暫停</code> 控制飛行回放。時間軸滑桿可拖曳到任意進度，速度選單可切換 <code>1x</code>、<code>5x</code>、<code>20x</code>、<code>100x</code>。</p>
               </div>
               <div class="card">
                 <h3>3. 切換視角</h3>
-                <p>預設是 <code>Global View</code>。你可以切到跟機、座艙、窗邊、尾追、俯視或 Orbit cinema。</p>
+                <p>右側直列按鈕可切換 <code>追</code>、<code>全</code>、<code>中</code>、<code>俯</code>、<code>塔</code>、<code>駕</code> 六種視角。</p>
               </div>
               <div class="card">
                 <h3>4. 匯出紀錄</h3>
@@ -290,7 +290,7 @@
               </tr>
               <tr>
                 <th>航班預載 / API key</th>
-                <td>手機版按右側「… / 更多」會直接展開此區。可輸入 aviationstack API key、航班號、起降機場、日期、時間與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
+                <td>手機版按右側「… / 更多」會直接展開此區。可輸入 aviationstack API key、航班號、起降機場、日期、時間、航程分鐘與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
               </tr>
               <tr>
                 <th>Travel Atlas</th>
@@ -305,38 +305,133 @@
 
           <section id="controls">
             <h2>操作控制</h2>
-            <ul>
-              <li><code>Play / Pause</code>：開始或暫停回放。</li>
-              <li><code>1x / 5x / 20x / 100x</code>：調整回放速度。</li>
-              <li><code>Camera</code>：切換視角。</li>
-              <li><code>Import</code>：匯入 <code>.json</code> 或 <code>.travelglobe</code> 旅程檔。</li>
-              <li><code>Export</code>：匯出完整 Travel Globe 回放包。</li>
-              <li><code>Share</code>：匯出隱私處理後的分享版 JSON。</li>
-              <li><code>Journal</code>：產生離線飛行日誌 Markdown。</li>
-              <li><code>Pack</code>：快速安裝 Core Global Atlas；完整離線包安裝/刪除可在 Travel Atlas 面板操作。</li>
-            </ul>
+            <table class="hud-table">
+              <tr>
+                <th><code>播放 / 暫停</code></th>
+                <td>開始或暫停目前 journey 的時間回放。進入 iOS Live GPS 後會顯示 <code>LIVE</code>，表示畫面由真實 GPS 推動，不再用模擬時間播放。</td>
+              </tr>
+              <tr>
+                <th><code>1x / 5x / 20x / 100x</code></th>
+                <td>回放速度選單；只影響 ReplayClock，不改動原始 GPS 點或匯出資料。</td>
+              </tr>
+              <tr>
+                <th>時間軸滑桿</th>
+                <td>拖曳到航程任意百分比；HUD、綠色已飛航跡、附近地標、Travel Atlas 統計都會跟著刷新。</td>
+              </tr>
+              <tr>
+                <th><code>追 / 全 / 中 / 俯 / 塔 / 駕</code></th>
+                <td>右側視角列。依序是追機視角、完整航線、中段飛行、俯視航線、塔台視角、駕駛艙前窗視角。進入 <code>駕</code> 後會收合成浮動單顆按鈕，再點一次可展開視角選單。</td>
+              </tr>
+              <tr>
+                <th><code>更多</code></th>
+                <td>打開或收合右側抽屜。手機版會把航班預載、Travel Atlas、旅遊紀錄與匯出按鈕收進這個抽屜。</td>
+              </tr>
+              <tr>
+                <th><code>Import</code></th>
+                <td>選擇並匯入 <code>.json</code>、<code>.travelglobe</code> 或 zip 旅程檔；成功後目前地球、timeline 與本機歷史旅程會改成匯入內容。</td>
+              </tr>
+              <tr>
+                <th><code>Export</code></th>
+                <td>匯出完整 Travel Globe package，保留 journey、事件、航線、媒體 metadata 與 app 需要的 replay 資料。</td>
+              </tr>
+              <tr>
+                <th><code>Share</code></th>
+                <td>匯出隱私處理後的分享版 JSON，會移除或簡化不適合公開的本機私有資訊。</td>
+              </tr>
+              <tr>
+                <th><code>使用手冊</code></th>
+                <td>打開本頁說明；iOS 離線 bundle 也會包含這個檔案。</td>
+              </tr>
+              <tr>
+                <th><code>GPX / KML</code></th>
+                <td>匯出給 GPS 工具或 Google Earth 使用的航跡格式；GPX 偏向軌跡分析，KML 會包含航線與事件點。</td>
+              </tr>
+              <tr>
+                <th><code>Journal</code></th>
+                <td>產生離線飛行日誌 Markdown，可作為旅程摘要或手動整理紀錄的起點。</td>
+              </tr>
+              <tr>
+                <th><code>Pack</code></th>
+                <td>快速把 Core Global Atlas 標記為離線可用；完整資料包狀態與刪除/標記可在 Travel Atlas 裡操作。</td>
+              </tr>
+            </table>
+
+            <h3>航班預載 / API key</h3>
+            <table class="hud-table">
+              <tr>
+                <th>aviationstack API key</th>
+                <td>可留空。輸入後保存在本機 localStorage；按 <code>套用航線</code> 時會先嘗試 aviationstack，成功後寫入本機航班快取。</td>
+              </tr>
+              <tr>
+                <th>航班號</th>
+                <td>輸入如 <code>CI100</code>、<code>FD234</code>。若離線 seed 或本機快取有資料，會自動帶入起飛、抵達、時間、航程分鐘與機型。</td>
+              </tr>
+              <tr>
+                <th>起飛 / 抵達</th>
+                <td>輸入 IATA、ICAO、城市或機場名稱。欄位下方會出現本機機場建議，可點選機場代碼帶入表單。</td>
+              </tr>
+              <tr>
+                <th>日期 / 時間</th>
+                <td>設定預載航線的起飛日期與本地起飛時間；會影響事件時間、ETA、日夜光照與回放時間軸。</td>
+              </tr>
+              <tr>
+                <th>航程分鐘</th>
+                <td>手動指定航程長度。留空時會使用 aviationstack、本機快取、離線 seed 或距離估算。</td>
+              </tr>
+              <tr>
+                <th>機型</th>
+                <td>可選自動、A320、A321、B737、B767、B777、B787、A350、A380。自動時會使用 aviationstack、快取、seed 或 OpenFlights equipment fallback。</td>
+              </tr>
+              <tr>
+                <th><code>套用航線</code></th>
+                <td>建立 planned journey，刷新地球航線、HUD、timeline、Travel Atlas，並在 iOS WebView 內把 flight plan 送回 native 作為後續 GPS recording 的目標。</td>
+              </tr>
+            </table>
           </section>
 
           <section id="atlas">
             <h2>Travel Atlas</h2>
-            <ul>
-              <li><strong>機場 detail</strong>：航線起點與終點會顯示機場名稱、城市、跑道數、常用頻率與附近導航台。這些資料來自本機 OurAirports aviation context index。</li>
-              <li><strong>離線資料包</strong>：<code>Core Global Atlas</code> 與 <code>East Asia Flight Context</code> 可在面板內安裝或刪除。狀態會保存在本機瀏覽器/iOS WebView localStorage，不會上傳。</li>
-              <li><strong>本機歷史旅程</strong>：已載入或建立過的 journey 會出現在本機歷史清單，可從 Travel Atlas 載入或刪除。刪除只移除本機儲存，不會影響已匯出的檔案。</li>
-              <li><strong>通知</strong>：Replay Engine 會把目前 notification rules 送到 iOS native local notification；瀏覽器模式只會顯示提醒狀態。</li>
-            </ul>
+            <table class="hud-table">
+              <tr>
+                <th>旅程統計</th>
+                <td>顯示 Trips、Countries、Years、Distance、Plan、Journal、Offline、Data、Flight context、Recording、Notice 等摘要。</td>
+              </tr>
+              <tr>
+                <th>機場 detail</th>
+                <td>航線起點與終點會顯示機場名稱、城市、跑道數、常用頻率與附近導航台。這些資料來自本機 OurAirports aviation context index。</td>
+              </tr>
+              <tr>
+                <th>機場資料庫搜尋框</th>
+                <td>可搜尋 IATA、ICAO、城市或國家。輸入後列表會即時刷新；點列表任一機場會把該代碼放回搜尋框並顯示 route graph / frequency / navaid 摘要。</td>
+              </tr>
+              <tr>
+                <th>只看定期航班</th>
+                <td>機場資料庫的 checkbox。勾選時只列 scheduled service 機場；取消勾選時會包含較小或非定期航班機場。</td>
+              </tr>
+              <tr>
+                <th><code>標記離線 / 移除標記</code></th>
+                <td>切換資料包的本機離線狀態。資料檔已隨目前 Replay build 或 iOS bundle 提供；這裡保存的是使用狀態，不會上傳。</td>
+              </tr>
+              <tr>
+                <th>本機歷史旅程 <code>載入 / 刪除</code></th>
+                <td><code>載入</code> 會切換目前地球到該 journey；<code>刪除</code> 只移除 localStorage 裡的本機歷史，不影響已匯出的檔案。</td>
+              </tr>
+              <tr>
+                <th>通知</th>
+                <td>Replay Engine 會把目前 notification rules 送到 iOS native local notification；瀏覽器模式只會顯示提醒狀態。</td>
+              </tr>
+            </table>
           </section>
 
           <section id="camera">
             <h2>視角模式</h2>
             <ul>
-              <li><code>Global View</code>：像機上娛樂系統的地球總覽，適合看完整航線。</li>
-              <li><code>Follow camera</code>：鏡頭跟著飛機移動，適合觀察實際航跡。</li>
-              <li><code>Orbit cinema</code>：鏡頭繞著飛機旋轉，適合影片式回放。</li>
-              <li><code>Cockpit view</code>：接近座艙視角，朝飛行方向看。</li>
-              <li><code>Left / Right window</code>：模擬窗邊視角，可看地球與航跡。</li>
-              <li><code>Tail chase</code>：從機尾後方追蹤飛機。</li>
-              <li><code>Top down</code>：從上方看航線，適合判斷偏航與航跡形狀。</li>
+              <li><code>追</code>：追機視角，鏡頭跟著目前位置與航向移動，適合觀察實際航跡。</li>
+              <li><code>全</code>：完整航線，拉遠看起飛、降落與整條 planned/actual route。</li>
+              <li><code>中</code>：中段飛行，快速切到巡航附近的構圖。</li>
+              <li><code>俯</code>：俯視航線，適合判斷偏航、航路點與機場接近狀態。</li>
+              <li><code>塔</code>：塔台視角，靠近機場起降段時會看見較強的地面焦點。</li>
+              <li><code>駕</code>：駕駛艙前窗視角，不顯示完整 3D 地球；畫面保留擋風玻璃框、上方遮光/ceiling、下方儀表台上緣、平直地平線、雲層與遠方地表。HUD 只顯示估算 IAS、ALT、pitch ladder、bank、HDG 與 VS；<code>HUD</code> 按鈕可關閉，關閉後仍能看出是駕駛艙。</li>
             </ul>
           </section>
 
@@ -389,6 +484,49 @@
               <li><strong>人工編輯</strong>：在「旅遊紀錄」面板可新增事件、修改目前紀錄、調整分類/時間、附加本機照片縮圖、復原上次編輯、隱藏紀錄，或編輯航線摘要。人工修改只寫入 edit overlay、media metadata 或 journey metadata，不會改掉原始 GPS 點。</li>
               <li><strong>資料對應</strong>：GPS record 是原始軌跡；Visit Point 是同一行程下的到此一遊點；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。刪除/隱藏旅遊事件不會刪除 SQLite 裡的真實 GPS。</li>
             </ol>
+            <h3>旅遊紀錄面板控制項</h3>
+            <table class="hud-table">
+              <tr>
+                <th>區域篩選按鈕</th>
+                <td><code>All</code> 與各區域按鈕會篩選 timeline 列表；切到特定區域時會自動選中該區域第一筆紀錄。</td>
+              </tr>
+              <tr>
+                <th>Timeline 紀錄列</th>
+                <td>點任一旅遊紀錄會把時間軸跳到該事件時間，並同步更新中央紀錄卡。</td>
+              </tr>
+              <tr>
+                <th><code>新增 / 新增事件</code></th>
+                <td>用目前地球顯示位置建立人工打卡事件；會詢問標題與備註。</td>
+              </tr>
+              <tr>
+                <th><code>修改 / 修改紀錄</code></th>
+                <td>修改目前紀錄標題與副標題，寫入 edit overlay，不改原始 GPS。</td>
+              </tr>
+              <tr>
+                <th><code>分類/時間</code></th>
+                <td>調整目前紀錄區域分類與 ISO 8601 時間；無效輸入會保留原值。</td>
+              </tr>
+              <tr>
+                <th><code>附加照片</code></th>
+                <td>選取本機照片並附加到目前紀錄。預設標記為本機私有，匯出分享版時會依隱私規則處理。</td>
+              </tr>
+              <tr>
+                <th><code>載入最新</code></th>
+                <td>iOS WebView 內要求 native 從 SQLite 載入最新 journey；瀏覽器模式會顯示沒有 iOS SQLite 的狀態訊息。</td>
+              </tr>
+              <tr>
+                <th><code>復原 / 復原上次</code></th>
+                <td>復原最近一次旅遊紀錄編輯。最多保留最近數筆編輯堆疊。</td>
+              </tr>
+              <tr>
+                <th><code>隱藏/刪除 / 隱藏紀錄</code></th>
+                <td>把目前旅遊事件標記為 hidden；原始 GPS、segment 與 SQLite 紀錄仍保留。</td>
+              </tr>
+              <tr>
+                <th><code>編輯航線 / 編輯航線摘要</code></th>
+                <td>修改航班號、機型、起飛 IATA、抵達 IATA 與 journey 標題摘要。</td>
+              </tr>
+            </table>
           </section>
 
           <section id="sources">
@@ -411,6 +549,7 @@
             <ul>
               <li><code>Start</code>：在 Recorder 卡片開始紀錄真實 GPS 航跡；這是真實飛行的錄製入口。</li>
               <li><code>Stop</code>：停止並保存旅程。</li>
+              <li><code>Record Into</code>：選擇這次 GPS recording 要寫入哪一筆已預載 flight plan；若沒有選到合適航線，會建立 GPS-only recording。</li>
               <li><code>Open Replay Engine</code>：打開內嵌 Web Replay Engine；用來預載航線、看 live 地球、看回放與匯出。</li>
               <li><code>GPS打卡</code>：用目前 iPhone GPS 在目前行程新增一筆 visit point。</li>
               <li><code>照片打卡</code>：從行程時間範圍內有 GPS 的 PhotoKit 照片匯入 visit points。</li>

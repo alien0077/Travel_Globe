@@ -13,7 +13,7 @@ import {
 } from '../bridge/nativeBridge';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import type { SavedJourneySummary } from '../bridge/RuntimeAdapter';
-import type { Journey, JourneySegment, TimelineEvent } from '../data/types';
+import type { Journey, JourneySegment, LocationPoint, TimelineEvent } from '../data/types';
 import { getPrimaryFlightSegment } from '../data/types';
 import { createGpx, createKml } from '../export/geoExport';
 import {
@@ -105,8 +105,13 @@ export class TravelGlobeApp {
   private scheduledNotificationIds = new Set<string>();
   private airportBrowserQuery = '';
   private airportBrowserScheduledOnly = true;
+  private shellEventController?: AbortController;
+  private isPilotHudEnabled = true;
+  private isPilotViewRailExpanded = false;
 
   private readonly viewport = document.createElement('section');
+  private readonly cockpitWindow = document.createElement('section');
+  private readonly pilotHudToggle = document.createElement('button');
   private readonly playButton = document.createElement('button');
   private readonly speedSelect = document.createElement('select');
   private readonly scrubber = document.createElement('input');
@@ -176,6 +181,9 @@ export class TravelGlobeApp {
   }
 
   private renderShell(journey: Journey, segment: JourneySegment): void {
+    this.shellEventController?.abort();
+    this.shellEventController = new AbortController();
+    const renderSignal = this.shellEventController.signal;
     const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
     this.root.className = isCompactViewport ? 'app-shell flight-system-shell is-compact' : 'app-shell flight-system-shell';
     this.viewport.className = 'globe-viewport';
@@ -193,6 +201,20 @@ export class TravelGlobeApp {
     this.belowMe.className = 'below-me';
     this.capability.className = 'capability';
     hud.append(this.hudTitle, this.hudRoute, this.hudPoint, this.geoNotice);
+
+    this.cockpitWindow.className = 'cockpit-window';
+    this.cockpitWindow.setAttribute('aria-hidden', 'true');
+    this.cockpitWindow.replaceChildren(
+      Object.assign(document.createElement('div'), { className: 'cockpit-sky' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-terrain' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-clouds' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-horizon-line' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-ceiling' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-left-post' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-center-post' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-right-post' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-glare-shield' })
+    );
 
     this.viewRail.className = 'view-rail';
     this.viewRail.setAttribute('aria-label', '飛行視角');
@@ -213,19 +235,31 @@ export class TravelGlobeApp {
         button.title = label;
         button.setAttribute('aria-label', label);
         button.textContent = icon;
+        let lastViewActivationMs = 0;
         const activateViewMode = (event?: Event): void => {
           event?.preventDefault();
           event?.stopPropagation();
+          const now = performance.now();
+          if (now - lastViewActivationMs < 220) {
+            return;
+          }
+          lastViewActivationMs = now;
+          if (this.cameraMode === 'pilotView' && mode === 'pilotView') {
+            this.isPilotViewRailExpanded = !this.isPilotViewRailExpanded;
+            this.syncViewRail();
+            return;
+          }
           this.cameraMode = mode;
+          this.isPilotViewRailExpanded = false;
           this.scene?.prepareForTimelineJump();
           this.syncViewRail();
         };
         button.addEventListener('pointerdown', (event) => {
           event.stopPropagation();
-        });
-        button.addEventListener('pointerup', activateViewMode);
-        button.addEventListener('touchend', activateViewMode, { passive: false });
-        button.addEventListener('click', activateViewMode);
+        }, { signal: renderSignal });
+        button.addEventListener('pointerup', activateViewMode, { signal: renderSignal });
+        button.addEventListener('touchend', activateViewMode, { passive: false, signal: renderSignal });
+        button.addEventListener('click', activateViewMode, { signal: renderSignal });
         return button;
       })
     );
@@ -234,6 +268,12 @@ export class TravelGlobeApp {
     dock.className = 'info-dock';
     this.pilotHud.className = 'pilot-hud';
     this.pilotHud.setAttribute('aria-hidden', 'true');
+    this.pilotHudToggle.type = 'button';
+    this.pilotHudToggle.className = 'pilot-hud-toggle';
+    this.pilotHudToggle.addEventListener('click', () => {
+      this.isPilotHudEnabled = !this.isPilotHudEnabled;
+      this.syncViewRail();
+    }, { signal: renderSignal });
 
     const timeline = document.createElement('details');
     timeline.className = 'dock-panel timeline-panel';
@@ -246,7 +286,7 @@ export class TravelGlobeApp {
     this.timelineList.className = 'timeline-list';
     this.recordPreview.className = 'record-preview';
     timeline.append(timelineTitle, this.recordFilterBar, this.recordPanelActions, this.timelineList, this.recordPreview);
-    keepDetailsOpenDuringContentGestures(this.recordFilterBar, this.recordPanelActions, this.timelineList, this.recordPreview);
+    keepDetailsOpenDuringContentGestures(renderSignal, this.recordFilterBar, this.recordPanelActions, this.timelineList, this.recordPreview);
 
     this.productPanel.className = 'product-panel';
     const productShell = document.createElement('details');
@@ -256,7 +296,7 @@ export class TravelGlobeApp {
     productSummary.className = 'panel-summary panel-title';
     productSummary.textContent = 'Travel Atlas';
     productShell.append(productSummary, this.productPanel);
-    keepDetailsOpenDuringContentGestures(this.productPanel);
+    keepDetailsOpenDuringContentGestures(renderSignal, this.productPanel);
 
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
@@ -280,12 +320,12 @@ export class TravelGlobeApp {
       dock.classList.toggle('has-open-product', productShell.open);
       dock.classList.toggle('has-open-timeline', timeline.open);
     };
-    bindDetailsSummaryToggle(timelineTitle, timeline, () => syncDrawerPanelState(timeline));
-    bindDetailsSummaryToggle(productSummary, productShell, () => syncDrawerPanelState(productShell));
-    bindDetailsSummaryToggle(preloadSummary, preloadShell, () => syncDrawerPanelState(preloadShell));
-    timeline.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(timeline)));
-    productShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(productShell)));
-    preloadShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(preloadShell)));
+    bindDetailsSummaryToggle(timelineTitle, timeline, () => syncDrawerPanelState(timeline), renderSignal);
+    bindDetailsSummaryToggle(productSummary, productShell, () => syncDrawerPanelState(productShell), renderSignal);
+    bindDetailsSummaryToggle(preloadSummary, preloadShell, () => syncDrawerPanelState(preloadShell), renderSignal);
+    timeline.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(timeline)), { signal: renderSignal });
+    productShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(productShell)), { signal: renderSignal });
+    preloadShell.addEventListener('toggle', () => requestAnimationFrame(() => syncDrawerPanelState(preloadShell)), { signal: renderSignal });
 
     const controls = document.createElement('section');
     controls.className = 'controls';
@@ -295,9 +335,10 @@ export class TravelGlobeApp {
     this.playButton.addEventListener('click', () => {
       this.clock?.togglePlayback();
       this.syncPlayButton();
-    });
+    }, { signal: renderSignal });
 
     this.speedSelect.className = 'control-select';
+    this.speedSelect.replaceChildren();
     for (const speed of [1, 5, 20, 100]) {
       const option = document.createElement('option');
       option.value = String(speed);
@@ -307,7 +348,7 @@ export class TravelGlobeApp {
     this.speedSelect.value = '5';
     this.speedSelect.addEventListener('change', () => {
       this.clock?.setSpeed(Number(this.speedSelect.value));
-    });
+    }, { signal: renderSignal });
 
     this.scrubber.className = 'timeline-scrubber';
     this.scrubber.type = 'range';
@@ -317,25 +358,25 @@ export class TravelGlobeApp {
     this.scrubber.addEventListener('input', () => {
       this.scene?.prepareForTimelineJump();
       this.clock?.seekPercent(Number(this.scrubber.value) / 1000);
-    });
+    }, { signal: renderSignal });
 
     const importButton = document.createElement('button');
     importButton.type = 'button';
     importButton.className = 'control-button secondary-action';
     importButton.textContent = 'Import';
-    bindTouchAction(importButton, () => this.fileInput.click());
+    bindTouchAction(importButton, () => this.fileInput.click(), renderSignal);
 
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.className = 'control-button secondary-action';
     exportButton.textContent = 'Export';
-    bindTouchAction(exportButton, () => this.exportTravelGlobe());
+    bindTouchAction(exportButton, () => this.exportTravelGlobe(), renderSignal);
 
     const shareButton = document.createElement('button');
     shareButton.type = 'button';
     shareButton.className = 'control-button secondary-action';
     shareButton.textContent = 'Share';
-    bindTouchAction(shareButton, () => this.exportShareSafeJson());
+    bindTouchAction(shareButton, () => this.exportShareSafeJson(), renderSignal);
 
     const manualLink = document.createElement('a');
     manualLink.className = 'control-button control-link secondary-action';
@@ -343,25 +384,25 @@ export class TravelGlobeApp {
     manualLink.textContent = '使用手冊';
     bindTouchAction(manualLink, () => {
       window.location.href = manualLink.href;
-    });
+    }, renderSignal);
 
     const gpxButton = document.createElement('button');
     gpxButton.type = 'button';
     gpxButton.className = 'control-button secondary-action';
     gpxButton.textContent = 'GPX';
-    bindTouchAction(gpxButton, () => this.exportGpx());
+    bindTouchAction(gpxButton, () => this.exportGpx(), renderSignal);
 
     const kmlButton = document.createElement('button');
     kmlButton.type = 'button';
     kmlButton.className = 'control-button secondary-action';
     kmlButton.textContent = 'KML';
-    bindTouchAction(kmlButton, () => this.exportKml());
+    bindTouchAction(kmlButton, () => this.exportKml(), renderSignal);
 
     const journalButton = document.createElement('button');
     journalButton.type = 'button';
     journalButton.className = 'control-button secondary-action';
     journalButton.textContent = 'Journal';
-    bindTouchAction(journalButton, () => this.exportJournalMarkdown());
+    bindTouchAction(journalButton, () => this.exportJournalMarkdown(), renderSignal);
 
     const packButton = document.createElement('button');
     packButton.type = 'button';
@@ -370,7 +411,7 @@ export class TravelGlobeApp {
     bindTouchAction(packButton, () => {
       this.installOfflinePack(coreOfflinePacks[0].id);
       this.renderProductPanel();
-    });
+    }, renderSignal);
 
     this.fileInput.type = 'file';
     this.fileInput.accept = '.json,.travelglobe,application/json,application/zip';
@@ -381,7 +422,7 @@ export class TravelGlobeApp {
         return;
       }
       void this.importJourney(file);
-    });
+    }, { signal: renderSignal });
 
     this.mediaInput.type = 'file';
     this.mediaInput.accept = 'image/*';
@@ -392,7 +433,7 @@ export class TravelGlobeApp {
         return;
       }
       void this.attachMediaToActiveRecord(file);
-    });
+    }, { signal: renderSignal });
 
     const actionGrid = document.createElement('div');
     actionGrid.className = 'action-grid';
@@ -424,17 +465,17 @@ export class TravelGlobeApp {
       lastSystemDrawerToggleMs = now;
       setSystemDrawerOpen(!systemDrawer.classList.contains('is-open'));
     };
-    systemSummary.addEventListener('pointerdown', (event) => event.stopPropagation());
-    systemSummary.addEventListener('pointerup', toggleSystemDrawer);
-    systemSummary.addEventListener('touchend', toggleSystemDrawer, { passive: false });
-    systemSummary.addEventListener('click', toggleSystemDrawer);
+    systemSummary.addEventListener('pointerdown', (event) => event.stopPropagation(), { signal: renderSignal });
+    systemSummary.addEventListener('pointerup', toggleSystemDrawer, { signal: renderSignal });
+    systemSummary.addEventListener('touchend', toggleSystemDrawer, { passive: false, signal: renderSignal });
+    systemSummary.addEventListener('click', toggleSystemDrawer, { signal: renderSignal });
     syncDrawerPanelState(preloadShell.open ? preloadShell : undefined);
     drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
     systemDrawer.append(systemSummary, drawerBody);
 
     controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
     dock.append(systemDrawer);
-    overlay.append(hud, this.viewRail, dock, this.pilotHud, controls);
+    overlay.append(this.cockpitWindow, hud, this.viewRail, dock, this.pilotHud, this.pilotHudToggle, controls);
     this.root.replaceChildren(this.viewport, overlay, this.fileInput, this.mediaInput);
 
     this.hudTitle.textContent = 'FLIGHT REPLAY';
@@ -443,7 +484,7 @@ export class TravelGlobeApp {
     this.renderRegionFilters();
     this.renderTimeline();
     this.renderRecordPreview();
-    this.renderPreloadPanel(segment);
+    this.renderPreloadPanel(segment, renderSignal);
     this.renderProductPanel();
     this.syncViewRail();
     this.syncPlayButton();
@@ -494,7 +535,7 @@ export class TravelGlobeApp {
     const deviationMeters = calculateRouteDeviationMeters(sample, this.flightOverlay.plannedRoute);
 
     this.hudTitle.textContent = metrics.flightNumber;
-    this.hudRoute.textContent = `${metrics.flightNumber} | ${metrics.routeLabel}`;
+    this.hudRoute.textContent = `${metrics.routeLabel} | ${localizePhase(metrics.phaseLabel)} | ETA ${metrics.etaLabel}`;
     this.hudStats.replaceChildren(
       metricItem('剩餘距離', metrics.remainingDistanceLabel),
       metricItem('預計抵達', metrics.etaLabel),
@@ -510,7 +551,7 @@ export class TravelGlobeApp {
       `T+${elapsedMinutes}:${elapsedRemainder}`,
       `偏離 ${formatDistance(deviationMeters)}`
     ].filter(Boolean).join(' | ');
-    this.renderPilotHud(metrics);
+    this.renderPilotHud(metrics, sample);
 
     this.renderBelowMe(sample);
     if (liveStatus === 'lost') {
@@ -544,28 +585,36 @@ export class TravelGlobeApp {
   }
 
   private syncViewRail(): void {
-    this.root.classList.toggle('is-pilot-view', this.cameraMode === 'pilotView');
-    this.pilotHud.setAttribute('aria-hidden', String(this.cameraMode !== 'pilotView'));
+    const isPilotView = this.cameraMode === 'pilotView';
+    this.root.classList.toggle('is-pilot-view', isPilotView);
+    this.root.classList.toggle('is-pilot-hud-off', isPilotView && !this.isPilotHudEnabled);
+    this.viewRail.classList.toggle('is-expanded', isPilotView && this.isPilotViewRailExpanded);
+    this.viewRail.setAttribute('aria-expanded', String(!isPilotView || this.isPilotViewRailExpanded));
+    this.cockpitWindow.setAttribute('aria-hidden', String(!isPilotView));
+    this.pilotHud.setAttribute('aria-hidden', String(!isPilotView || !this.isPilotHudEnabled));
+    this.pilotHudToggle.hidden = !isPilotView;
+    this.pilotHudToggle.textContent = this.isPilotHudEnabled ? 'HUD' : 'HUD off';
+    this.pilotHudToggle.setAttribute('aria-pressed', String(this.isPilotHudEnabled));
     for (const button of this.viewRail.querySelectorAll<HTMLButtonElement>('.view-mode-button')) {
       const isActive = button.dataset.mode === this.cameraMode;
       button.classList.toggle('is-active', isActive);
+      button.classList.toggle('is-hidden-in-pilot-menu', isPilotView && !this.isPilotViewRailExpanded && !isActive);
       button.setAttribute('aria-pressed', String(isActive));
     }
   }
 
-  private renderPilotHud(metrics: ReturnType<typeof buildFlightHudMetrics>): void {
+  private renderPilotHud(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
+    const attitude = buildPilotAttitude(this.segment, sample);
     this.pilotHud.replaceChildren(
-      pilotScale('Airspeed', metrics.speedKmh, 'left'),
-      pilotScale('Altitude', metrics.altitudeFeet, 'right'),
-      pilotReadout('GSPD', metrics.groundSpeedKmh),
-      pilotReadout('HDG', metrics.headingDegrees),
-      pilotReadout('VS', metrics.verticalSpeedLabel),
-      pilotReadout('ALT', metrics.altitudeFeet),
-      pilotHorizon()
+      pilotScale('IAS EST', attitude.iasKnots, 'left', attitude.iasTicks),
+      pilotScale('ALT', metrics.altitudeFeet, 'right', altitudeTicks(sample.point.altitudeMeters ?? 0)),
+      pilotHorizon(attitude),
+      pilotHeading(attitude.headingLabel),
+      pilotVerticalSpeed(metrics.verticalSpeedLabel)
     );
   }
 
-  private renderPreloadPanel(segment: JourneySegment): void {
+  private renderPreloadPanel(segment: JourneySegment, renderSignal: AbortSignal): void {
     const form = document.createElement('form');
     form.className = 'preload-form';
 
@@ -643,23 +692,24 @@ export class TravelGlobeApp {
       this.destinationInput,
       this.departureDateInput,
       this.departureTimeInput,
+      this.durationInput,
       this.aircraftTypeSelect
     ]) {
-      input.addEventListener('input', markPending);
-      input.addEventListener('change', markPending);
+      input.addEventListener('input', markPending, { signal: renderSignal });
+      input.addEventListener('change', markPending, { signal: renderSignal });
     }
     this.aviationstackApiKeyInput.addEventListener('change', () => {
       writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
       this.preloadStatus.textContent = this.aviationstackApiKeyInput.value.trim()
         ? 'aviationstack API key 已保存在本機。下次套用航線會先嘗試 API，成功後寫入航班快取。'
         : 'aviationstack API key 已清除；會使用本機快取或離線 seed。';
-    });
+    }, { signal: renderSignal });
     this.flightNumberInput.addEventListener('input', () => {
       if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
         applyKnownFlight();
       }
-    });
-    this.flightNumberInput.addEventListener('change', applyKnownFlight);
+    }, { signal: renderSignal });
+    this.flightNumberInput.addEventListener('change', applyKnownFlight, { signal: renderSignal });
 
     const apiKeyField = field('aviationstack API key（保存在本機）', this.aviationstackApiKeyInput, {
         placeholder: '保存在本機',
@@ -671,13 +721,22 @@ export class TravelGlobeApp {
       apiKeyField,
       field('航班號', this.flightNumberInput, { placeholder: 'CI100' }),
       airportField('起飛', this.originInput, airportSuggestions, markPending, {
-        placeholder: 'TPE / Taipei'
+        placeholder: 'TPE / Taipei',
+        signal: renderSignal
       }),
       airportField('抵達', this.destinationInput, airportSuggestions, markPending, {
-        placeholder: 'NRT / Tokyo'
+        placeholder: 'NRT / Tokyo',
+        signal: renderSignal
       }),
       field('日期', this.departureDateInput, { type: 'date' }),
       field('時間', this.departureTimeInput, { type: 'time' }),
+      field('航程分鐘', this.durationInput, {
+        placeholder: '自動',
+        type: 'number',
+        min: '1',
+        step: '1',
+        required: false
+      }),
       selectField('機型', this.aircraftTypeSelect),
       submitButton
     );
@@ -1727,38 +1786,129 @@ function metricItem(label: string, value: string): HTMLElement {
   return item;
 }
 
-function pilotScale(label: string, value: string, side: 'left' | 'right'): HTMLElement {
+interface PilotAttitude {
+  pitchDegrees: number;
+  rollDegrees: number;
+  headingLabel: string;
+  iasKnots: string;
+  iasTicks: string[];
+}
+
+function pilotScale(label: string, value: string, side: 'left' | 'right', ticks: string[]): HTMLElement {
   const item = document.createElement('div');
   item.className = `pilot-scale pilot-scale-${side}`;
   const title = document.createElement('span');
   title.textContent = label;
   const readout = document.createElement('strong');
-  readout.textContent = value.replace(' km/h', '').replace(' ft', '');
+  readout.textContent = value.replace(' ft', '');
   const ladder = document.createElement('i');
+  ladder.replaceChildren(...ticks.map((tick) => Object.assign(document.createElement('span'), { textContent: tick })));
   item.append(title, ladder, readout);
   return item;
 }
 
-function pilotReadout(label: string, value: string): HTMLElement {
+function pilotHeading(value: string): HTMLElement {
   const item = document.createElement('div');
-  item.className = 'pilot-readout';
-  const title = document.createElement('span');
-  title.textContent = label;
-  const readout = document.createElement('strong');
-  readout.textContent = value;
-  item.append(title, readout);
+  item.className = 'pilot-heading';
+  item.textContent = value;
   return item;
 }
 
-function pilotHorizon(): HTMLElement {
+function pilotVerticalSpeed(value: string): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'pilot-vs';
+  item.textContent = `VS ${value}`;
+  return item;
+}
+
+function pilotHorizon(attitude: PilotAttitude): HTMLElement {
   const horizon = document.createElement('div');
   horizon.className = 'pilot-horizon';
+  horizon.style.setProperty('--pilot-bank-angle', `${attitude.rollDegrees.toFixed(2)}deg`);
+  horizon.style.setProperty('--pilot-pitch-offset', `${(-attitude.pitchDegrees * 5).toFixed(1)}px`);
   horizon.replaceChildren(
     Object.assign(document.createElement('span'), { className: 'pilot-horizon-line' }),
+    pilotPitchLadder(),
     Object.assign(document.createElement('span'), { className: 'pilot-reticle' }),
     Object.assign(document.createElement('span'), { className: 'pilot-bank' })
   );
   return horizon;
+}
+
+function pilotPitchLadder(): HTMLElement {
+  const ladder = document.createElement('span');
+  ladder.className = 'pilot-pitch-ladder';
+  for (const [index, pitch] of [-10, -5, 0, 5, 10].entries()) {
+    const line = document.createElement('span');
+    line.className = `pilot-pitch-line${pitch === 0 ? ' is-zero' : ''}`;
+    line.style.setProperty('--pitch-index', String(index - 2));
+    line.textContent = pitch === 0 ? '' : String(Math.abs(pitch));
+    ladder.appendChild(line);
+  }
+  return ladder;
+}
+
+function buildPilotAttitude(segment: JourneySegment | undefined, sample: ReplaySample): PilotAttitude {
+  const headingDegrees = Math.round(sample.bearingDegrees);
+  const point = sample.point;
+  const speedMetersPerSecond = point.speedMetersPerSecond ?? 0;
+  const altitudeMeters = point.altitudeMeters ?? 0;
+  const adjacent = segment ? adjacentReplayPoints(segment, point.timestamp) : undefined;
+  const verticalSpeedMetersPerSecond = adjacent
+    ? ((adjacent.next.altitudeMeters ?? altitudeMeters) - (adjacent.previous.altitudeMeters ?? altitudeMeters)) /
+      Math.max(1, (Date.parse(adjacent.next.timestamp) - Date.parse(adjacent.previous.timestamp)) / 1000)
+    : 0;
+  const pitchDegrees = clamp(Math.atan2(verticalSpeedMetersPerSecond, Math.max(52, speedMetersPerSecond)) * 180 / Math.PI, -8, 10);
+  const rollDegrees = adjacent
+    ? clamp(-angleDeltaDegrees(adjacent.previous.courseDegrees ?? sample.bearingDegrees, adjacent.next.courseDegrees ?? sample.bearingDegrees) * 1.6, -22, 22)
+    : 0;
+  const ias = estimatedIasKnots(speedMetersPerSecond, altitudeMeters);
+
+  return {
+    pitchDegrees,
+    rollDegrees,
+    headingLabel: `HDG ${headingDegrees.toString().padStart(3, '0')}`,
+    iasKnots: Math.round(ias).toString(),
+    iasTicks: speedTicks(ias)
+  };
+}
+
+function adjacentReplayPoints(segment: JourneySegment, timestamp: string): { previous: LocationPoint; next: LocationPoint } | undefined {
+  const points = segment.derivedReplayRoute.points;
+  if (points.length < 2) {
+    return undefined;
+  }
+  const targetMs = Date.parse(timestamp);
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if (targetMs <= Date.parse(points[index + 1].timestamp)) {
+      return { previous: points[index], next: points[index + 1] };
+    }
+  }
+  return { previous: points[points.length - 2], next: points[points.length - 1] };
+}
+
+function estimatedIasKnots(speedMetersPerSecond: number, altitudeMeters: number): number {
+  const densityRatio = Math.exp(-Math.max(0, altitudeMeters) / 8500);
+  return Math.max(0, speedMetersPerSecond * 1.94384 * Math.sqrt(Math.max(0.24, densityRatio)));
+}
+
+function speedTicks(iasKnots: number): string[] {
+  const center = Math.round(iasKnots / 10) * 10;
+  return [center + 20, center + 10, center, center - 10, center - 20].map((tick) => Math.max(0, tick).toString());
+}
+
+function altitudeTicks(altitudeMeters: number): string[] {
+  const altitudeHundreds = Math.round(altitudeMeters * 3.28084 / 100);
+  return [altitudeHundreds + 4, altitudeHundreds + 2, altitudeHundreds, altitudeHundreds - 2, altitudeHundreds - 4]
+    .map((tick) => Math.max(0, tick).toString());
+}
+
+function angleDeltaDegrees(fromDegrees: number, toDegrees: number): number {
+  return ((((toDegrees - fromDegrees + 540) % 360) - 180) + 360) % 360 - 180;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function textLine(value: string): HTMLElement {
@@ -1900,7 +2050,7 @@ function airportField(
   input: HTMLInputElement,
   airports: AirportRecord[],
   onSelect: () => void,
-  options: { placeholder?: string; list?: string } = {}
+  options: { placeholder?: string; list?: string; signal?: AbortSignal } = {}
 ): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'preload-field airport-picker';
@@ -1956,10 +2106,10 @@ function airportField(
         }
         onSelect();
       };
-      button.addEventListener('touchstart', selectAirport, { passive: false });
-      button.addEventListener('mousedown', selectAirport);
-      button.addEventListener('pointerdown', selectAirport);
-      button.addEventListener('click', selectAirport);
+      button.addEventListener('touchstart', selectAirport, { passive: false, signal: options.signal });
+      button.addEventListener('mousedown', selectAirport, { signal: options.signal });
+      button.addEventListener('pointerdown', selectAirport, { signal: options.signal });
+      button.addEventListener('click', selectAirport, { signal: options.signal });
       return button;
     });
 
@@ -1967,13 +2117,13 @@ function airportField(
     menu.hidden = buttons.length === 0;
   };
 
-  input.addEventListener('focus', showMatches);
-  input.addEventListener('input', showMatches);
+  input.addEventListener('focus', showMatches, { signal: options.signal });
+  input.addEventListener('input', showMatches, { signal: options.signal });
   input.addEventListener('blur', () => {
     window.setTimeout(() => {
       closeMenu();
     }, 120);
-  });
+  }, { signal: options.signal });
 
   return wrapper;
 }
@@ -2059,7 +2209,11 @@ function stringValue(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 }
 
-function bindTouchAction(element: HTMLElement, action: (event: Event) => void | Promise<void>): void {
+function bindTouchAction(
+  element: HTMLElement,
+  action: (event: Event) => void | Promise<void>,
+  signal?: AbortSignal
+): void {
   let lastActivationMs = 0;
   const activate = (event: Event): void => {
     event.preventDefault();
@@ -2073,16 +2227,17 @@ function bindTouchAction(element: HTMLElement, action: (event: Event) => void | 
   };
   element.addEventListener('pointerdown', (event) => {
     event.stopPropagation();
-  });
-  element.addEventListener('pointerup', activate);
-  element.addEventListener('touchend', activate, { passive: false });
-  element.addEventListener('click', activate);
+  }, { signal });
+  element.addEventListener('pointerup', activate, { signal });
+  element.addEventListener('touchend', activate, { passive: false, signal });
+  element.addEventListener('click', activate, { signal });
 }
 
 function bindDetailsSummaryToggle(
   summary: HTMLElement,
   details: HTMLDetailsElement,
-  onToggle?: () => void
+  onToggle?: () => void,
+  signal?: AbortSignal
 ): void {
   let pointerStart: { x: number; y: number; timeMs: number } | undefined;
 
@@ -2098,10 +2253,10 @@ function bindDetailsSummaryToggle(
       timeMs: performance.now()
     };
     event.stopPropagation();
-  });
+  }, { signal });
   summary.addEventListener('pointercancel', () => {
     pointerStart = undefined;
-  });
+  }, { signal });
   summary.addEventListener('pointerup', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -2114,15 +2269,15 @@ function bindDetailsSummaryToggle(
     if (travel <= 12 && durationMs <= 700) {
       toggle();
     }
-  });
+  }, { signal });
   summary.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-  });
+  }, { signal });
   summary.addEventListener('touchend', (event) => {
     event.preventDefault();
     event.stopPropagation();
-  }, { passive: false });
+  }, { passive: false, signal });
   summary.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
       return;
@@ -2130,16 +2285,16 @@ function bindDetailsSummaryToggle(
     event.preventDefault();
     event.stopPropagation();
     toggle();
-  });
+  }, { signal });
 }
 
-function keepDetailsOpenDuringContentGestures(...elements: HTMLElement[]): void {
+function keepDetailsOpenDuringContentGestures(signal: AbortSignal, ...elements: HTMLElement[]): void {
   for (const element of elements) {
-    element.addEventListener('pointerdown', (event) => event.stopPropagation());
-    element.addEventListener('pointerup', (event) => event.stopPropagation());
-    element.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
-    element.addEventListener('touchend', (event) => event.stopPropagation(), { passive: true });
-    element.addEventListener('click', (event) => event.stopPropagation());
+    element.addEventListener('pointerdown', (event) => event.stopPropagation(), { signal });
+    element.addEventListener('pointerup', (event) => event.stopPropagation(), { signal });
+    element.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true, signal });
+    element.addEventListener('touchend', (event) => event.stopPropagation(), { passive: true, signal });
+    element.addEventListener('click', (event) => event.stopPropagation(), { signal });
   }
 }
 

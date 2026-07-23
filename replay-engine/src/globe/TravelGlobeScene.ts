@@ -158,6 +158,7 @@ export class TravelGlobeScene {
     updateRouteTrack(this.routeTrack, visibleRoutePoints, visibleActualRoutePoints, 180000);
     this.updateRouteAppearance(point, cameraMode);
     this.updateDayNight(point);
+    this.setCockpitSceneVisibility(cameraMode);
     this.cameraController.setMode(cameraMode);
     this.cameraController.update(point, bearingDegrees, {
       snap: snapCamera,
@@ -414,6 +415,18 @@ export class TravelGlobeScene {
         ? lerp(0.2, 0.44, altitudePerspectiveFactor(point))
         : 0.58;
     }
+  }
+
+  private setCockpitSceneVisibility(cameraMode: CameraMode): void {
+    const isPilotView = cameraMode === 'pilotView';
+    this.renderer.domElement.classList.toggle('is-cockpit-render', isPilotView);
+    this.earth.visible = !isPilotView;
+    this.clouds.visible = !isPilotView;
+    this.nightLights.visible = !isPilotView;
+    this.nightSurfaceWash.visible = !isPilotView;
+    this.cityLights.visible = !isPilotView && this.cityLightMaterial.opacity > 0.08;
+    this.airportMarkers.visible = !isPilotView;
+    this.routeTrack.visible = !isPilotView;
   }
 
   private showFocusedAirportLabel(width: number, height: number): void {

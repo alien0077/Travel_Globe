@@ -69,6 +69,7 @@ for (const viewport of [
     const viewButtons = [...document.querySelectorAll('.view-mode-button')];
     const activeViewButton = document.querySelector('.view-mode-button.is-active');
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
+    const speedOptionCount = document.querySelectorAll('.control-select option').length;
     const cameraOptions = viewButtons.map((button) => button.getAttribute('aria-label') ?? '');
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
@@ -149,6 +150,7 @@ for (const viewport of [
         controls.includes('KML') &&
         controls.includes('Journal') &&
         controls.includes('Pack') &&
+        speedOptionCount === 4 &&
         activeViewButton instanceof HTMLButtonElement &&
         activeViewButton.dataset.mode === 'flightPreview' &&
         cameraOptions.includes('追機視角') &&
@@ -163,6 +165,7 @@ for (const viewport of [
         productText.includes('Trips') &&
         productText.includes('Countries') &&
         (preloadText.includes('預載進入') || preloadText.includes('套用航線')) &&
+        preloadText.includes('航程分鐘') &&
         (preloadText.includes('CI100') || preloadFlightNumber === 'CI100') &&
         productText.includes('FlightGear Global Airway Graph') &&
         filterText.includes('All') &&
@@ -185,6 +188,7 @@ for (const viewport of [
       cameraValue: activeViewButton instanceof HTMLButtonElement ? activeViewButton.dataset.mode ?? '' : '',
       cameraOptions,
       controls,
+      speedOptionCount,
       timelineItems,
       productText,
       preloadText,
@@ -209,7 +213,8 @@ for (const viewport of [
   let afterPreload = {
     route: '',
     status: '',
-    timelineItems: 0
+    timelineItems: 0,
+    speedOptionCount: 0
   };
   let mobileRegression = null;
 
@@ -245,7 +250,8 @@ for (const viewport of [
     afterPreload = await page.evaluate(() => ({
       route: document.querySelector('.hud-route')?.textContent ?? '',
       status: document.querySelector('.preload-status')?.textContent ?? '',
-      timelineItems: document.querySelectorAll('.timeline-item').length
+      timelineItems: document.querySelectorAll('.timeline-item').length,
+      speedOptionCount: document.querySelectorAll('.control-select option').length
     }));
 
     await page.evaluate(() => {
@@ -269,9 +275,11 @@ for (const viewport of [
     await page.waitForTimeout(100);
     const pilotHudCheck = await page.evaluate(() => {
       const pilotHud = document.querySelector('.pilot-hud');
+      const cockpitWindow = document.querySelector('.cockpit-window');
       return {
         visible: pilotHud instanceof HTMLElement && window.getComputedStyle(pilotHud).display !== 'none',
-        text: pilotHud?.textContent ?? ''
+        text: pilotHud?.textContent ?? '',
+        cockpitVisible: cockpitWindow instanceof HTMLElement && window.getComputedStyle(cockpitWindow).display !== 'none'
       };
     });
     await clickViewMode(page, 'flightPreview');
@@ -286,6 +294,7 @@ for (const viewport of [
         : '',
       pilotHudVisible: pilotHudCheck.visible,
       pilotHudText: pilotHudCheck.text,
+      cockpitVisible: pilotHudCheck.cockpitVisible,
       coloredPixelsAfterInteraction: (() => {
         const canvas = document.querySelector('canvas');
         if (!(canvas instanceof HTMLCanvasElement)) {
@@ -348,12 +357,17 @@ const failed = results.filter(
     result.errors.length > 0 ||
     result.blockedExternalRequests > 0 ||
     result.assetRequests.length === 0 ||
-    !result.afterPreload.route.includes('CI100 | TPE -> NRT') ||
+    !result.afterPreload.route.includes('TPE -> NRT') ||
     !result.afterPreload.status.includes('CI100 已由離線班表解析為 TPE -> NRT') ||
     result.afterPreload.timelineItems < 4 ||
+    result.afterPreload.speedOptionCount !== 4 ||
     !result.afterScrub.pilotHudVisible ||
-    !result.afterScrub.pilotHudText.includes('Airspeed') ||
-    !result.afterScrub.pilotHudText.includes('Altitude') ||
+    !result.afterScrub.cockpitVisible ||
+    !result.afterScrub.pilotHudText.includes('IAS EST') ||
+    !result.afterScrub.pilotHudText.includes('ALT') ||
+    !result.afterScrub.pilotHudText.includes('HDG') ||
+    !result.afterScrub.pilotHudText.includes('VS') ||
+    result.afterScrub.pilotHudText.includes('GSPD') ||
     result.afterScrub.coloredPixelsAfterInteraction <= 100 ||
     (result.mobileRegression !== null && !result.mobileRegression.ok)
 );
@@ -415,7 +429,7 @@ async function verifyMobileFd234Regression(page) {
 
     assert((await page.locator('.preload-panel-shell[open]').count()) === 1, 'preload/API key panel should be open by default on mobile drawer');
     console.error('[verify-preview] mobile: FD234 step preload visibility');
-    for (const label of ['aviationstack API key（保存在本機）', '航班號', '起飛', '抵達', '日期', '時間', '機型', '套用航線']) {
+    for (const label of ['aviationstack API key（保存在本機）', '航班號', '起飛', '抵達', '日期', '時間', '航程分鐘', '機型', '套用航線']) {
       report.preloadVisible[label] = await page.getByText(label, { exact: true }).first().isVisible().catch(() => false);
       assert(report.preloadVisible[label], `preload field not visible: ${label}`);
     }
