@@ -113,6 +113,10 @@ export function getInstalledSizeBytes(state: OfflinePackState): number {
   return state.packs.reduce((total, pack) => total + pack.sizeBytes, 0);
 }
 
+export function getBundledOfflinePackSizeBytes(): number {
+  return coreOfflinePacks.reduce((total, pack) => total + pack.sizeBytes, 0);
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1_000) {
     return `${bytes} B`;

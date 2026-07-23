@@ -54,15 +54,8 @@ import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { evaluateNotifications } from '../notifications/notificationRules';
 import {
   coreOfflinePacks,
-  deletePack,
-  describeInstalledPacks,
   formatBytes,
-  getInstalledSizeBytes,
-  installPack,
-  isPackInstalled,
-  loadOfflinePackState,
-  saveOfflinePackState,
-  type OfflinePackState
+  getBundledOfflinePackSizeBytes
 } from '../offline/offlinePacks';
 import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { ReplayClock } from '../replay/ReplayClock';
@@ -93,7 +86,6 @@ export class TravelGlobeApp {
   private routeLandmarks: GeographicFeature[] = [];
   private cameraMode: CameraMode = 'flightPreview';
   private lastFrameMs?: number;
-  private packState: OfflinePackState = loadOfflinePackState();
   private autoRecordingContext?: AutoRecordingContext;
   private travelRecords: TravelRecord[] = [];
   private activeRecordId?: string;
@@ -105,6 +97,7 @@ export class TravelGlobeApp {
   private scheduledNotificationIds = new Set<string>();
   private airportBrowserQuery = '';
   private airportBrowserScheduledOnly = true;
+  private pendingSavedJourneyDeleteId?: string;
   private shellEventController?: AbortController;
   private isPilotHudEnabled = true;
   private isPilotViewRailExpanded = false;
@@ -409,7 +402,9 @@ export class TravelGlobeApp {
     packButton.className = 'control-button secondary-action';
     packButton.textContent = 'Pack';
     bindTouchAction(packButton, () => {
-      this.installOfflinePack(coreOfflinePacks[0].id);
+      productShell.open = true;
+      syncDrawerPanelState(productShell);
+      this.capability.textContent = '離線資料已內建在目前 Replay build / iOS bundle；不需要另外啟用或取消。';
       this.renderProductPanel();
     }, renderSignal);
 
@@ -902,14 +897,14 @@ export class TravelGlobeApp {
     const actions = document.createElement('div');
     actions.className = 'record-actions';
     actions.replaceChildren(
-      recordActionButton('新增事件', () => void this.addManualTravelRecord()),
-      recordActionButton('修改紀錄', () => void this.editActiveTravelRecord(record)),
-      recordActionButton('分類/時間', () => void this.editRecordDetails(record)),
+      recordActionButton('新增事件', () => this.showAddTravelRecordForm()),
+      recordActionButton('修改紀錄', () => this.showEditActiveTravelRecordForm(record)),
+      recordActionButton('分類/時間', () => this.showRecordDetailsForm(record)),
       recordActionButton('附加照片', () => this.mediaInput.click()),
       recordActionButton('載入最新', () => this.requestLatestNativeJourney()),
       recordActionButton('復原上次', () => void this.undoRecordEdit()),
-      recordActionButton('隱藏紀錄', () => void this.hideActiveTravelRecord(record)),
-      recordActionButton('編輯航線摘要', () => void this.editFlightSummary())
+      recordActionButton('隱藏紀錄', () => this.showHideRecordConfirmation(record)),
+      recordActionButton('編輯航線摘要', () => this.showFlightSummaryForm())
     );
     content.append(meta, title, subtitle, tags, mediaGallery, actions, this.renderSavedJourneySection('record-history-section'));
 
@@ -925,35 +920,53 @@ export class TravelGlobeApp {
 
   private renderRecordPanelActions(record?: TravelRecord): void {
     const buttons = [
-      recordActionButton('新增', () => void this.addManualTravelRecord()),
+      recordActionButton('新增', () => this.showAddTravelRecordForm()),
       recordActionButton('載入最新', () => this.requestLatestNativeJourney())
     ];
     if (record) {
       buttons.splice(
         1,
         0,
-        recordActionButton('修改', () => void this.editActiveTravelRecord(record)),
-        recordActionButton('分類/時間', () => void this.editRecordDetails(record)),
+        recordActionButton('修改', () => this.showEditActiveTravelRecordForm(record)),
+        recordActionButton('分類/時間', () => this.showRecordDetailsForm(record)),
         recordActionButton('附加照片', () => this.mediaInput.click()),
-        recordActionButton('隱藏/刪除', () => void this.hideActiveTravelRecord(record))
+        recordActionButton('隱藏/刪除', () => this.showHideRecordConfirmation(record))
       );
     }
     buttons.push(
       recordActionButton('復原', () => void this.undoRecordEdit()),
-      recordActionButton('編輯航線', () => void this.editFlightSummary())
+      recordActionButton('編輯航線', () => this.showFlightSummaryForm())
     );
     this.recordPanelActions.replaceChildren(...buttons);
   }
 
-  private async addManualTravelRecord(): Promise<void> {
+  private showAddTravelRecordForm(): void {
+    if (!this.journey || !this.segment || !this.clock) {
+      this.capability.textContent = '目前沒有可新增事件的 active journey。';
+      return;
+    }
+    const form = recordEditorForm('新增旅遊紀錄');
+    const title = recordTextInput('標題', '人工打卡');
+    const subtitle = recordTextInput('備註', '手動新增');
+    form.body.append(title.field, subtitle.field);
+    form.submit.textContent = '新增';
+    form.submit.addEventListener('click', () => {
+      void this.addManualTravelRecord(title.input.value, subtitle.input.value);
+    });
+    form.cancel.addEventListener('click', () => this.renderRecordPreview());
+    this.recordPreview.replaceChildren(form.element);
+  }
+
+  private async addManualTravelRecord(titleValue: string, subtitleValue: string): Promise<void> {
     if (!this.journey || !this.segment || !this.clock) {
       return;
     }
-    const title = window.prompt('新增旅遊紀錄標題', '人工打卡');
-    if (!title?.trim()) {
+    const title = titleValue.trim();
+    if (!title) {
+      this.capability.textContent = '請先輸入旅遊紀錄標題。';
       return;
     }
-    const subtitle = window.prompt('備註', '手動新增') ?? '手動新增';
+    const subtitle = subtitleValue.trim() || '手動新增';
     const point = this.currentDisplayPoint();
     const event: TimelineEvent = {
       id: `event-${this.segment.id}-manual-${Date.now()}`,
@@ -961,8 +974,8 @@ export class TravelGlobeApp {
       segmentId: this.segment.id,
       timestamp: point.timestamp,
       type: 'manualTravelRecord',
-      title: title.trim(),
-      subtitle: subtitle.trim(),
+      title,
+      subtitle,
       location: {
         latitude: point.latitude,
         longitude: point.longitude,
@@ -988,17 +1001,36 @@ export class TravelGlobeApp {
     this.activeRecordId = event.id;
     this.renderTimeline();
     this.renderRecordPreview();
+    this.capability.textContent = `已新增旅遊紀錄：${event.title}`;
   }
 
-  private async editActiveTravelRecord(record: TravelRecord): Promise<void> {
+  private showEditActiveTravelRecordForm(record: TravelRecord): void {
+    if (!this.journey) {
+      this.capability.textContent = '目前沒有可修改的 active journey。';
+      return;
+    }
+    const form = recordEditorForm('修改旅遊紀錄');
+    const title = recordTextInput('標題', record.title);
+    const subtitle = recordTextInput('備註/副標題', record.subtitle);
+    form.body.append(title.field, subtitle.field);
+    form.submit.textContent = '儲存';
+    form.submit.addEventListener('click', () => {
+      void this.editActiveTravelRecord(record, title.input.value, subtitle.input.value);
+    });
+    form.cancel.addEventListener('click', () => this.renderRecordPreview());
+    this.recordPreview.replaceChildren(form.element);
+  }
+
+  private async editActiveTravelRecord(record: TravelRecord, titleValue: string, subtitleValue: string): Promise<void> {
     if (!this.journey) {
       return;
     }
-    const title = window.prompt('旅遊紀錄標題', record.title);
-    if (title === null) {
+    const title = titleValue.trim();
+    if (!title) {
+      this.capability.textContent = '旅遊紀錄標題不可空白。';
       return;
     }
-    const subtitle = window.prompt('備註/副標題', record.subtitle) ?? record.subtitle;
+    const subtitle = subtitleValue.trim() || record.subtitle;
     this.pushRecordUndo();
     const edited = writeTravelRecordEdit(this.journey, record.id, {
       title,
@@ -1009,37 +1041,76 @@ export class TravelGlobeApp {
     this.activeRecordId = record.id;
     this.renderTimeline();
     this.renderRecordPreview();
+    this.capability.textContent = `已修改旅遊紀錄：${title}`;
+  }
+
+  private showHideRecordConfirmation(record: TravelRecord): void {
+    if (!this.journey) {
+      this.capability.textContent = '目前沒有可隱藏的 active journey。';
+      return;
+    }
+    const form = recordEditorForm('隱藏旅遊紀錄');
+    const message = document.createElement('p');
+    message.className = 'record-editor-note';
+    message.textContent = `隱藏「${record.title}」只會從旅遊紀錄清單移除，原始 GPS 與事件資料仍保留，可用「復原」取回。`;
+    form.body.append(message);
+    form.submit.textContent = '確認隱藏';
+    form.submit.addEventListener('click', () => void this.hideActiveTravelRecord(record));
+    form.cancel.addEventListener('click', () => this.renderRecordPreview());
+    this.recordPreview.replaceChildren(form.element);
   }
 
   private async hideActiveTravelRecord(record: TravelRecord): Promise<void> {
     if (!this.journey) {
       return;
     }
-    if (!window.confirm(`隱藏「${record.title}」？原始 GPS 與事件資料仍會保留。`)) {
-      return;
-    }
     this.pushRecordUndo();
     await this.loadJourney(writeTravelRecordEdit(this.journey, record.id, { hidden: true }));
+    this.capability.textContent = `已隱藏旅遊紀錄：${record.title}`;
   }
 
-  private async editRecordDetails(record: TravelRecord): Promise<void> {
+  private showRecordDetailsForm(record: TravelRecord): void {
+    if (!this.journey) {
+      this.capability.textContent = '目前沒有可分類的 active journey。';
+      return;
+    }
+    const form = recordEditorForm('分類與時間');
+    const regionField = document.createElement('label');
+    regionField.className = 'record-editor-field';
+    const regionLabel = document.createElement('span');
+    regionLabel.textContent = '區域分類';
+    const regionSelect = document.createElement('select');
+    regionSelect.className = 'record-editor-input';
+    regionSelect.replaceChildren(
+      ...getTravelRegionOptions().map((option) => {
+        const item = document.createElement('option');
+        item.value = option.id;
+        item.textContent = option.label;
+        return item;
+      })
+    );
+    regionSelect.value = record.region;
+    regionField.append(regionLabel, regionSelect);
+    const date = recordTextInput('日期', toInputDate(record.timestamp), 'date');
+    const time = recordTextInput('時間', toInputTime(record.timestamp), 'time');
+    form.body.append(regionField, date.field, time.field);
+    form.submit.textContent = '套用';
+    form.submit.addEventListener('click', () => {
+      void this.editRecordDetails(record, regionSelect.value as TravelRegion, date.input.value, time.input.value);
+    });
+    form.cancel.addEventListener('click', () => this.renderRecordPreview());
+    this.recordPreview.replaceChildren(form.element);
+  }
+
+  private async editRecordDetails(record: TravelRecord, region: TravelRegion, dateValue: string, timeValue: string): Promise<void> {
     if (!this.journey) {
       return;
     }
     const regionOptions = getTravelRegionOptions();
-    const regionPrompt = regionOptions.map((option) => `${option.id}=${option.label}`).join(', ');
-    const region = window.prompt(`區域分類：${regionPrompt}`, record.region);
-    if (region === null) {
-      return;
-    }
-    const timestamp = window.prompt('時間 ISO 8601', record.timestamp);
-    if (timestamp === null) {
-      return;
-    }
     const normalizedRegion = regionOptions.some((option) => option.id === region)
-      ? (region as TravelRegion)
+      ? region
       : record.region;
-    const normalizedTimestamp = Number.isFinite(Date.parse(timestamp)) ? new Date(timestamp).toISOString() : record.timestamp;
+    const normalizedTimestamp = timestampFromDateTimeInputs(record.timestamp, dateValue, timeValue);
     this.pushRecordUndo();
     await this.loadJourney(writeTravelRecordEdit(this.journey, record.id, {
       region: normalizedRegion,
@@ -1049,6 +1120,7 @@ export class TravelGlobeApp {
     this.activeRecordId = record.id;
     this.renderTimeline();
     this.renderRecordPreview();
+    this.capability.textContent = `已更新 ${record.title} 的分類與時間。`;
   }
 
   private async attachMediaToActiveRecord(file: File): Promise<void> {
@@ -1115,24 +1187,55 @@ export class TravelGlobeApp {
     this.recordEditUndoStack = [...this.recordEditUndoStack.slice(-7), structuredClone(this.journey)];
   }
 
-  private async editFlightSummary(): Promise<void> {
+  private showFlightSummaryForm(): void {
+    if (!this.journey || !this.segment) {
+      this.capability.textContent = '目前沒有可編輯的航線摘要。';
+      return;
+    }
+    const currentFlight = stringValue(this.segment.metadata.flightNumber, '');
+    const currentAircraft = stringValue(this.segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE);
+    const form = recordEditorForm('編輯航線摘要');
+    const flightNumber = recordTextInput('航班號', currentFlight);
+    const aircraftType = recordTextInput('機型', currentAircraft);
+    const originIata = recordTextInput('起飛機場 IATA', this.segment.origin.iataCode ?? '');
+    const destinationIata = recordTextInput('抵達機場 IATA', this.segment.destination.iataCode ?? '');
+    form.body.append(flightNumber.field, aircraftType.field, originIata.field, destinationIata.field);
+    form.submit.textContent = '儲存';
+    form.submit.addEventListener('click', () => {
+      void this.editFlightSummary(
+        flightNumber.input.value,
+        aircraftType.input.value,
+        originIata.input.value,
+        destinationIata.input.value
+      );
+    });
+    form.cancel.addEventListener('click', () => this.renderRecordPreview());
+    this.recordPreview.replaceChildren(form.element);
+  }
+
+  private async editFlightSummary(
+    flightNumberValue: string,
+    aircraftTypeValue: string,
+    originIataValue: string,
+    destinationIataValue: string
+  ): Promise<void> {
     if (!this.journey || !this.segment) {
       return;
     }
     const currentFlight = stringValue(this.segment.metadata.flightNumber, '');
     const currentAircraft = stringValue(this.segment.metadata.aircraftType, DEFAULT_AIRCRAFT_TYPE);
-    const flightNumber = window.prompt('航班號', currentFlight) ?? currentFlight;
-    const aircraftType = window.prompt('機型', currentAircraft) ?? currentAircraft;
-    const originIata = window.prompt('起飛機場 IATA', this.segment.origin.iataCode ?? '') ?? this.segment.origin.iataCode ?? '';
-    const destinationIata = window.prompt('抵達機場 IATA', this.segment.destination.iataCode ?? '') ?? this.segment.destination.iataCode ?? '';
+    const flightNumber = flightNumberValue.trim() || currentFlight;
+    const aircraftType = aircraftTypeValue.trim() || currentAircraft;
+    const originIata = originIataValue.trim().toUpperCase() || (this.segment.origin.iataCode ?? '');
+    const destinationIata = destinationIataValue.trim().toUpperCase() || (this.segment.destination.iataCode ?? '');
     const updatedSegment: JourneySegment = {
       ...this.segment,
-      origin: { ...this.segment.origin, iataCode: originIata.trim().toUpperCase() || this.segment.origin.iataCode },
-      destination: { ...this.segment.destination, iataCode: destinationIata.trim().toUpperCase() || this.segment.destination.iataCode },
+      origin: { ...this.segment.origin, iataCode: originIata || this.segment.origin.iataCode },
+      destination: { ...this.segment.destination, iataCode: destinationIata || this.segment.destination.iataCode },
       metadata: {
         ...this.segment.metadata,
-        flightNumber: flightNumber.trim() || currentFlight,
-        aircraftType: aircraftType.trim() || currentAircraft,
+        flightNumber,
+        aircraftType,
         summaryEditedAt: new Date().toISOString()
       }
     };
@@ -1145,6 +1248,7 @@ export class TravelGlobeApp {
         summaryEditedAt: new Date().toISOString()
       }
     });
+    this.capability.textContent = `已更新航線摘要：${flightNumber || '未命名航班'}`;
   }
 
   private currentDisplayPoint(): ReturnType<typeof sampleReplayAt>['point'] {
@@ -1292,7 +1396,7 @@ export class TravelGlobeApp {
       ['Distance', formatDistance(summary.totalDistanceMeters)],
       ['Plan', `${plan.completedCount}/${plan.plannedPlaces.length} places completed`],
       ['Journal', `${journal.markdown.split('\n').length} markdown lines ready`],
-      ['Offline', `${this.packState.packs.length} pack | ${formatBytes(getInstalledSizeBytes(this.packState))}`],
+      ['Offline', `Bundled | ${coreOfflinePacks.length} packs | ${formatBytes(getBundledOfflinePackSizeBytes())}`],
       ['Data', `${airportIndex.airports} airports | ${airportIndex.navaids} navaids`],
       ['Flight context', `${flightContextCount} radio/nav records`],
       ['Recording', this.autoRecordingContext?.state ?? 'Idle'],
@@ -1333,7 +1437,7 @@ export class TravelGlobeApp {
 
     const packDescription = document.createElement('div');
     packDescription.className = 'pack-description';
-    packDescription.textContent = describeInstalledPacks(this.packState);
+    packDescription.textContent = 'Core Global Atlas 與 FlightGear Global Airway Graph 已隨目前 Replay build / iOS bundle 內建；離線時直接可用。';
 
     const airportDetails = document.createElement('div');
     airportDetails.className = 'atlas-section-grid';
@@ -1352,23 +1456,18 @@ export class TravelGlobeApp {
     packList.className = 'pack-control-list';
     packList.replaceChildren(
       ...coreOfflinePacks.map((pack) => {
-        const installed = isPackInstalled(this.packState, pack.id);
         const row = document.createElement('div');
         row.className = 'pack-control-row';
         const body = document.createElement('span');
-        body.textContent = `${pack.name} | ${formatBytes(pack.sizeBytes)} | ${pack.dataLayers.length} layers`;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'record-action-button';
-        button.textContent = installed ? '移除標記' : '標記離線';
-        bindTouchAction(button, () => {
-          if (installed) {
-            this.deleteOfflinePack(pack.id);
-          } else {
-            this.installOfflinePack(pack.id);
-          }
-        });
-        row.append(body, button);
+        const name = document.createElement('strong');
+        name.textContent = `${pack.name} | ${formatBytes(pack.sizeBytes)} | ${pack.dataLayers.length} layers`;
+        const description = document.createElement('small');
+        description.textContent = offlinePackPurpose(pack.id);
+        body.replaceChildren(name, description);
+        const status = document.createElement('strong');
+        status.className = 'pack-status-pill';
+        status.textContent = '已內建';
+        row.append(body, status);
         return row;
       })
     );
@@ -1435,6 +1534,9 @@ export class TravelGlobeApp {
     section.className = 'atlas-section airport-browser';
     const title = document.createElement('strong');
     title.textContent = '機場資料庫';
+    const note = document.createElement('p');
+    note.className = 'atlas-section-note';
+    note.textContent = '查詢本機離線機場索引、頻率、導航台與航線圖；若要建立航線，請用下方按鈕帶入航班預載欄位。';
 
     const controls = document.createElement('div');
     controls.className = 'airport-browser-controls';
@@ -1443,9 +1545,27 @@ export class TravelGlobeApp {
     search.className = 'airport-browser-search';
     search.placeholder = '搜尋 IATA / ICAO / 城市 / 國家';
     search.value = this.airportBrowserQuery;
+    const resultList = document.createElement('div');
+    resultList.className = 'airport-browser-results';
+    const renderResults = (): void => {
+      const results = searchAirports(this.airportBrowserQuery, {
+        limit: 16,
+        scheduledOnly: this.airportBrowserScheduledOnly
+      });
+      resultList.replaceChildren(
+        ...(results.length > 0
+          ? results.map((airport) => this.renderAirportBrowserRow(airport, (code) => {
+              this.airportBrowserQuery = code;
+              search.value = code;
+              this.capability.textContent = `${code} 已選取；可設為航班預載的起飛或抵達機場。`;
+              renderResults();
+            }))
+          : [textLine('找不到符合條件的機場')])
+      );
+    };
     search.addEventListener('input', () => {
       this.airportBrowserQuery = search.value;
-      this.renderProductPanel();
+      renderResults();
     });
     const scheduledToggle = document.createElement('label');
     scheduledToggle.className = 'airport-browser-toggle';
@@ -1454,32 +1574,23 @@ export class TravelGlobeApp {
     checkbox.checked = this.airportBrowserScheduledOnly;
     checkbox.addEventListener('change', () => {
       this.airportBrowserScheduledOnly = checkbox.checked;
-      this.renderProductPanel();
+      renderResults();
     });
     const toggleText = document.createElement('span');
     toggleText.textContent = '只看定期航班';
     scheduledToggle.append(checkbox, toggleText);
     controls.append(search, scheduledToggle);
 
-    const results = searchAirports(this.airportBrowserQuery, {
-      limit: 16,
-      scheduledOnly: this.airportBrowserScheduledOnly
-    });
-    const resultList = document.createElement('div');
-    resultList.className = 'airport-browser-results';
-    resultList.replaceChildren(
-      ...(results.length > 0
-        ? results.map((airport) => this.renderAirportBrowserRow(airport))
-        : [textLine('找不到符合條件的機場')])
-    );
-    section.append(title, controls, resultList);
+    renderResults();
+    section.append(title, note, controls, resultList);
     return section;
   }
 
-  private renderAirportBrowserRow(airport: AirportRecord): HTMLElement {
-    const row = document.createElement('button');
-    row.type = 'button';
+  private renderAirportBrowserRow(airport: AirportRecord, selectAirport: (code: string) => void): HTMLElement {
+    const row = document.createElement('div');
     row.className = 'airport-browser-row';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
     const context = airport.iataCode ? findAirportContextByIata(airport.iataCode) : undefined;
     const code = document.createElement('strong');
     code.textContent = airportDisplayCode(airport);
@@ -1491,17 +1602,55 @@ export class TravelGlobeApp {
       ? `${routeGraph.outgoingRoutes} outgoing | top ${routeGraph.topDestinations.slice(0, 4).map((item) => item.code).join(', ')}`
       : 'no route graph';
     detail.textContent = `${airport.type} | runways ${airport.runwayCount} | ${context?.frequencies.length ?? 0} freq | ${context?.navaids.length ?? 0} navaids | ${routeSummary}`;
-    row.append(code, body, detail);
+    const actions = document.createElement('div');
+    actions.className = 'airport-browser-actions';
+    actions.replaceChildren(
+      recordActionButton('設為起飛', () => this.applyAirportToPreload(airport, 'origin')),
+      recordActionButton('設為抵達', () => this.applyAirportToPreload(airport, 'destination'))
+    );
+    row.append(code, body, detail, actions);
     row.addEventListener('click', () => {
-      this.airportBrowserQuery = airportDisplayCode(airport);
-      this.renderProductPanel();
+      selectAirport(airportDisplayCode(airport));
+    });
+    row.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+      event.preventDefault();
+      selectAirport(airportDisplayCode(airport));
     });
     return row;
+  }
+
+  private applyAirportToPreload(airport: AirportRecord, target: 'origin' | 'destination'): void {
+    const code = airportDisplayCode(airport);
+    if (!code) {
+      this.capability.textContent = '此機場沒有可帶入的 IATA / ICAO / ident 代碼。';
+      return;
+    }
+    if (target === 'origin') {
+      this.originInput.value = code;
+    } else {
+      this.destinationInput.value = code;
+    }
+    const preloadShell = this.preloadPanel.closest('details');
+    const productShell = this.productPanel.closest('details');
+    if (preloadShell instanceof HTMLDetailsElement) {
+      preloadShell.open = true;
+    }
+    if (productShell instanceof HTMLDetailsElement) {
+      productShell.open = false;
+    }
+    this.preloadStatus.textContent = `${code} 已帶入${target === 'origin' ? '起飛' : '抵達'}欄位，請確認日期時間後按「套用航線」。`;
+    this.capability.textContent = `${airport.name} 已帶入航班預載。`;
+    this.preloadPanel.scrollIntoView({ block: 'nearest' });
   }
 
   private renderSavedJourneyRow(summary: SavedJourneySummary): HTMLElement {
     const row = document.createElement('div');
     row.className = 'saved-journey-row';
+    const isCurrentJourney = this.journey?.id === summary.id;
+    const isConfirmingDelete = this.pendingSavedJourneyDeleteId === summary.id;
     const body = document.createElement('span');
     body.textContent = `${summary.title} | ${summary.status} | ${formatShortDate(summary.startTime)}`;
     const actions = document.createElement('div');
@@ -1514,8 +1663,33 @@ export class TravelGlobeApp {
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.className = 'record-action-button';
-    deleteButton.textContent = '刪除';
-    bindTouchAction(deleteButton, () => void this.deleteSavedJourney(summary.id));
+    if (isCurrentJourney) {
+      deleteButton.textContent = '使用中';
+      deleteButton.disabled = true;
+    } else if (isConfirmingDelete) {
+      deleteButton.textContent = '確認刪除';
+      bindTouchAction(deleteButton, () => void this.deleteSavedJourney(summary.id));
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'record-action-button';
+      cancelButton.textContent = '取消';
+      bindTouchAction(cancelButton, () => {
+        this.pendingSavedJourneyDeleteId = undefined;
+        this.renderProductPanel();
+        this.renderRecordPreview();
+      });
+      actions.append(loadButton, deleteButton, cancelButton);
+      row.append(body, actions);
+      return row;
+    } else {
+      deleteButton.textContent = '刪除';
+      bindTouchAction(deleteButton, () => {
+        this.pendingSavedJourneyDeleteId = summary.id;
+        this.capability.textContent = `請再按一次「確認刪除」移除本機歷史旅程：${summary.title}`;
+        this.renderProductPanel();
+        this.renderRecordPreview();
+      });
+    }
     actions.append(loadButton, deleteButton);
     row.append(body, actions);
     return row;
@@ -1537,33 +1711,13 @@ export class TravelGlobeApp {
     return savedJourneyList;
   }
 
-  private installOfflinePack(packId: string): void {
-    const pack = coreOfflinePacks.find((candidate) => candidate.id === packId);
-    if (!pack) {
-      return;
-    }
-    this.packState = installPack(this.packState, pack);
-    saveOfflinePackState(this.packState);
-    this.capability.textContent = `${pack.name} 已標記為可離線使用；資料檔已隨目前 Replay build / iOS bundle 提供。`;
-    this.renderProductPanel();
-    this.renderRecordPreview();
-  }
-
-  private deleteOfflinePack(packId: string): void {
-    const pack = coreOfflinePacks.find((candidate) => candidate.id === packId);
-    this.packState = deletePack(this.packState, packId);
-    saveOfflinePackState(this.packState);
-    this.capability.textContent = `${pack?.name ?? packId} 已從本機離線狀態標記移除；不會刪除 bundle 內建資料檔。`;
-    this.renderProductPanel();
-    this.renderRecordPreview();
-  }
-
   private async loadSavedJourney(journeyId: string): Promise<void> {
     const journey = await this.adapter.loadJourneyById(journeyId);
     if (!journey) {
       this.capability.textContent = '找不到這筆本機歷史旅程。';
       return;
     }
+    this.pendingSavedJourneyDeleteId = undefined;
     await this.loadJourney(journey);
     this.capability.textContent = `已載入本機歷史旅程：${journey.title}`;
   }
@@ -1573,13 +1727,12 @@ export class TravelGlobeApp {
       this.capability.textContent = '目前播放中的 journey 不能直接刪除，請先載入其他旅程。';
       return;
     }
-    if (!window.confirm('刪除此本機歷史 journey？匯出的 .travelglobe 檔不會受影響。')) {
-      return;
-    }
     await this.adapter.deleteJourney(journeyId);
+    this.pendingSavedJourneyDeleteId = undefined;
     this.savedJourneys = await this.adapter.listSavedJourneys();
     this.renderProductPanel();
     this.renderRecordPreview();
+    this.capability.textContent = '已刪除本機歷史旅程；匯出的 .travelglobe 檔不受影響。';
   }
 
   private scheduleNativeNotifications(notifications: TravelNotification[]): void {
@@ -1930,6 +2083,67 @@ function recordActionButton(label: string, onClick: () => void): HTMLElement {
   button.textContent = label;
   bindTouchAction(button, onClick);
   return button;
+}
+
+function recordEditorForm(title: string): {
+  element: HTMLFormElement;
+  body: HTMLDivElement;
+  submit: HTMLButtonElement;
+  cancel: HTMLButtonElement;
+} {
+  const form = document.createElement('form');
+  form.className = 'record-editor-form';
+  const heading = document.createElement('strong');
+  heading.textContent = title;
+  const body = document.createElement('div');
+  body.className = 'record-editor-body';
+  const actions = document.createElement('div');
+  actions.className = 'record-editor-actions';
+  const submit = document.createElement('button');
+  submit.type = 'button';
+  submit.className = 'record-action-button is-primary';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'record-action-button';
+  cancel.textContent = '取消';
+  actions.append(submit, cancel);
+  form.addEventListener('submit', (event) => event.preventDefault());
+  form.append(heading, body, actions);
+  return { element: form, body, submit, cancel };
+}
+
+function recordTextInput(
+  label: string,
+  value: string,
+  type: 'text' | 'date' | 'time' = 'text'
+): { field: HTMLLabelElement; input: HTMLInputElement } {
+  const field = document.createElement('label');
+  field.className = 'record-editor-field';
+  const text = document.createElement('span');
+  text.textContent = label;
+  const input = document.createElement('input');
+  input.className = 'record-editor-input';
+  input.type = type;
+  input.value = value;
+  field.append(text, input);
+  return { field, input };
+}
+
+function timestampFromDateTimeInputs(fallbackTimestamp: string, dateValue: string, timeValue: string): string {
+  const fallback = new Date(fallbackTimestamp);
+  if (!dateValue) {
+    return Number.isFinite(fallback.getTime()) ? fallback.toISOString() : new Date().toISOString();
+  }
+  const time = timeValue || '00:00';
+  const parsed = new Date(`${dateValue}T${time}:00`);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : fallbackTimestamp;
+}
+
+function offlinePackPurpose(packId: string): string {
+  if (packId === 'core-global') {
+    return '地圖、國界、城市、機場、跑道、頻率與導航台資料，供 Travel Atlas 與機場查詢離線使用。';
+  }
+  return '全球航路、航路點與 airway graph，供預載航線和航路查找在離線時使用。';
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {

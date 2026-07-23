@@ -318,18 +318,28 @@ for (const viewport of [
       })()
     }), pilotHudCheck);
 
-    await page.goto(new URL('./readme.html', url).href, { waitUntil: 'networkidle' });
+    await page.goto(new URL('./readme.html', url).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('body', { state: 'visible' });
     const manualCheck = await page.evaluate(() => ({
       title: document.title,
       heading: document.querySelector('strong')?.textContent ?? '',
       hasBackLink: Boolean(document.querySelector('a[href="./index.html"]')),
-      hasExports: document.body.textContent?.includes('GPX') && document.body.textContent?.includes('KML')
+      hasExports: document.body.textContent?.includes('GPX') && document.body.textContent?.includes('KML'),
+      hasAtlasControls:
+        document.body.textContent?.includes('設為起飛') &&
+        document.body.textContent?.includes('Core Global Atlas') &&
+        document.body.textContent?.includes('FlightGear Global Airway Graph'),
+      hasTravelRecordForms:
+        document.body.textContent?.includes('在紀錄卡內開啟新增表單') &&
+        document.body.textContent?.includes('確認隱藏')
     }));
     if (
       !manualCheck.title.includes('使用手冊') ||
       !manualCheck.heading.includes('Travel Globe') ||
       !manualCheck.hasBackLink ||
-      !manualCheck.hasExports
+      !manualCheck.hasExports ||
+      !manualCheck.hasAtlasControls ||
+      !manualCheck.hasTravelRecordForms
     ) {
       errors.push(`manual page check failed: ${JSON.stringify(manualCheck)}`);
     }
@@ -499,7 +509,7 @@ async function verifyMobileFd234Regression(page) {
     console.error('[verify-preview] mobile: FD234 step pack and panels');
     await dispatchActionButtonClick(page, 'Pack');
     await page.waitForTimeout(250);
-    assert((await page.locator('.capability').innerText()).includes('Core Global Atlas'), 'Pack button did not update capability text');
+    assert((await page.locator('.capability').innerText()).includes('離線資料已內建'), 'Pack button did not update capability text');
     console.error('[verify-preview] mobile: FD234 pack capability ok');
     await setDetailsOpen(page, '.product-panel-shell', true);
     await page.waitForTimeout(200);
@@ -518,10 +528,8 @@ async function verifyMobileFd234Regression(page) {
     assert(report.cardMetrics.travelAtlas.bottom <= report.cardMetrics.travelAtlas.drawerBottom + 1, `Travel Atlas panel is clipped outside drawer: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlas.reachedBottom, `Travel Atlas panel cannot scroll to its bottom: ${JSON.stringify(report.cardMetrics.travelAtlas)}`);
     assert(report.cardMetrics.travelAtlasGesture.open, `Travel Atlas collapsed during content drag/long press: ${JSON.stringify(report.cardMetrics.travelAtlasGesture)}`);
-    await dispatchTextClick(page, '標記離線');
-    await page.waitForTimeout(180);
-    assert((await page.locator('.capability').innerText()).includes('已標記為可離線使用'), 'Travel Atlas offline marker button did not update status');
-    console.error('[verify-preview] mobile: FD234 product offline marker ok');
+    assert((await page.locator('.product-panel').innerText()).includes('已內建'), 'Travel Atlas bundled pack status is missing');
+    console.error('[verify-preview] mobile: FD234 bundled pack status ok');
     await setDetailsOpen(page, '.product-panel-shell', false);
     await page.waitForTimeout(150);
     await setDetailsOpen(page, '.timeline-panel', true);

@@ -402,19 +402,31 @@
               </tr>
               <tr>
                 <th>機場資料庫搜尋框</th>
-                <td>可搜尋 IATA、ICAO、城市或國家。輸入後列表會即時刷新；點列表任一機場會把該代碼放回搜尋框並顯示 route graph / frequency / navaid 摘要。</td>
+                <td>這是離線查詢工具，不是航班建立表單。可搜尋 IATA、ICAO、城市或國家，用來檢查機場、跑道、頻率、導航台與 route graph 摘要；點列表任一機場會選取該代碼。</td>
+              </tr>
+              <tr>
+                <th><code>設為起飛 / 設為抵達</code></th>
+                <td>把機場資料庫選到的代碼帶入「航班預載 / API key」的起飛或抵達欄位，接著確認日期、時間、航班號與機型，再按 <code>套用航線</code> 建立 flight plan。</td>
               </tr>
               <tr>
                 <th>只看定期航班</th>
                 <td>機場資料庫的 checkbox。勾選時只列 scheduled service 機場；取消勾選時會包含較小或非定期航班機場。</td>
               </tr>
               <tr>
-                <th><code>標記離線 / 移除標記</code></th>
-                <td>切換資料包的本機離線狀態。資料檔已隨目前 Replay build 或 iOS bundle 提供；這裡保存的是使用狀態，不會上傳。</td>
+                <th>Core Global Atlas</th>
+                <td>地圖、國界、城市、機場、跑道、頻率與導航台資料包。它支援 Travel Atlas、機場資料庫搜尋、起降機場 detail 與離線地理顯示。</td>
+              </tr>
+              <tr>
+                <th>FlightGear Global Airway Graph</th>
+                <td>全球航路、航路點與 airway graph 資料包。它支援航班預載時用真實航路連接起降機場；找不到可連接路徑時才退回 Great Circle estimate。</td>
+              </tr>
+              <tr>
+                <th><code>已內建</code></th>
+                <td>代表資料已隨目前 Replay build 或 iOS bundle 一起提供。FlightGear data 已納入本機包，因此不需要「使用離線」或「取消離線」；離線時會直接使用這些資料。</td>
               </tr>
               <tr>
                 <th>本機歷史旅程 <code>載入 / 刪除</code></th>
-                <td><code>載入</code> 會切換目前地球到該 journey；<code>刪除</code> 只移除 localStorage 裡的本機歷史，不影響已匯出的檔案。</td>
+                <td><code>載入</code> 會切換目前地球到該 journey；<code>刪除</code> 會先顯示 <code>確認刪除 / 取消</code>，確認後只移除 localStorage 裡的本機歷史，不影響已匯出的檔案。目前正在播放的 journey 會顯示 <code>使用中</code>，需先載入其他旅程再刪。</td>
               </tr>
               <tr>
                 <th>通知</th>
@@ -496,15 +508,15 @@
               </tr>
               <tr>
                 <th><code>新增 / 新增事件</code></th>
-                <td>用目前地球顯示位置建立人工打卡事件；會詢問標題與備註。</td>
+                <td>在紀錄卡內開啟新增表單，用目前地球顯示位置建立人工打卡事件；輸入標題與備註後按 <code>新增</code>。</td>
               </tr>
               <tr>
                 <th><code>修改 / 修改紀錄</code></th>
-                <td>修改目前紀錄標題與副標題，寫入 edit overlay，不改原始 GPS。</td>
+                <td>在紀錄卡內開啟修改表單，更新目前紀錄標題與副標題，寫入 edit overlay，不改原始 GPS。</td>
               </tr>
               <tr>
                 <th><code>分類/時間</code></th>
-                <td>調整目前紀錄區域分類與 ISO 8601 時間；無效輸入會保留原值。</td>
+                <td>在紀錄卡內開啟分類與時間表單，可選區域並用日期/時間欄位調整事件時間；無效輸入會保留原值。</td>
               </tr>
               <tr>
                 <th><code>附加照片</code></th>
@@ -516,15 +528,15 @@
               </tr>
               <tr>
                 <th><code>復原 / 復原上次</code></th>
-                <td>復原最近一次旅遊紀錄編輯。最多保留最近數筆編輯堆疊。</td>
+                <td>復原最近一次旅遊紀錄編輯，包含新增、修改、分類、隱藏、附加照片與航線摘要編輯。最多保留最近數筆編輯堆疊。</td>
               </tr>
               <tr>
                 <th><code>隱藏/刪除 / 隱藏紀錄</code></th>
-                <td>把目前旅遊事件標記為 hidden；原始 GPS、segment 與 SQLite 紀錄仍保留。</td>
+                <td>在紀錄卡內顯示確認訊息，確認後把目前旅遊事件標記為 hidden；原始 GPS、segment 與 SQLite 紀錄仍保留，可用 <code>復原</code> 取回。</td>
               </tr>
               <tr>
                 <th><code>編輯航線 / 編輯航線摘要</code></th>
-                <td>修改航班號、機型、起飛 IATA、抵達 IATA 與 journey 標題摘要。</td>
+                <td>在紀錄卡內開啟航線摘要表單，可修改航班號、機型、起飛 IATA、抵達 IATA 與 journey 標題摘要。</td>
               </tr>
             </table>
           </section>

@@ -1023,6 +1023,14 @@ select.preload-input {
   font-weight: 850;
 }
 
+.atlas-section-note {
+  margin: 0;
+  color: #a7c7c8;
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .atlas-section-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1110,6 +1118,21 @@ select.preload-input {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.pack-status-pill {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(132 226 159 / 24%);
+  border-radius: 7px;
+  background: rgb(132 226 159 / 12%);
+  color: #dfffe8;
+  font-size: 10px;
+  font-weight: 850;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
 .saved-journey-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -1154,6 +1177,13 @@ select.preload-input {
   line-height: 1.35;
 }
 
+.airport-browser-actions {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .pack-control-row > span,
 .saved-journey-row > span {
   min-width: 0;
@@ -1162,6 +1192,22 @@ select.preload-input {
   font-weight: 750;
   line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+.pack-control-row > span {
+  display: grid;
+  gap: 3px;
+}
+
+.pack-control-row > span strong {
+  color: #d9f3f4;
+  font-size: 10px;
+}
+
+.pack-control-row > span small {
+  color: #93b6b8;
+  font-size: 9px;
+  line-height: 1.3;
 }
 
 .region-bar-row {
@@ -1346,6 +1392,74 @@ select.preload-input {
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.record-action-button.is-primary {
+  border-color: rgb(132 226 159 / 42%);
+  background: rgb(132 226 159 / 18%);
+}
+
+.record-action-button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.record-editor-form {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgb(126 220 230 / 18%);
+  border-radius: 7px;
+  background: rgb(3 20 25 / 76%);
+  color: #f5fbff;
+}
+
+.record-editor-form > strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.record-editor-body,
+.record-editor-field {
+  display: grid;
+  gap: 6px;
+}
+
+.record-editor-field span,
+.record-editor-note {
+  color: #a7c7c8;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.record-editor-note {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.record-editor-input {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid rgb(126 220 230 / 18%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 8%);
+  color: #f5fbff;
+  font: inherit;
+  font-size: 12px;
+  padding: 0 9px;
+}
+
+.record-editor-input:focus {
+  border-color: rgb(126 220 230 / 58%);
+  outline: none;
+}
+
+.record-editor-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .record-tags {
