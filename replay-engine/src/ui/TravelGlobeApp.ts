@@ -619,16 +619,17 @@ export class TravelGlobeApp {
     const attitude = buildPilotAttitude(
       this.segment,
       sample,
-      this.isLiveGpsMode ? this.pilotHudPreviousBearingDegrees : undefined
+      this.isLiveGpsMode ? this.pilotHudPreviousBearingDegrees : undefined,
+      this.isLiveGpsMode ? 'live' : 'route'
     );
-    this.pilotHudSmoothedRollDegrees += (attitude.rollDegrees - this.pilotHudSmoothedRollDegrees) * 0.16;
-    if (Math.abs(this.pilotHudSmoothedRollDegrees) < 0.35) {
+    this.pilotHudSmoothedRollDegrees += (attitude.rollDegrees - this.pilotHudSmoothedRollDegrees) * 0.12;
+    if (Math.abs(this.pilotHudSmoothedRollDegrees) < 0.8) {
       this.pilotHudSmoothedRollDegrees = 0;
     }
     attitude.rollDegrees = this.pilotHudSmoothedRollDegrees;
     this.pilotHudPreviousBearingDegrees = sample.bearingDegrees;
     this.pilotHud.replaceChildren(
-      pilotScale('IAS EST', attitude.iasKnots, 'left', attitude.iasTicks),
+      pilotScale('SPD kt', attitude.iasKnots, 'left', attitude.iasTicks),
       pilotScale('ALT', metrics.altitudeFeet, 'right', altitudeTicks(sample.point.altitudeMeters ?? 0)),
       pilotHorizon(attitude),
       pilotHeading(attitude.headingLabel),
@@ -2041,7 +2042,8 @@ function pilotPitchLadder(): HTMLElement {
 function buildPilotAttitude(
   segment: JourneySegment | undefined,
   sample: ReplaySample,
-  previousLiveBearingDegrees?: number
+  previousLiveBearingDegrees?: number,
+  turnSource: 'route' | 'live' = 'route'
 ): PilotAttitude {
   const headingDegrees = Math.round(sample.bearingDegrees);
   const point = sample.point;
@@ -2062,7 +2064,9 @@ function buildPilotAttitude(
         adjacent.next.courseDegrees ?? sample.bearingDegrees
       )
     : 0;
-  const rollDegrees = bankAngleForTurn(previousLiveBearingDegrees === undefined ? routeTurnDegrees : liveTurnDegrees);
+  const rollDegrees = turnSource === 'live'
+    ? liveBankAngleForTurn(liveTurnDegrees)
+    : routeBankAngleForTurn(routeTurnDegrees);
   const ias = estimatedIasKnots(speedMetersPerSecond, altitudeMeters);
 
   return {
@@ -2074,12 +2078,20 @@ function buildPilotAttitude(
   };
 }
 
-function bankAngleForTurn(turnDegrees: number): number {
-  const deadbandDegrees = 5.5;
+function routeBankAngleForTurn(turnDegrees: number): number {
+  const deadbandDegrees = 18;
   if (Math.abs(turnDegrees) < deadbandDegrees) {
     return 0;
   }
-  return clamp(-turnDegrees * 0.42, -12, 12);
+  return clamp(-turnDegrees * 0.18, -7, 7);
+}
+
+function liveBankAngleForTurn(turnDegrees: number): number {
+  const deadbandDegrees = 8;
+  if (Math.abs(turnDegrees) < deadbandDegrees) {
+    return 0;
+  }
+  return clamp(-turnDegrees * 0.32, -10, 10);
 }
 
 function pitchAngleForVerticalSpeed(verticalSpeedMetersPerSecond: number, speedMetersPerSecond: number): number {

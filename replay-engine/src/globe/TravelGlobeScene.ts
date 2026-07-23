@@ -288,7 +288,7 @@ export class TravelGlobeScene {
     this.container.parentElement?.classList.toggle('is-daylight-scene', dayFactor >= 0.55);
     this.renderer.toneMappingExposure = lerp(1.0, 1.36, dayFactor);
     const daySky = new THREE.Color(0xbfdff4);
-    const nightSky = new THREE.Color(0x07111d);
+    const nightSky = new THREE.Color(0x12324a);
     const sky = new THREE.Color().lerpColors(nightSky, daySky, dayFactor);
     this.scene.background = sky;
     this.renderer.setClearColor(sky, 1);
