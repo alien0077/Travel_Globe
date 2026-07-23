@@ -101,6 +101,8 @@ export class TravelGlobeApp {
   private shellEventController?: AbortController;
   private isPilotHudEnabled = true;
   private isPilotViewRailExpanded = false;
+  private pilotHudPreviousBearingDegrees?: number;
+  private pilotHudSmoothedRollDegrees = 0;
 
   private readonly viewport = document.createElement('section');
   private readonly cockpitWindow = document.createElement('section');
@@ -156,6 +158,8 @@ export class TravelGlobeApp {
     this.activeRecordId = this.travelRecords[0]?.id;
     this.liveGps = new LiveGpsTracker();
     this.isLiveGpsMode = false;
+    this.pilotHudPreviousBearingDegrees = undefined;
+    this.pilotHudSmoothedRollDegrees = 0;
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
     this.lastFrameMs = undefined;
@@ -204,7 +208,6 @@ export class TravelGlobeApp {
       Object.assign(document.createElement('div'), { className: 'cockpit-horizon-line' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-ceiling' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-left-post' }),
-      Object.assign(document.createElement('div'), { className: 'cockpit-center-post' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-right-post' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-glare-shield' })
     );
@@ -613,7 +616,17 @@ export class TravelGlobeApp {
   }
 
   private renderPilotHud(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
-    const attitude = buildPilotAttitude(this.segment, sample);
+    const attitude = buildPilotAttitude(
+      this.segment,
+      sample,
+      this.isLiveGpsMode ? this.pilotHudPreviousBearingDegrees : undefined
+    );
+    this.pilotHudSmoothedRollDegrees += (attitude.rollDegrees - this.pilotHudSmoothedRollDegrees) * 0.16;
+    if (Math.abs(this.pilotHudSmoothedRollDegrees) < 0.35) {
+      this.pilotHudSmoothedRollDegrees = 0;
+    }
+    attitude.rollDegrees = this.pilotHudSmoothedRollDegrees;
+    this.pilotHudPreviousBearingDegrees = sample.bearingDegrees;
     this.pilotHud.replaceChildren(
       pilotScale('IAS EST', attitude.iasKnots, 'left', attitude.iasTicks),
       pilotScale('ALT', metrics.altitudeFeet, 'right', altitudeTicks(sample.point.altitudeMeters ?? 0)),
@@ -1825,6 +1838,10 @@ export class TravelGlobeApp {
     if (!point) {
       return;
     }
+    if (!this.isLiveGpsMode) {
+      this.pilotHudPreviousBearingDegrees = undefined;
+      this.pilotHudSmoothedRollDegrees = 0;
+    }
     this.isLiveGpsMode = true;
     this.liveGps.ingest(point, performance.now());
     this.capability.textContent = 'Live GPS recording：已接收 iPhone CoreLocation 真實定位';
@@ -1998,7 +2015,7 @@ function pilotHorizon(attitude: PilotAttitude): HTMLElement {
   const horizon = document.createElement('div');
   horizon.className = 'pilot-horizon';
   horizon.style.setProperty('--pilot-bank-angle', `${attitude.rollDegrees.toFixed(2)}deg`);
-  horizon.style.setProperty('--pilot-pitch-offset', `${(-attitude.pitchDegrees * 5).toFixed(1)}px`);
+  horizon.style.setProperty('--pilot-pitch-offset', `${(-attitude.pitchDegrees * 7).toFixed(1)}px`);
   horizon.replaceChildren(
     Object.assign(document.createElement('span'), { className: 'pilot-horizon-line' }),
     pilotPitchLadder(),
@@ -2021,7 +2038,11 @@ function pilotPitchLadder(): HTMLElement {
   return ladder;
 }
 
-function buildPilotAttitude(segment: JourneySegment | undefined, sample: ReplaySample): PilotAttitude {
+function buildPilotAttitude(
+  segment: JourneySegment | undefined,
+  sample: ReplaySample,
+  previousLiveBearingDegrees?: number
+): PilotAttitude {
   const headingDegrees = Math.round(sample.bearingDegrees);
   const point = sample.point;
   const speedMetersPerSecond = point.speedMetersPerSecond ?? 0;
@@ -2031,10 +2052,17 @@ function buildPilotAttitude(segment: JourneySegment | undefined, sample: ReplayS
     ? ((adjacent.next.altitudeMeters ?? altitudeMeters) - (adjacent.previous.altitudeMeters ?? altitudeMeters)) /
       Math.max(1, (Date.parse(adjacent.next.timestamp) - Date.parse(adjacent.previous.timestamp)) / 1000)
     : 0;
-  const pitchDegrees = clamp(Math.atan2(verticalSpeedMetersPerSecond, Math.max(52, speedMetersPerSecond)) * 180 / Math.PI, -8, 10);
-  const rollDegrees = adjacent
-    ? clamp(-angleDeltaDegrees(adjacent.previous.courseDegrees ?? sample.bearingDegrees, adjacent.next.courseDegrees ?? sample.bearingDegrees) * 1.6, -22, 22)
+  const pitchDegrees = pitchAngleForVerticalSpeed(verticalSpeedMetersPerSecond, speedMetersPerSecond);
+  const liveTurnDegrees = previousLiveBearingDegrees === undefined
+    ? 0
+    : angleDeltaDegrees(previousLiveBearingDegrees, sample.bearingDegrees);
+  const routeTurnDegrees = adjacent
+    ? angleDeltaDegrees(
+        adjacent.previous.courseDegrees ?? sample.bearingDegrees,
+        adjacent.next.courseDegrees ?? sample.bearingDegrees
+      )
     : 0;
+  const rollDegrees = bankAngleForTurn(previousLiveBearingDegrees === undefined ? routeTurnDegrees : liveTurnDegrees);
   const ias = estimatedIasKnots(speedMetersPerSecond, altitudeMeters);
 
   return {
@@ -2044,6 +2072,22 @@ function buildPilotAttitude(segment: JourneySegment | undefined, sample: ReplayS
     iasKnots: Math.round(ias).toString(),
     iasTicks: speedTicks(ias)
   };
+}
+
+function bankAngleForTurn(turnDegrees: number): number {
+  const deadbandDegrees = 5.5;
+  if (Math.abs(turnDegrees) < deadbandDegrees) {
+    return 0;
+  }
+  return clamp(-turnDegrees * 0.42, -12, 12);
+}
+
+function pitchAngleForVerticalSpeed(verticalSpeedMetersPerSecond: number, speedMetersPerSecond: number): number {
+  if (Math.abs(verticalSpeedMetersPerSecond) < 0.28) {
+    return 0;
+  }
+  const referenceSpeed = Math.max(30, speedMetersPerSecond * 0.56);
+  return clamp(Math.atan2(verticalSpeedMetersPerSecond, referenceSpeed) * 180 / Math.PI, -10, 12);
 }
 
 function adjacentReplayPoints(segment: JourneySegment, timestamp: string): { previous: LocationPoint; next: LocationPoint } | undefined {

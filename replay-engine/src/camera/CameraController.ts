@@ -56,19 +56,21 @@ export class CameraController {
     }
 
     if (this.mode === 'totalRoute') {
-      const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const yawedForward = forward.clone().applyAxisAngle(normal, this.orbitYaw);
+      const right = new THREE.Vector3().crossVectors(yawedForward, normal).normalize();
       const distance = THREE.MathUtils.clamp(3.45 * this.zoom, 2.65, 6.2);
+      const routeElevation = THREE.MathUtils.clamp(2.35 + this.orbitPitch * 1.08, 0.85, 3.9);
       this.desired
         .copy(this.target)
-        .add(forward.clone().multiplyScalar(-distance))
+        .add(yawedForward.clone().multiplyScalar(-distance))
         .add(right.multiplyScalar(0.36 * distance))
-        .add(normal.clone().multiplyScalar(2.35 * this.zoom));
+        .add(normal.clone().multiplyScalar(routeElevation * this.zoom));
       this.camera.position.lerp(this.desired, lerpAmount ?? 0.1);
       this.camera.up.copy(normal);
       this.camera.lookAt(
         this.target
           .clone()
-          .add(forward.clone().multiplyScalar(0.28))
+          .add(yawedForward.clone().multiplyScalar(0.28))
           .add(normal.clone().multiplyScalar(0.28))
       );
       return;

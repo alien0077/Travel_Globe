@@ -68,6 +68,25 @@ describe('camera controller interaction', () => {
     expect(distances.get('totalRoute')).toBeGreaterThan(distances.get('flightPreview') ?? 0);
   });
 
+  it('allows total route view to orbit with drag gestures', () => {
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const controller = new CameraController(camera);
+    const point = { latitude: 22.6, longitude: 120.3, altitudeMeters: 9_500 };
+    controller.setMode('totalRoute');
+
+    for (let index = 0; index < 36; index += 1) {
+      controller.update(point, 35);
+    }
+    const before = camera.position.clone();
+
+    controller.rotate(100, 45);
+    for (let index = 0; index < 36; index += 1) {
+      controller.update(point, 35);
+    }
+
+    expect(camera.position.distanceTo(before)).toBeGreaterThan(0.2);
+  });
+
   it('keeps low-altitude pilot view close to the horizon with a narrow local scale', () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const controller = new CameraController(camera);

@@ -420,13 +420,13 @@ export class TravelGlobeScene {
   private setCockpitSceneVisibility(cameraMode: CameraMode): void {
     const isPilotView = cameraMode === 'pilotView';
     this.renderer.domElement.classList.toggle('is-cockpit-render', isPilotView);
-    this.earth.visible = !isPilotView;
-    this.clouds.visible = !isPilotView;
-    this.nightLights.visible = !isPilotView;
-    this.nightSurfaceWash.visible = !isPilotView;
-    this.cityLights.visible = !isPilotView && this.cityLightMaterial.opacity > 0.08;
-    this.airportMarkers.visible = !isPilotView;
-    this.routeTrack.visible = !isPilotView;
+    this.earth.visible = true;
+    this.clouds.visible = true;
+    this.nightLights.visible = true;
+    this.nightSurfaceWash.visible = true;
+    this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
+    this.airportMarkers.visible = true;
+    this.routeTrack.visible = true;
   }
 
   private showFocusedAirportLabel(width: number, height: number): void {
@@ -451,8 +451,8 @@ export class TravelGlobeScene {
       return;
     }
     this.focusedAirportLabel.textContent = airportFocusLabel(airportFocus.point);
-    const x = THREE.MathUtils.clamp(((projected.x + 1) / 2) * width + 22, 8, Math.max(8, width - this.focusedAirportLabel.offsetWidth - 10));
-    const y = THREE.MathUtils.clamp(((-projected.y + 1) / 2) * height - 18, 98, Math.max(98, height - 210));
+    const x = ((projected.x + 1) / 2) * width + 22;
+    const y = ((-projected.y + 1) / 2) * height - 18;
     this.focusedAirportLabel.classList.remove('is-hidden');
     this.focusedAirportLabel.style.opacity = '1';
     this.focusedAirportLabel.style.transform = `translate(${x}px, ${y}px) scale(${(1.16 + airportFocus.strength * 0.2).toFixed(3)})`;
