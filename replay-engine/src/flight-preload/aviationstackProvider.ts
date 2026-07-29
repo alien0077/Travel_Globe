@@ -1,4 +1,8 @@
-import { buildPreloadedFlightJourney, type PreloadFlightRequest, type PreloadFlightResult } from './buildPreloadedFlightJourney';
+import {
+  buildPreloadedFlightJourneyWithRouteShapes,
+  type PreloadFlightRequest,
+  type PreloadFlightResult
+} from './buildPreloadedFlightJourney';
 import { normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
 
 const API_KEY_STORAGE_KEY = 'travelglobe.aviationstack.apiKey';
@@ -63,7 +67,7 @@ export class AviationstackFlightPreloadProvider {
       const record = await fetchAviationstackFlight(apiKey, flightNumber);
       if (record) {
         writeCachedFlight(record);
-        return buildPreloadedFlightJourney({
+        return await buildPreloadedFlightJourneyWithRouteShapes({
           ...request,
           ...record,
           source: 'aviationstack'
@@ -99,18 +103,18 @@ export function readCachedFlight(flightNumber: string): CachedFlightRecord | und
   return cache[normalizeFlightNumber(flightNumber)];
 }
 
-function buildFromCachedOrOffline(request: PreloadFlightRequest, flightNumber: string): PreloadFlightResult {
+async function buildFromCachedOrOffline(request: PreloadFlightRequest, flightNumber: string): Promise<PreloadFlightResult> {
   const cached = readCachedFlight(flightNumber);
   const manualOrigin = normalizeOptionalIata(request.originIata);
   const manualDestination = normalizeOptionalIata(request.destinationIata);
   if (cached && (!manualOrigin || !manualDestination)) {
-    return buildPreloadedFlightJourney({
+    return await buildPreloadedFlightJourneyWithRouteShapes({
       ...request,
       ...cached,
       source: 'aviationstack-cache'
     });
   }
-  return buildPreloadedFlightJourney(request);
+  return await buildPreloadedFlightJourneyWithRouteShapes(request);
 }
 
 async function fetchAviationstackFlight(apiKey: string, flightNumber: string): Promise<CachedFlightRecord | undefined> {

@@ -8,6 +8,7 @@ import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
 import { findAirgraphRoute, type AirgraphRouteResult } from './airgraphIndex';
 import { findAirportByIata, findOpenFlightsRoute, normalizeIata, type AirportRecord } from './airportIndex';
 import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
+import { findRouteShape } from './routeShapeIndex';
 
 export interface PreloadFlightRequest {
   flightNumber: string;
@@ -31,27 +32,22 @@ const replayFractions = [0, 0.08, 0.24, 0.5, 0.76, 0.92, 1];
 const processedFractions = [0, 0.25, 0.5, 0.75, 1];
 const rawFractions = [0, 0.12, 0.5, 0.88, 1];
 
-export function buildPreloadedFlightJourney(request: PreloadFlightRequest): PreloadFlightResult {
+export async function buildPreloadedFlightJourneyWithRouteShapes(request: PreloadFlightRequest): Promise<PreloadFlightResult> {
+  const endpoints = resolvePreloadEndpoints(request);
+  const routeShape = await findRouteShape(endpoints.origin, endpoints.destination);
+  return buildPreloadedFlightJourney(request, routeShape);
+}
+
+export function buildPreloadedFlightJourney(
+  request: PreloadFlightRequest,
+  preferredRoute?: AirgraphRouteResult
+): PreloadFlightResult {
   const flightNumber = normalizeFlightNumber(request.flightNumber);
   if (!flightNumber) {
     throw new Error('請輸入航班號');
   }
 
-  const schedule = findScheduleByFlightNumber(flightNumber);
-  const originIata = normalizeOptionalIata(request.originIata) ?? schedule?.originIata;
-  const destinationIata = normalizeOptionalIata(request.destinationIata) ?? schedule?.destinationIata;
-  if (!originIata || !destinationIata) {
-    throw new Error(`${flightNumber} 尚未有起飛/抵達機場資料，請手動輸入 IATA`);
-  }
-
-  const origin = findAirportByIata(originIata);
-  const destination = findAirportByIata(destinationIata);
-  if (!origin || !destination) {
-    const missing = [origin ? '' : normalizeIata(originIata), destination ? '' : normalizeIata(destinationIata)]
-      .filter(Boolean)
-      .join(', ');
-    throw new Error(`機場索引找不到 ${missing}`);
-  }
+  const { schedule, origin, destination, originIata, destinationIata } = resolvePreloadEndpoints(request, flightNumber);
   if (origin.iataCode === destination.iataCode) {
     throw new Error('起飛與抵達機場不可相同');
   }
@@ -77,11 +73,15 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       : schedule?.defaultAircraftType
         ? 'offline-schedule-index'
         : 'default';
-  const airgraphRoute = findAirgraphRoute(origin, destination);
+  const airgraphRoute = preferredRoute ?? findAirgraphRoute(origin, destination);
   const hasAirwayRoute = airgraphRoute?.method === 'airway_graph';
-  const routeDistanceMeters = hasAirwayRoute && airgraphRoute ? airgraphRoute.distanceMeters : distanceMeters;
+  const hasRouteShape = airgraphRoute?.source === 'aviationdb-route-shapes';
+  const hasPlannedRoute = Boolean(airgraphRoute && (hasAirwayRoute || hasRouteShape));
+  const routeDistanceMeters = hasPlannedRoute && airgraphRoute && airgraphRoute.distanceMeters > 0
+    ? airgraphRoute.distanceMeters
+    : distanceMeters;
 
-  const derivedReplayRoute = hasAirwayRoute && airgraphRoute
+  const derivedReplayRoute = hasPlannedRoute && airgraphRoute
     ? {
         kind: 'derivedReplay' as const,
         points: routePointsFromAirgraph({
@@ -109,7 +109,7 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
           })
         )
       };
-  const processedRoute = hasAirwayRoute && airgraphRoute
+  const processedRoute = hasPlannedRoute && airgraphRoute
     ? {
         kind: 'processed' as const,
         points: routePointsFromAirgraph({
@@ -137,7 +137,7 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
           })
         )
       };
-  const rawRoute = hasAirwayRoute && airgraphRoute
+  const rawRoute = hasPlannedRoute && airgraphRoute
     ? {
         kind: 'raw' as const,
         points: routePointsFromAirgraph({
@@ -201,8 +201,8 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       preloadSource,
       routeMethod: airgraphRoute?.method ?? 'great_circle_fallback',
       routeSource: airgraphRoute?.source ?? 'great-circle',
-      routeFallbackSource: airgraphRoute ? undefined : 'great-circle',
-      routeFallbackLabel: airgraphRoute ? undefined : 'Great Circle estimate',
+      routeFallbackSource: hasPlannedRoute ? undefined : 'great-circle',
+      routeFallbackLabel: hasPlannedRoute ? undefined : 'Great Circle estimate',
       airgraphRegion: airgraphRoute?.region,
       airgraphWaypoints: airgraphRoute?.waypoints,
       aircraftTypeSource,
@@ -252,8 +252,8 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
         preloadSource,
         routeMethod: airgraphRoute?.method ?? 'great_circle_fallback',
         routeSource: airgraphRoute?.source ?? 'great-circle',
-        routeFallbackSource: airgraphRoute ? undefined : 'great-circle',
-        routeFallbackLabel: airgraphRoute ? undefined : 'Great Circle estimate',
+        routeFallbackSource: hasPlannedRoute ? undefined : 'great-circle',
+        routeFallbackLabel: hasPlannedRoute ? undefined : 'Great Circle estimate',
         airgraphRegion: airgraphRoute?.region,
         airgraphWaypoints: airgraphRoute?.waypoints,
         aircraftTypeSource,
@@ -262,6 +262,35 @@ export function buildPreloadedFlightJourney(request: PreloadFlightRequest): Prel
       }
     }
   };
+}
+
+function resolvePreloadEndpoints(request: PreloadFlightRequest, normalizedFlightNumber?: string): {
+  schedule: ReturnType<typeof findScheduleByFlightNumber>;
+  origin: AirportRecord;
+  destination: AirportRecord;
+  originIata: string;
+  destinationIata: string;
+} {
+  const flightNumber = normalizedFlightNumber ?? normalizeFlightNumber(request.flightNumber);
+  if (!flightNumber) {
+    throw new Error('請輸入航班號');
+  }
+  const schedule = findScheduleByFlightNumber(flightNumber);
+  const originIata = normalizeOptionalIata(request.originIata) ?? schedule?.originIata;
+  const destinationIata = normalizeOptionalIata(request.destinationIata) ?? schedule?.destinationIata;
+  if (!originIata || !destinationIata) {
+    throw new Error(`${flightNumber} 尚未有起飛/抵達機場資料，請手動輸入 IATA`);
+  }
+
+  const origin = findAirportByIata(originIata);
+  const destination = findAirportByIata(destinationIata);
+  if (!origin || !destination) {
+    const missing = [origin ? '' : normalizeIata(originIata), destination ? '' : normalizeIata(destinationIata)]
+      .filter(Boolean)
+      .join(', ');
+    throw new Error(`機場索引找不到 ${missing}`);
+  }
+  return { schedule, origin, destination, originIata, destinationIata };
 }
 
 function buildPreloadWarning(
@@ -275,7 +304,9 @@ function buildPreloadWarning(
   airgraphRoute?: AirgraphRouteResult
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
-  const routeNote = airgraphRoute
+  const routeNote = airgraphRoute?.source === 'aviationdb-route-shapes'
+    ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線 airport-pair 與航路點 corridor 近似，尚非正式 filed route。`
+    : airgraphRoute
     ? ` 已使用 AviationDB ${airgraphRoute.region} airway graph 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線航路圖近似，尚非正式 filed route。`
     : ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';
   const aircraftNote = openFlightsAircraftType && openFlightsRouteCount

@@ -1,0 +1,627 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-29T01:04:45.165225+00:00",
+  "route": "KHH-NRT",
+  "pairSource": {
+    "exists": true,
+    "source": "OpenFlights historical route graph",
+    "count": 5,
+    "aircraftTypes": [
+      "321",
+      "738",
+      "763",
+      "767"
+    ]
+  },
+  "adsbSupport": {
+    "diagnosticDate": "2026-07-22",
+    "corridorCandidates": 145,
+    "strictOriginDestinationCandidates": 0
+  },
+  "selected": {
+    "method": "great_circle_waypoint_corridor",
+    "score": 112.97,
+    "reason": "Real airgraph waypoints near the airport-pair great-circle corridor score best.",
+    "provenance": {
+      "source": "openflights-pair-plus-airgraph-waypoints-near-great-circle",
+      "note": "Uses real airgraph waypoints selected by proximity to the airport-pair great-circle corridor; airway segment connectivity is not implied.",
+      "waypointCount": 9,
+      "maxWaypointCorridorKm": 13.2
+    },
+    "points": [
+      {
+        "ident": "KHH",
+        "lat": 22.577101,
+        "lon": 120.349998,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "WAGON",
+        "lat": 23.588056,
+        "lon": 121.773889,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.073,
+        "greatCircleDistanceKm": 6.5
+      },
+      {
+        "ident": "SEDKU",
+        "lat": 24.933333,
+        "lon": 124.0,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.181,
+        "greatCircleDistanceKm": 4.1
+      },
+      {
+        "ident": "MYC11",
+        "lat": 26.387334,
+        "lon": 126.298187,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.294,
+        "greatCircleDistanceKm": 9.3
+      },
+      {
+        "ident": "CHAMP",
+        "lat": 27.919417,
+        "lon": 128.534619,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.407,
+        "greatCircleDistanceKm": 4.0
+      },
+      {
+        "ident": "EMILY",
+        "lat": 28.736822,
+        "lon": 129.771194,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.469,
+        "greatCircleDistanceKm": 3.7
+      },
+      {
+        "ident": "TONAR",
+        "lat": 29.890697,
+        "lon": 131.686939,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.562,
+        "greatCircleDistanceKm": 13.2
+      },
+      {
+        "ident": "WEBER",
+        "lat": 32.169139,
+        "lon": 134.997222,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.73,
+        "greatCircleDistanceKm": 4.4
+      },
+      {
+        "ident": "MAYON",
+        "lat": 32.870453,
+        "lon": 136.044947,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.782,
+        "greatCircleDistanceKm": 3.4
+      },
+      {
+        "ident": "CELLO",
+        "lat": 33.998608,
+        "lon": 137.920167,
+        "pointType": "SIGNIFICANT_POINT",
+        "greatCircleT": 0.873,
+        "greatCircleDistanceKm": 12.8
+      },
+      {
+        "ident": "NRT",
+        "lat": 35.76858,
+        "lon": 140.388714,
+        "pointType": "AIRPORT"
+      }
+    ],
+    "metrics": {
+      "distanceKm": 2436.0,
+      "directKm": 2428.0,
+      "detourRatio": 1.003,
+      "greatCircleMeanDeviationKm": 5.6,
+      "greatCircleMaxDeviationKm": 13.2,
+      "southPenaltyKm": 0.0,
+      "earlyEastPenaltyKm": 2.6,
+      "taiwanSideHeuristic": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "side": "west_or_strait"
+        },
+        {
+          "ident": "WAGON",
+          "lat": 23.588056,
+          "lon": 121.773889,
+          "side": "east"
+        },
+        {
+          "ident": "SEDKU",
+          "lat": 24.933333,
+          "lon": 124.0,
+          "side": "east"
+        },
+        {
+          "ident": "MYC11",
+          "lat": 26.387334,
+          "lon": 126.298187,
+          "side": "east"
+        }
+      ]
+    }
+  },
+  "candidates": [
+    {
+      "method": "great_circle_waypoint_corridor",
+      "provenance": {
+        "source": "openflights-pair-plus-airgraph-waypoints-near-great-circle",
+        "note": "Uses real airgraph waypoints selected by proximity to the airport-pair great-circle corridor; airway segment connectivity is not implied.",
+        "waypointCount": 9,
+        "maxWaypointCorridorKm": 13.2
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "WAGON",
+          "lat": 23.588056,
+          "lon": 121.773889,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.073,
+          "greatCircleDistanceKm": 6.5
+        },
+        {
+          "ident": "SEDKU",
+          "lat": 24.933333,
+          "lon": 124.0,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.181,
+          "greatCircleDistanceKm": 4.1
+        },
+        {
+          "ident": "MYC11",
+          "lat": 26.387334,
+          "lon": 126.298187,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.294,
+          "greatCircleDistanceKm": 9.3
+        },
+        {
+          "ident": "CHAMP",
+          "lat": 27.919417,
+          "lon": 128.534619,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.407,
+          "greatCircleDistanceKm": 4.0
+        },
+        {
+          "ident": "EMILY",
+          "lat": 28.736822,
+          "lon": 129.771194,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.469,
+          "greatCircleDistanceKm": 3.7
+        },
+        {
+          "ident": "TONAR",
+          "lat": 29.890697,
+          "lon": 131.686939,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.562,
+          "greatCircleDistanceKm": 13.2
+        },
+        {
+          "ident": "WEBER",
+          "lat": 32.169139,
+          "lon": 134.997222,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.73,
+          "greatCircleDistanceKm": 4.4
+        },
+        {
+          "ident": "MAYON",
+          "lat": 32.870453,
+          "lon": 136.044947,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.782,
+          "greatCircleDistanceKm": 3.4
+        },
+        {
+          "ident": "CELLO",
+          "lat": 33.998608,
+          "lon": 137.920167,
+          "pointType": "SIGNIFICANT_POINT",
+          "greatCircleT": 0.873,
+          "greatCircleDistanceKm": 12.8
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "metrics": {
+        "distanceKm": 2436.0,
+        "directKm": 2428.0,
+        "detourRatio": 1.003,
+        "greatCircleMeanDeviationKm": 5.6,
+        "greatCircleMaxDeviationKm": 13.2,
+        "southPenaltyKm": 0.0,
+        "earlyEastPenaltyKm": 2.6,
+        "taiwanSideHeuristic": [
+          {
+            "ident": "KHH",
+            "lat": 22.577101,
+            "lon": 120.349998,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "WAGON",
+            "lat": 23.588056,
+            "lon": 121.773889,
+            "side": "east"
+          },
+          {
+            "ident": "SEDKU",
+            "lat": 24.933333,
+            "lon": 124.0,
+            "side": "east"
+          },
+          {
+            "ident": "MYC11",
+            "lat": 26.387334,
+            "lon": 126.298187,
+            "side": "east"
+          }
+        ]
+      },
+      "score": 112.97,
+      "selectionReason": "Real airgraph waypoints near the airport-pair great-circle corridor score best."
+    },
+    {
+      "method": "great_circle_pair_fallback",
+      "provenance": {
+        "source": "openflights-pair-plus-great-circle",
+        "note": "Selected when airgraph shortest path conflicts with great-circle/ADSB scoring."
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "GC01",
+          "lat": 23.778906,
+          "lon": 121.836249,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC02",
+          "lat": 24.966222,
+          "lon": 123.350061,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC03",
+          "lat": 26.137937,
+          "lon": 124.893174,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC04",
+          "lat": 27.292885,
+          "lon": 126.467346,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC05",
+          "lat": 28.429842,
+          "lon": 128.074348,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC06",
+          "lat": 29.547521,
+          "lon": 129.715953,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC07",
+          "lat": 30.644574,
+          "lon": 131.393927,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC08",
+          "lat": 31.719588,
+          "lon": 133.110014,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC09",
+          "lat": 32.771079,
+          "lon": 134.865923,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC10",
+          "lat": 33.797498,
+          "lon": 136.663309,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "GC11",
+          "lat": 34.797228,
+          "lon": 138.503747,
+          "pointType": "GREAT_CIRCLE_INTERPOLATED"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "metrics": {
+        "distanceKm": 2428.0,
+        "directKm": 2428.0,
+        "detourRatio": 1.0,
+        "greatCircleMeanDeviationKm": 43.6,
+        "greatCircleMaxDeviationKm": 71.2,
+        "southPenaltyKm": 0.0,
+        "earlyEastPenaltyKm": 0.0,
+        "taiwanSideHeuristic": [
+          {
+            "ident": "KHH",
+            "lat": 22.577101,
+            "lon": 120.349998,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "GC01",
+            "lat": 23.778906,
+            "lon": 121.836249,
+            "side": "east"
+          },
+          {
+            "ident": "GC02",
+            "lat": 24.966222,
+            "lon": 123.350061,
+            "side": "east"
+          },
+          {
+            "ident": "GC03",
+            "lat": 26.137937,
+            "lon": 124.893174,
+            "side": "east"
+          }
+        ]
+      },
+      "score": 64.26,
+      "selectionReason": "Great-circle pair fallback has lower detour/south/east penalty than available airgraph path."
+    },
+    {
+      "method": "airgraph_shortest_path",
+      "provenance": {
+        "source": "aviationdb-airgraph",
+        "originConnector": {
+          "ident": "MENON",
+          "lat": 22.805936,
+          "lon": 120.143699,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceKm": 33.1
+        },
+        "destinationConnector": {
+          "ident": "TYE",
+          "lat": 35.783586,
+          "lon": 140.262986,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceKm": 11.5
+        },
+        "waypointCount": 19
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "MENON",
+          "lat": 22.805936,
+          "lon": 120.143699,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PARPA",
+          "lat": 22.0325,
+          "lon": 120.036389,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SADEK",
+          "lat": 23.004319,
+          "lon": 123.965083,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MY",
+          "lat": 24.788083,
+          "lon": 125.294547,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OK",
+          "lat": 26.101736,
+          "lon": 127.665103,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TOPAT",
+          "lat": 25.972689,
+          "lon": 129.456797,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MD",
+          "lat": 25.840572,
+          "lon": 131.245844,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BIXAK",
+          "lat": 27.880611,
+          "lon": 133.137558,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DOVAG",
+          "lat": 28.583883,
+          "lon": 133.814153,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OLDUP",
+          "lat": 30.125417,
+          "lon": 135.342319,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BUBDO",
+          "lat": 31.431969,
+          "lon": 136.653839,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "GULEG",
+          "lat": 32.876008,
+          "lon": 138.167281,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HCE",
+          "lat": 33.11435,
+          "lon": 139.788483,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SANGO",
+          "lat": 33.380678,
+          "lon": 139.803894,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PQE",
+          "lat": 34.946394,
+          "lon": 139.895528,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TYE",
+          "lat": 35.783586,
+          "lon": 140.262986,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "metrics": {
+        "distanceKm": 3050.9,
+        "directKm": 2428.0,
+        "detourRatio": 1.257,
+        "greatCircleMeanDeviationKm": 143.9,
+        "greatCircleMaxDeviationKm": 346.0,
+        "southPenaltyKm": 174.4,
+        "earlyEastPenaltyKm": 171.6,
+        "taiwanSideHeuristic": [
+          {
+            "ident": "KHH",
+            "lat": 22.577101,
+            "lon": 120.349998,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "MENON",
+            "lat": 22.805936,
+            "lon": 120.143699,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "PARPA",
+            "lat": 22.0325,
+            "lon": 120.036389,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "HCN",
+            "lat": 21.928056,
+            "lon": 120.843889,
+            "side": "west_or_strait"
+          },
+          {
+            "ident": "SADEK",
+            "lat": 23.004319,
+            "lon": 123.965083,
+            "side": "east"
+          },
+          {
+            "ident": "MY",
+            "lat": 24.788083,
+            "lon": 125.294547,
+            "side": "east"
+          },
+          {
+            "ident": "OK",
+            "lat": 26.101736,
+            "lon": 127.665103,
+            "side": "east"
+          },
+          {
+            "ident": "TOPAT",
+            "lat": 25.972689,
+            "lon": 129.456797,
+            "side": "east"
+          },
+          {
+            "ident": "MD",
+            "lat": 25.840572,
+            "lon": 131.245844,
+            "side": "east"
+          }
+        ]
+      },
+      "score": -160.48,
+      "selectionReason": "Airgraph path remains close enough to great-circle scoring."
+    }
+  ]
+}

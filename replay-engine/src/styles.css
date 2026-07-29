@@ -79,8 +79,14 @@ input {
 
 .is-pilot-view .globe-viewport::after {
   background:
-    linear-gradient(180deg, rgb(42 106 150 / 18%) 0%, rgb(49 120 164 / 10%) 34%, rgb(15 43 63 / 0%) 58%),
-    radial-gradient(ellipse at 52% 30%, rgb(92 174 218 / 14%), rgb(13 40 60 / 0%) 62%);
+    linear-gradient(180deg, rgb(38 116 176 / 56%) 0%, rgb(28 94 146 / 44%) 28%, rgb(15 58 96 / 24%) 54%, rgb(5 18 34 / 0%) 76%),
+    radial-gradient(ellipse at 52% 27%, rgb(106 190 235 / 24%), rgb(13 40 60 / 0%) 64%);
+}
+
+.is-pilot-view .globe-viewport.is-daylight::after {
+  background:
+    linear-gradient(180deg, rgb(124 202 244 / 54%) 0%, rgb(74 164 224 / 38%) 34%, rgb(34 108 168 / 18%) 58%, rgb(13 40 60 / 0%) 78%),
+    radial-gradient(ellipse at 50% 24%, rgb(224 247 255 / 22%), rgb(74 164 224 / 0%) 62%);
 }
 
 .globe-viewport canvas:active {
@@ -642,7 +648,8 @@ input {
   padding: 3px 6px;
   border: 1px solid currentColor;
   color: rgb(255 255 255 / 92%);
-  font-size: 18px;
+  font-size: 15px;
+  white-space: nowrap;
 }
 
 .pilot-heading {
@@ -1641,16 +1648,16 @@ select.preload-input {
 
   .pilot-scale {
     top: 37%;
-    width: 66px;
+    width: 78px;
     font-size: 10px;
   }
 
   .pilot-scale-left {
-    left: 3%;
+    left: 2%;
   }
 
   .pilot-scale-right {
-    right: 3%;
+    right: 2%;
   }
 
   .pilot-scale i {
@@ -1658,8 +1665,8 @@ select.preload-input {
   }
 
   .pilot-scale strong {
-    min-width: 50px;
-    font-size: 14px;
+    min-width: 64px;
+    font-size: 12px;
   }
 
   .pilot-reticle::before,

@@ -629,8 +629,8 @@ export class TravelGlobeApp {
     attitude.rollDegrees = this.pilotHudSmoothedRollDegrees;
     this.pilotHudPreviousBearingDegrees = sample.bearingDegrees;
     this.pilotHud.replaceChildren(
-      pilotScale('SPD kt', attitude.iasKnots, 'left', attitude.iasTicks),
-      pilotScale('ALT', metrics.altitudeFeet, 'right', altitudeTicks(sample.point.altitudeMeters ?? 0)),
+      pilotScale('SPD', attitude.iasKnots, 'kt', 'left', attitude.iasTicks),
+      pilotScale('ALT', metrics.altitudeFeet, 'ft', 'right', altitudeTicks(sample.point.altitudeMeters ?? 0)),
       pilotHorizon(attitude),
       pilotHeading(attitude.headingLabel),
       pilotVerticalSpeed(metrics.verticalSpeedLabel)
@@ -1985,13 +1985,13 @@ interface PilotAttitude {
   iasTicks: string[];
 }
 
-function pilotScale(label: string, value: string, side: 'left' | 'right', ticks: string[]): HTMLElement {
+function pilotScale(label: string, value: string, unit: string, side: 'left' | 'right', ticks: string[]): HTMLElement {
   const item = document.createElement('div');
   item.className = `pilot-scale pilot-scale-${side}`;
   const title = document.createElement('span');
-  title.textContent = label;
+  title.textContent = `${label} ${unit}`;
   const readout = document.createElement('strong');
-  readout.textContent = value.replace(' ft', '');
+  readout.textContent = `${value.replace(` ${unit}`, '')} ${unit}`;
   const ladder = document.createElement('i');
   ladder.replaceChildren(...ticks.map((tick) => Object.assign(document.createElement('span'), { textContent: tick })));
   item.append(title, ladder, readout);
@@ -2058,15 +2058,12 @@ function buildPilotAttitude(
   const liveTurnDegrees = previousLiveBearingDegrees === undefined
     ? 0
     : angleDeltaDegrees(previousLiveBearingDegrees, sample.bearingDegrees);
-  const routeTurnDegrees = adjacent
-    ? angleDeltaDegrees(
-        adjacent.previous.courseDegrees ?? sample.bearingDegrees,
-        adjacent.next.courseDegrees ?? sample.bearingDegrees
-      )
+  const routeTurnRateDegreesPerMinute = adjacent
+    ? routeTurnRateForReplayWindow(adjacent, sample.bearingDegrees)
     : 0;
   const rollDegrees = turnSource === 'live'
     ? liveBankAngleForTurn(liveTurnDegrees)
-    : routeBankAngleForTurn(routeTurnDegrees);
+    : routeBankAngleForTurnRate(routeTurnRateDegreesPerMinute);
   const ias = estimatedIasKnots(speedMetersPerSecond, altitudeMeters);
 
   return {
@@ -2078,12 +2075,12 @@ function buildPilotAttitude(
   };
 }
 
-function routeBankAngleForTurn(turnDegrees: number): number {
-  const deadbandDegrees = 18;
-  if (Math.abs(turnDegrees) < deadbandDegrees) {
+function routeBankAngleForTurnRate(turnRateDegreesPerMinute: number): number {
+  const deadbandDegreesPerMinute = 1.2;
+  if (Math.abs(turnRateDegreesPerMinute) < deadbandDegreesPerMinute) {
     return 0;
   }
-  return clamp(-turnDegrees * 0.18, -7, 7);
+  return clamp(-turnRateDegreesPerMinute * 3.1, -8, 8);
 }
 
 function liveBankAngleForTurn(turnDegrees: number): number {
@@ -2100,6 +2097,21 @@ function pitchAngleForVerticalSpeed(verticalSpeedMetersPerSecond: number, speedM
   }
   const referenceSpeed = Math.max(30, speedMetersPerSecond * 0.56);
   return clamp(Math.atan2(verticalSpeedMetersPerSecond, referenceSpeed) * 180 / Math.PI, -10, 12);
+}
+
+function routeTurnRateForReplayWindow(
+  adjacent: { previous: LocationPoint; next: LocationPoint },
+  fallbackBearingDegrees: number
+): number {
+  const durationMinutes = Math.max(
+    1 / 60,
+    (Date.parse(adjacent.next.timestamp) - Date.parse(adjacent.previous.timestamp)) / 60000
+  );
+  const turnDegrees = angleDeltaDegrees(
+    adjacent.previous.courseDegrees ?? fallbackBearingDegrees,
+    adjacent.next.courseDegrees ?? fallbackBearingDegrees
+  );
+  return turnDegrees / durationMinutes;
 }
 
 function adjacentReplayPoints(segment: JourneySegment, timestamp: string): { previous: LocationPoint; next: LocationPoint } | undefined {

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-29T00:13:29.702167+00:00",
+  "pack": "global.route-fallback.json.gz",
+  "summary": {
+    "routes": 177266,
+    "observedRoutes": 157769,
+    "fallbackRoutes": 19497,
+    "connectivityFallbackRoutes": 1040,
+    "suspiciousAirports": 736,
+    "criticalSuspiciousAirports": 29
+  },
+  "sourceRegistry": {
+    "observed_adsb": {
+      "defaultConfidence": 0.95,
+      "offlineRedistribution": "private_pack_only"
+    },
+    "recovered_endpoint": {
+      "defaultConfidence": 0.82,
+      "offlineRedistribution": "private_pack_only"
+    },
+    "static_route_graph": {
+      "defaultConfidence": 0.62,
+      "offlineRedistribution": "allowed_with_odbl_provenance"
+    },
+    "airport_pair_fallback": {
+      "defaultConfidence": 0.48,
+      "offlineRedistribution": "derived_private_pack"
+    },
+    "airport_connectivity_fallback": {
+      "defaultConfidence": 0.25,
+      "offlineRedistribution": "derived_private_pack"
+    },
+    "adsbdb_targeted": {
+      "defaultConfidence": 0.55,
+      "offlineRedistribution": "manual_review_required"
+    },
+    "airportroutes_targeted": {
+      "defaultConfidence": 0.7,
+      "offlineRedistribution": "manual_review_required"
+    }
+  },
+  "bytes": {
+    "json": 56466944,
+    "gzip": 2032281
+  }
+}

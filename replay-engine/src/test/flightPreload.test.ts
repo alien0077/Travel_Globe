@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { getPrimaryFlightSegment } from '../data/types';
 import { assertJourney } from '../data/validateJourney';
-import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
+import routeShapeRuntime from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json';
+import {
+  buildPreloadedFlightJourney,
+  buildPreloadedFlightJourneyWithRouteShapes
+} from '../flight-preload/buildPreloadedFlightJourney';
 import { findAirportContextByIata, getAirportIndexSummary } from '../flight-preload/airportIndex';
+import { injectRouteShapePackForTest } from '../flight-preload/routeShapeIndex';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
 
 describe('flight preload', () => {
@@ -59,6 +64,35 @@ describe('flight preload', () => {
     expect(segment.statistics?.durationSeconds).toBe(235 * 60);
     expect(segment.metadata.aircraftType).toBe('321');
     expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
+  });
+
+  it('uses the route-shapes pack before airgraph fallback for KHH to NRT', async () => {
+    injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
+    const result = await buildPreloadedFlightJourneyWithRouteShapes({
+      flightNumber: 'FD234',
+      originIata: 'KHH',
+      destinationIata: 'NRT',
+      departureDate: '2026-07-22',
+      departureTime: '07:05'
+    });
+    const segment = getPrimaryFlightSegment(result.journey);
+
+    expect(segment.metadata.routeMethod).toBe('great_circle_waypoint_corridor');
+    expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
+    expect(segment.metadata.airgraphWaypoints).toEqual([
+      'WAGON',
+      'SEDKU',
+      'MYC11',
+      'CHAMP',
+      'EMILY',
+      'TONAR',
+      'WEBER',
+      'MAYON',
+      'CELLO'
+    ]);
+    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-wagon');
+    expect(result.warnings[0]).toContain('AviationDB route-shapes');
+    injectRouteShapePackForTest(undefined);
   });
 
   it('builds a valid planned journey from flight form input', () => {
