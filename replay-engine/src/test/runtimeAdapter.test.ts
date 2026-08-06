@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import { sampleJourney } from '../data/sampleJourney';
 import type { Journey } from '../data/types';
+import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
+import routeShapeRuntime from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json';
+import { injectRouteShapePackForTest } from '../flight-preload/routeShapeIndex';
 
 describe('browser runtime adapter journey history', () => {
   beforeEach(() => {
@@ -28,6 +31,31 @@ describe('browser runtime adapter journey history', () => {
 
     await adapter.deleteJourney(olderJourney.id);
     expect((await adapter.listSavedJourneys()).map((summary) => summary.id)).toEqual([sampleJourney.id]);
+  });
+
+  it('refreshes a stale planned route from the latest offline route-shape pack', async () => {
+    injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
+    try {
+      const stale = buildPreloadedFlightJourney({
+        flightNumber: 'FD234',
+        originIata: 'KHH',
+        destinationIata: 'NRT',
+        departureDate: '2026-07-22',
+        departureTime: '07:05'
+      }).journey;
+      const adapter = new BrowserRuntimeAdapter(stale);
+
+      await adapter.saveJourney(stale);
+      const refreshed = await adapter.loadJourney();
+      const segment = refreshed.segments[0];
+
+      expect(segment?.metadata.routeMethod).toBe('directed_airway_graph');
+      expect(segment?.metadata.routeSource).toBe('aviationdb-route-shapes');
+      expect(segment?.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-hcn');
+      expect(segment?.derivedReplayRoute.points.some((point) => point.id.includes('wagon'))).toBe(false);
+    } finally {
+      injectRouteShapePackForTest(undefined);
+    }
   });
 });
 

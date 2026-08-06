@@ -1,7 +1,13 @@
-import type { Journey } from '../data/types';
+import type { Journey, JourneySegment } from '../data/types';
 import { exportBlob, type NativeExportDelivery } from './nativeBridge';
 import { createJsonBlob, createTravelGlobePackage } from '../export/travelglobePackage';
 import { createShareSafeJourney } from '../privacy/redactJourney';
+import {
+  buildPreloadedFlightJourney,
+  type PreloadFlightRequest,
+  type PreloadFlightResult
+} from '../flight-preload/buildPreloadedFlightJourney';
+import { findRouteShape } from '../flight-preload/routeShapeIndex';
 
 export interface RuntimeAdapter {
   loadJourney(): Promise<Journey>;
@@ -36,7 +42,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
     if (!stored) {
       return this.journey;
     }
-    this.journey = JSON.parse(stored) as Journey;
+    this.journey = await refreshPlannedRouteFromLatestPack(JSON.parse(stored) as Journey);
     return this.journey;
   }
 
@@ -45,7 +51,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
     if (!stored) {
       return undefined;
     }
-    this.journey = JSON.parse(stored) as Journey;
+    this.journey = await refreshPlannedRouteFromLatestPack(JSON.parse(stored) as Journey);
     localStorage.setItem(currentJourneyKey, this.journey.id);
     return this.journey;
   }
@@ -125,4 +131,111 @@ function readJourneyIndex(): string[] {
   } catch {
     return [];
   }
+}
+
+async function refreshPlannedRouteFromLatestPack(journey: Journey): Promise<Journey> {
+  if (journey.status !== 'planned') {
+    return journey;
+  }
+
+  const segment = journey.segments.find((candidate) => candidate.type === 'flight');
+  const request = segment ? preloadRequestFromJourney(journey, segment) : undefined;
+  if (!segment || !request) {
+    return journey;
+  }
+
+  const routeShape = await findRouteShape(segment.origin, segment.destination).catch(() => undefined);
+  if (!routeShape || routeMatches(segment, routeShape)) {
+    return journey;
+  }
+
+  const rebuilt = buildPreloadedFlightJourney(request, routeShape).journey;
+  const rebuiltSegment = rebuilt.segments[0];
+  if (!rebuiltSegment) {
+    return journey;
+  }
+
+  const refreshedSegment: JourneySegment = {
+    ...segment,
+    rawRoute: rebuiltSegment.rawRoute,
+    processedRoute: rebuiltSegment.processedRoute,
+    derivedReplayRoute: rebuiltSegment.derivedReplayRoute,
+    statistics: rebuiltSegment.statistics,
+    metadata: {
+      ...segment.metadata,
+      ...rebuiltSegment.metadata,
+      routeRefresh: 'latest-offline-route-shape-pack'
+    }
+  };
+  const rebuiltEvents = new Map(rebuilt.events.map((event) => [event.id, event]));
+  const events = journey.events.map((event) => rebuiltEvents.get(event.id) ?? event);
+
+  return {
+    ...journey,
+    segments: journey.segments.map((candidate) => candidate.id === segment.id ? refreshedSegment : candidate),
+    events,
+    statistics: {
+      ...journey.statistics,
+      ...rebuilt.statistics
+    },
+    metadata: {
+      ...journey.metadata,
+      ...rebuilt.metadata,
+      routeRefresh: 'latest-offline-route-shape-pack'
+    }
+  };
+}
+
+function preloadRequestFromJourney(journey: Journey, segment: JourneySegment): PreloadFlightRequest | undefined {
+  const flightNumber = stringValue(segment.metadata.flightNumber) ?? stringValue(journey.metadata.flightNumber);
+  const startMs = Date.parse(segment.startTime);
+  const endMs = Date.parse(segment.endTime);
+  if (!flightNumber || !segment.origin.iataCode || !segment.destination.iataCode || !Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+    return undefined;
+  }
+
+  const start = new Date(startMs);
+  const dateFromSegmentId = segment.id.match(/(\d{4}-\d{2}-\d{2})$/)?.[1];
+  return {
+    flightNumber,
+    originIata: segment.origin.iataCode,
+    destinationIata: segment.destination.iataCode,
+    departureDate: dateFromSegmentId ?? formatLocalDate(start),
+    departureTime: formatLocalTime(start),
+    durationMinutes: Math.max(1, Math.round((endMs - startMs) / 60_000)),
+    aircraftType: stringValue(segment.metadata.aircraftType),
+    airlineName: stringValue(segment.metadata.airlineName),
+    source: preloadSource(segment.metadata.preloadSource)
+  };
+}
+
+function preloadSource(value: unknown): PreloadFlightResult['source'] | undefined {
+  return value === 'offline-airport-index' || value === 'offline-schedule-index' || value === 'aviationstack' || value === 'aviationstack-cache'
+    ? value
+    : undefined;
+}
+
+function routeMatches(segment: JourneySegment, route: Awaited<ReturnType<typeof findRouteShape>>): boolean {
+  if (!route || segment.metadata.routeMethod !== route.method || segment.metadata.routeSource !== route.source) {
+    return false;
+  }
+  const points = segment.derivedReplayRoute.points;
+  return points.length === route.points.length && points.every((point, index) => {
+    const expected = route.points[index];
+    return Boolean(expected) && Math.abs(point.latitude - expected.latitude) < 0.0001 && Math.abs(point.longitude - expected.longitude) < 0.0001;
+  });
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function formatLocalDate(date: Date): string {
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part, index) => index === 0 ? String(part).padStart(4, '0') : String(part).padStart(2, '0'))
+    .join('-');
+}
+
+function formatLocalTime(date: Date): string {
+  return [date.getHours(), date.getMinutes()].map((part) => String(part).padStart(2, '0')).join(':');
 }
