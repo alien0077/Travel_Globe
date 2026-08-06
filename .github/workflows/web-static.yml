@@ -20,6 +20,8 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Keep Pages deployment retries visible as workflow changes when the Pages queue is transiently stuck.
+
 jobs:
   build:
     runs-on: ubuntu-latest
