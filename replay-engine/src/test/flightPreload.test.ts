@@ -28,8 +28,9 @@ describe('flight preload', () => {
     expect(segment.statistics?.durationSeconds).toBe(185 * 60);
     expect(segment.metadata.aircraftType).toBe('744');
     expect(segment.metadata.aircraftTypeSource).toBe('openflights-route-graph');
-    expect(segment.metadata.routeMethod).toBe('airway_graph');
-    expect(segment.metadata.airgraphWaypoints).toEqual(['KUDOS', 'LEKOS', 'PABSO', 'BORDO', 'ENTOK', 'BISIS', 'ONC', 'DONAN', 'POMAS', 'SABAN', 'GURAR', 'DEMPA', 'TAPOP', 'GULEG', 'HCE', 'SANGO', 'PQE', 'TYE']);
+    expect(segment.metadata.routeMethod).toBe('great_circle_fallback');
+    expect(segment.metadata.routeSource).toBe('great-circle');
+    expect(segment.metadata.airgraphWaypoints).toBeUndefined();
     expect(result.warnings[0]).toContain('CI100 已由離線班表解析為 TPE -> NRT');
   });
 
@@ -77,21 +78,56 @@ describe('flight preload', () => {
     });
     const segment = getPrimaryFlightSegment(result.journey);
 
-    expect(segment.metadata.routeMethod).toBe('great_circle_waypoint_corridor');
+    expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
     expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
     expect(segment.metadata.airgraphWaypoints).toEqual([
-      'WAGON',
-      'SEDKU',
-      'MYC11',
-      'CHAMP',
-      'EMILY',
-      'TONAR',
-      'WEBER',
-      'MAYON',
-      'CELLO'
+      'HCN',
+      'BONEY',
+      'MEVIN',
+      'ELMAS',
+      'BISIG',
+      'SAKON',
+      'TIC',
+      'TAMAK',
+      'SHIBK',
+      'NIKAI',
+      'JERID',
+      'MISAK',
+      'MJE',
+      'BAFFY',
+      'ORGAN',
+      'PANDA'
     ]);
-    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-wagon');
+    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-hcn');
     expect(result.warnings[0]).toContain('AviationDB route-shapes');
+    injectRouteShapePackForTest(undefined);
+  });
+
+  it('uses a directed route-shapes pack for TPE to HKG instead of runtime airgraph guessing', async () => {
+    injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
+    const result = await buildPreloadedFlightJourneyWithRouteShapes({
+      flightNumber: 'CX451',
+      originIata: 'TPE',
+      destinationIata: 'HKG',
+      departureDate: '2026-07-28',
+      departureTime: '20:00'
+    });
+    const segment = getPrimaryFlightSegment(result.journey);
+
+    expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
+    expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
+    expect(segment.metadata.airgraphWaypoints).toEqual([
+      'HLG',
+      'SWORD',
+      'MKG',
+      'KADLO',
+      'ELATO',
+      'MAGOG',
+      'CH',
+      'TAMOT',
+      'NLG'
+    ]);
+    expect(segment.derivedReplayRoute.points.every((point) => point.longitude < 121.5)).toBe(true);
     injectRouteShapePackForTest(undefined);
   });
 
@@ -114,7 +150,7 @@ describe('flight preload', () => {
     expect(result.journey.title).toBe('XX901 TPE to HND');
     expect(segment.origin.iataCode).toBe('TPE');
     expect(segment.destination.iataCode).toBe('HND');
-    expect(segment.derivedReplayRoute.points).toHaveLength(20);
+    expect(segment.derivedReplayRoute.points).toHaveLength(7);
     expect(result.journey.events.map((event) => event.type)).toEqual([
       'flightTakeoff',
       'flightCruise',

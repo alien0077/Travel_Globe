@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:38.088333+00:00",
+  "route": "SNP-YQH",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 917.99,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-11"
+    },
+    "metrics": {
+      "distanceKm": 2392.4,
+      "detourRatio": 1.006,
+      "meanObservedToIfrKm": 157.7,
+      "maxObservedToIfrKm": 307.7,
+      "meanIfrToObservedKm": 131.8
+    },
+    "points": [
+      {
+        "ident": "SNP",
+        "lat": 57.166311,
+        "lon": -170.222555,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 56.83987,
+        "lon": -171.18776,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 57.01364,
+        "lon": -169.94937,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 57.55346,
+        "lon": -167.63276,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 58.06728,
+        "lon": -165.18706,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS005",
+        "lat": 58.59479,
+        "lon": -163.29511,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS006",
+        "lat": 58.97512,
+        "lon": -161.82994,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS007",
+        "lat": 59.39493,
+        "lon": -160.09103,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS008",
+        "lat": 59.79588,
+        "lon": -158.286,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS009",
+        "lat": 60.15385,
+        "lon": -156.52989,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS010",
+        "lat": 60.48331,
+        "lon": -154.7609,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS011",
+        "lat": 60.58746,
+        "lon": -153.58818,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS012",
+        "lat": 60.70844,
+        "lon": -151.87642,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS013",
+        "lat": 60.79685,
+        "lon": -150.36104,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS014",
+        "lat": 60.92203,
+        "lon": -147.30086,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS015",
+        "lat": 60.95992,
+        "lon": -145.67292,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS016",
+        "lat": 60.9778,
+        "lon": -144.1267,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS017",
+        "lat": 60.97738,
+        "lon": -142.50837,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS018",
+        "lat": 60.95918,
+        "lon": -140.99334,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS019",
+        "lat": 60.82878,
+        "lon": -138.1849,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS020",
+        "lat": 60.62121,
+        "lon": -135.16891,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS021",
+        "lat": 60.33016,
+        "lon": -132.51111,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS022",
+        "lat": 60.00609,
+        "lon": -130.03731,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "YQH",
+        "lat": 60.116839,
+        "lon": -128.821993,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

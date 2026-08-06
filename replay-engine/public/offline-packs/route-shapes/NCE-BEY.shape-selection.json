@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:38.668856+00:00",
+  "route": "NCE-BEY",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 923.88,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-12"
+    },
+    "metrics": {
+      "distanceKm": 2766.3,
+      "detourRatio": 1.037,
+      "meanObservedToIfrKm": 154.5,
+      "maxObservedToIfrKm": 288.3,
+      "meanIfrToObservedKm": 168.1
+    },
+    "points": [
+      {
+        "ident": "NCE",
+        "lat": 43.658401,
+        "lon": 7.21587,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 43.4209,
+        "lon": 7.04956,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 43.32328,
+        "lon": 7.13085,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 43.19522,
+        "lon": 7.39968,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 42.65538,
+        "lon": 9.21197,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS005",
+        "lat": 42.21053,
+        "lon": 11.75412,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS006",
+        "lat": 42.0261,
+        "lon": 12.938,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS007",
+        "lat": 41.87932,
+        "lon": 14.08977,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS008",
+        "lat": 41.77468,
+        "lon": 14.66407,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS009",
+        "lat": 41.6716,
+        "lon": 15.20701,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS010",
+        "lat": 41.39695,
+        "lon": 16.0875,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS011",
+        "lat": 40.90485,
+        "lon": 18.88361,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS012",
+        "lat": 40.5747,
+        "lon": 20.43963,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS013",
+        "lat": 40.56972,
+        "lon": 20.55725,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS014",
+        "lat": 40.61842,
+        "lon": 21.00922,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS015",
+        "lat": 40.61655,
+        "lon": 21.23202,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS016",
+        "lat": 40.59416,
+        "lon": 21.50068,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS017",
+        "lat": 39.9354,
+        "lon": 23.82179,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS018",
+        "lat": 39.42339,
+        "lon": 25.51915,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS019",
+        "lat": 38.00075,
+        "lon": 28.24497,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS020",
+        "lat": 37.70769,
+        "lon": 28.74386,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS021",
+        "lat": 37.4402,
+        "lon": 29.46969,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS022",
+        "lat": 36.9234,
+        "lon": 30.79263,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS023",
+        "lat": 36.42219,
+        "lon": 32.44415,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS024",
+        "lat": 35.93623,
+        "lon": 33.93846,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS025",
+        "lat": 35.6227,
+        "lon": 34.29856,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS026",
+        "lat": 34.7152,
+        "lon": 35.26544,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS027",
+        "lat": 33.83961,
+        "lon": 36.11115,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS028",
+        "lat": 33.84399,
+        "lon": 36.09598,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "BEY",
+        "lat": 33.819833,
+        "lon": 35.487443,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

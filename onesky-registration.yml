@@ -1,0 +1,371 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - img "logo-eurocontrol" [ref=e6]
+    - generic [ref=e7]:
+      - strong [ref=e8]: OneSky Online
+      - text: Extranet
+  - generic [ref=e11]:
+    - heading "OneSky Online Extranet registration" [level=1] [ref=e14]
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Contact details" [level=3] [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: First name *
+            - textbox [ref=e21]
+          - generic [ref=e22]:
+            - generic [ref=e23]: Last name *
+            - textbox [ref=e24]
+          - generic [ref=e25]:
+            - generic [ref=e26]: Job title
+            - textbox [ref=e27]
+          - generic [ref=e28]:
+            - generic [ref=e29]: Work e-mail *
+            - textbox [ref=e30]
+          - generic [ref=e31]:
+            - generic [ref=e32]: Confirm Work e-mail *
+            - textbox [ref=e33]
+          - generic [ref=e34]:
+            - generic [ref=e35]: Phone *
+            - textbox [ref=e38]
+          - generic [ref=e39]:
+            - generic [ref=e40]: Mobile
+            - textbox [ref=e43]
+          - generic [ref=e44]:
+            - generic [ref=e45]: Your organisation *
+            - textbox [ref=e46]
+          - generic [ref=e47]:
+            - generic [ref=e48]: Your department
+            - textbox [ref=e49]
+          - generic [ref=e50]:
+            - generic [ref=e51]: Gender *
+            - combobox [ref=e52]:
+              - option "Select your gender" [selected]
+              - option "Male"
+              - option "Female"
+              - option "Other"
+          - generic [ref=e53]:
+            - generic [ref=e54]: Language *
+            - combobox [ref=e55]:
+              - option "Select your language" [selected]
+              - option "Albanian"
+              - option "Armenian"
+              - option "Azerbaijani"
+              - option "Belarusian"
+              - option "Bosnian"
+              - option "Bulgarian"
+              - option "Croatian"
+              - option "Czech"
+              - option "Danish"
+              - option "Dutch"
+              - option "English"
+              - option "Estonian"
+              - option "Finnish"
+              - option "French"
+              - option "Georgian"
+              - option "German"
+              - option "Greek"
+              - option "Hebrew"
+              - option "Hungarian"
+              - option "Icelandic"
+              - option "Italian"
+              - option "Latvian"
+              - option "Lithuanian"
+              - option "Macedonian"
+              - option "Moldavian"
+              - option "Norwegian"
+              - option "Polish"
+              - option "Portuguese"
+              - option "Romanian"
+              - option "Russian"
+              - option "Serbian"
+              - option "Slovak"
+              - option "Slovenian"
+              - option "Spanish"
+              - option "Swedish"
+              - option "Turkish"
+              - option "Ukrainian"
+      - generic [ref=e56]:
+        - heading "Address" [level=3] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Address *
+            - textbox [ref=e61]
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - generic [ref=e65]: Postcode *
+              - textbox [ref=e66]
+            - generic [ref=e67]:
+              - generic [ref=e68]: City *
+              - textbox [ref=e69]
+          - generic [ref=e70]:
+            - generic [ref=e71]: Country *
+            - combobox [ref=e72]:
+              - option "Select your country" [selected]
+              - option "Afghanistan"
+              - option "Albania"
+              - option "Algeria"
+              - option "American Samoa"
+              - option "Andorra"
+              - option "Angola"
+              - option "Anguilla"
+              - option "Antarctica"
+              - option "Antigua And Barbuda"
+              - option "Argentina"
+              - option "Armenia"
+              - option "Aruba"
+              - option "Australia"
+              - option "Austria"
+              - option "Azerbaijan"
+              - option "Bahamas"
+              - option "Bahrain"
+              - option "Bangladesh"
+              - option "Barbados"
+              - option "Belarus"
+              - option "Belgium"
+              - option "Belize"
+              - option "Benin"
+              - option "Bermuda"
+              - option "Bhutan"
+              - option "Bolivia"
+              - option "Bosnia-Herzegovina"
+              - option "Botswana"
+              - option "Bouvet Island"
+              - option "Brazil"
+              - option "British Indian Ocean Territory"
+              - option "Brunei Darrussalam"
+              - option "Bulgaria"
+              - option "Burkina Faso"
+              - option "Burundi"
+              - option "Cambodia"
+              - option "Cameroon"
+              - option "Canada"
+              - option "Cape Verde"
+              - option "Cayman Islands"
+              - option "Central African Republic"
+              - option "Chad"
+              - option "Chile"
+              - option "China"
+              - option "Christmas Island"
+              - option "Cocos (Keeling) Islands"
+              - option "Colombia"
+              - option "Comoros"
+              - option "Congo"
+              - option "Congo, The Democratic Republic Of The"
+              - option "Cook Islands"
+              - option "Costa Rica"
+              - option "Cote D'Ivoire"
+              - option "Croatia"
+              - option "Cuba"
+              - option "Cyprus"
+              - option "Czech Republic"
+              - option "Denmark"
+              - option "Djibouti"
+              - option "Dominica"
+              - option "Dominican Republic"
+              - option "East Timor"
+              - option "Ecuador"
+              - option "Egypt"
+              - option "El Salvador"
+              - option "Equatorial Guinea"
+              - option "Eritrea"
+              - option "Estonia"
+              - option "Ethiopia"
+              - option "Falkland Islands (Malvinas)"
+              - option "Faroe Islands"
+              - option "Federated States Of Micronesia"
+              - option "Fiji"
+              - option "Finland"
+              - option "France"
+              - option "French Guiana"
+              - option "French Polynesia"
+              - option "French Southern Territories"
+              - option "Gabon"
+              - option "Gambia"
+              - option "Georgia"
+              - option "Germany"
+              - option "Ghana"
+              - option "Gibraltar"
+              - option "Greece"
+              - option "Greenland"
+              - option "Grenada"
+              - option "Guadeloupe"
+              - option "Guam"
+              - option "Guatemala"
+              - option "Guinea"
+              - option "Guinea-Bissau"
+              - option "Guyana"
+              - option "Haiti"
+              - option "Heard Island And Mcdonald Islands"
+              - option "Honduras"
+              - option "Hong Kong (China)"
+              - option "Hungary"
+              - option "Iceland"
+              - option "India"
+              - option "Indonesia"
+              - option "Iran (Islamic Republic Of)"
+              - option "Iraq"
+              - option "Ireland"
+              - option "Isle Of Man"
+              - option "Israel"
+              - option "Italy"
+              - option "Jamaica"
+              - option "Japan"
+              - option "Jordan"
+              - option "Kazakhstan"
+              - option "Kenya"
+              - option "Kiribati"
+              - option "Korea (Republic Of)"
+              - option "Kosovo *"
+              - option "Kuwait"
+              - option "Kyrgyzstan"
+              - option "Latvia"
+              - option "Lebanon"
+              - option "Lesotho"
+              - option "Liberia"
+              - option "Libyan Arab Jamahiriya"
+              - option "Liechtenstein"
+              - option "Lithuania"
+              - option "Luxembourg"
+              - option "Macau"
+              - option "Madagascar"
+              - option "Malawi"
+              - option "Malaysia"
+              - option "Maldives"
+              - option "Mali"
+              - option "Malta"
+              - option "Marshall Islands"
+              - option "Martinique"
+              - option "Mauritania"
+              - option "Mauritius"
+              - option "Mayotte"
+              - option "Mexico"
+              - option "Moldova (Republic Of)"
+              - option "Monaco"
+              - option "Mongolia"
+              - option "Montenegro"
+              - option "Montserrat"
+              - option "Morocco"
+              - option "Mozambique"
+              - option "Myanmar"
+              - option "Namibia"
+              - option "Nauru"
+              - option "Nepal"
+              - option "Netherlands"
+              - option "Netherlands Antilles"
+              - option "New Caledonia"
+              - option "New Zealand"
+              - option "Nicaragua"
+              - option "Niger"
+              - option "Nigeria"
+              - option "Niue"
+              - option "Norfolk Island"
+              - option "Northern Mariana Islands"
+              - option "Norway"
+              - option "Not Provided"
+              - option "Oman"
+              - option "Pakistan"
+              - option "Palau"
+              - option "Palestine *"
+              - option "Panama"
+              - option "Papua New Guinea"
+              - option "Paraguay"
+              - option "Peru"
+              - option "Philippines"
+              - option "Pitcairn"
+              - option "Poland"
+              - option "Portugal"
+              - option "Puerto Rico"
+              - option "Qatar"
+              - option "Republic Of North Macedonia"
+              - option "Reunion (France)"
+              - option "Romania"
+              - option "Russian Federation"
+              - option "Rwanda"
+              - option "Saint Helena"
+              - option "Saint Kitts And Nevis"
+              - option "Saint Lucia"
+              - option "Saint Pierre And Miquelon"
+              - option "Saint Vincent And The Grenadines"
+              - option "Samoa"
+              - option "San Marino"
+              - option "Sao Tome And Principe"
+              - option "Saudi Arabia"
+              - option "Senegal"
+              - option "Serbia"
+              - option "Seychelles"
+              - option "Sierra Leone"
+              - option "Singapore"
+              - option "Slovakia"
+              - option "Slovenia"
+              - option "Solomon Islands"
+              - option "Somalia"
+              - option "South Africa"
+              - option "South Georgia And The South Sandwich Islands"
+              - option "Spain"
+              - option "Sri Lanka"
+              - option "Sudan"
+              - option "Suriname"
+              - option "Svalbard And Jan Mayen"
+              - option "Swaziland"
+              - option "Sweden"
+              - option "Switzerland"
+              - option "Syrian Arab Republic"
+              - option "Taiwan, Republic Of China"
+              - option "Tajikistan"
+              - option "Tanzania (United Republic Of)"
+              - option "Thailand"
+              - option "Togo"
+              - option "Tokelau"
+              - option "Tonga"
+              - option "Trinidad And Tobago"
+              - option "Tunisia"
+              - option "Turkmenistan"
+              - option "Turks And Caicos Islands"
+              - option "Tuvalu"
+              - option "Türkiye"
+              - option "Uganda"
+              - option "Ukraine"
+              - option "United Arab Emirates"
+              - option "United Kingdom"
+              - option "United States"
+              - option "United States Minor Outlying Islands"
+              - option "Uruguay"
+              - option "Uzbekistan"
+              - option "Vanuatu"
+              - option "Vatican City State"
+              - option "Venezuela"
+              - option "Viet Nam"
+              - option "Virgin Islands, British"
+              - option "Virgin Islands, U.S."
+              - option "Wallis And Futuna"
+              - option "Western Sahara"
+              - option "Yemen"
+              - option "Zambia"
+              - option "Zimbabwe"
+        - heading "Login details" [level=3] [ref=e73]
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]: Username *
+            - generic [ref=e77]:
+              - textbox [ref=e79]
+              - button "Suggest" [ref=e81] [cursor=pointer]
+            - paragraph [ref=e82]: "Choose your username: your username must have at least 9 characters. You can ask the system to suggest one for you by clicking on 'Suggest'. You can always modify the suggested username."
+          - generic [ref=e83]:
+            - generic [ref=e84]: Password *
+            - textbox [ref=e85]
+          - generic [ref=e86]:
+            - generic [ref=e87]: Re-type password *
+            - textbox [ref=e88]
+            - paragraph [ref=e89]: "The passwords are case-sensitive and its length must be at least 8 characters. Your password must respect at least 3 of 4 of the following rules: 1)It must at least contain an upper case letter. 2)It must at least contain a lower case letter. 3)It must at least contain a digit. 4)It must at least contain a special character."
+    - generic [ref=e91]:
+      - heading "Business justification" [level=3] [ref=e92]
+      - generic [ref=e94]:
+        - generic [ref=e95]: Business justification *
+        - textbox [ref=e96]
+    - generic [ref=e97]:
+      - button "Submit" [ref=e98] [cursor=pointer]
+      - text: or Back to
+      - link "OneSky Online Extranet" [ref=e99] [cursor=pointer]:
+        - /url: /elsh/private/getOnlineServicesList.do
+  - paragraph [ref=e103]: © EUROCONTROL

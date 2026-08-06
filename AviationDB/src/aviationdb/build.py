@@ -220,14 +220,14 @@ def _build_flightgear(source_id: str) -> ParsedDataset:
     dataset = ParsedDataset()
     
     # Insert points
-    seen: set[str] = set()
+    seen_uids: set[str] = set()
     for (ident, region), info in pts.items():
-        if ident in seen:
+        uid = point_uid(ident, info["lat"], info["lon"], "FG_GLOBAL", info["type"], source_id)
+        if uid in seen_uids:
             continue
-        seen.add(ident)
+        seen_uids.add(uid)
         dataset.points.append(NavPoint(
-            uid=point_uid(ident, info["lat"], info["lon"], "FG_GLOBAL",
-                          info["type"], source_id),
+            uid=uid,
             ident=ident, name=ident,
             latitude=info["lat"], longitude=info["lon"],
             point_type=info["type"], usage_type="ENROUTE",
@@ -250,8 +250,8 @@ def _build_flightgear(source_id: str) -> ParsedDataset:
                     source_id=source_id,
                 )
     for pt in awy_point_uids.values():
-        if pt.ident not in seen:
-            seen.add(pt.ident)
+        if pt.uid not in seen_uids:
+            seen_uids.add(pt.uid)
             dataset.points.append(pt)
     
     # Insert airways from awy.dat
@@ -270,6 +270,9 @@ def _build_flightgear(source_id: str) -> ParsedDataset:
             uid=airway_uid(route_name, source_id, "FG_GLOBAL"),
             designator=route_name,
             route_type="ATS",
+            direction="both",
+            lower_limit_ft=min(int(seg.get("base_ft") or 0) for seg in segs),
+            upper_limit_ft=max(int(seg.get("top_ft") or 0) for seg in segs),
             country="XX", fir="FG_GLOBAL",
             source_id=source_id,
         )
@@ -287,9 +290,26 @@ def _build_flightgear(source_id: str) -> ParsedDataset:
                 airway_uid=awy.uid, sequence=i,
                 from_point_uid=from_uid, to_point_uid=to_uid,
                 source_id=source_id,
+                distance_nm=_haversine_nm(seg["from_lat"], seg["from_lon"], seg["to_lat"], seg["to_lon"]),
+                direction="both",
+                minimum_altitude_ft=seg["base_ft"],
+                maximum_altitude_ft=seg["top_ft"],
             ))
     
     return dataset
+
+
+def _haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+
+    rlat1 = math.radians(lat1)
+    rlon1 = math.radians(lon1)
+    rlat2 = math.radians(lat2)
+    rlon2 = math.radians(lon2)
+    dlat = rlat2 - rlat1
+    dlon = rlon2 - rlon1
+    value = math.sin(dlat / 2) ** 2 + math.cos(rlat1) * math.cos(rlat2) * math.sin(dlon / 2) ** 2
+    return round(3440.065 * 2 * math.asin(min(1, math.sqrt(value))), 3)
 
 
 def _read_fixture(relative_path: str) -> str:

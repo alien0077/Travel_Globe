@@ -7,6 +7,7 @@ interface RuntimeRouteShape {
   m?: string;
   s?: number;
   d?: number;
+  w?: string[];
   p?: RuntimeRoutePoint[];
 }
 
@@ -30,7 +31,8 @@ export async function findRouteShape(origin: PlaceReference, destination: PlaceR
     return undefined;
   }
   const shape = runtimePack?.routes?.[`${originIata}-${destinationIata}`];
-  if (!shape?.p || shape.p.length < 2) {
+  const method = normalizeRouteShapeMethod(shape?.m);
+  if (!method || !shape?.p || shape.p.length < 2) {
     return undefined;
   }
   const points = shape.p
@@ -40,7 +42,7 @@ export async function findRouteShape(origin: PlaceReference, destination: PlaceR
     return undefined;
   }
   return {
-    method: normalizeRouteShapeMethod(shape.m),
+    method,
     region: 'global',
     source: 'aviationdb-route-shapes',
     distanceMeters: shape.d ?? 0,
@@ -48,7 +50,7 @@ export async function findRouteShape(origin: PlaceReference, destination: PlaceR
     waypoints: points
       .filter((point) => point.pointType !== 'AIRPORT')
       .map((point) => point.ident),
-    warnings: []
+    warnings: Array.isArray(shape.w) ? shape.w.filter((item): item is string => typeof item === 'string') : []
   };
 }
 
@@ -77,8 +79,15 @@ async function fetchRouteShapePack(): Promise<RuntimeRouteShapePack | undefined>
   return await response.json() as RuntimeRouteShapePack;
 }
 
-function normalizeRouteShapeMethod(method: string | undefined): AirgraphRouteResult['method'] {
-  return method === 'great_circle_waypoint_corridor' ? 'great_circle_waypoint_corridor' : 'great_circle_pair_fallback';
+function normalizeRouteShapeMethod(method: string | undefined): AirgraphRouteResult['method'] | undefined {
+  if (
+    method === 'directed_airway_graph' ||
+    method === 'observed_adsb_mapped' ||
+    method === 'approximate_direct_fallback'
+  ) {
+    return method;
+  }
+  return undefined;
 }
 
 function toRoutePoint(point: RuntimeRoutePoint): AirgraphRoutePoint | undefined {

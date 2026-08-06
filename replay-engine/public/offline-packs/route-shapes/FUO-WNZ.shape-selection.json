@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:41.507164+00:00",
+  "route": "FUO-WNZ",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 963.21,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-23"
+    },
+    "metrics": {
+      "distanceKm": 984.9,
+      "detourRatio": 1.04,
+      "meanObservedToIfrKm": 121.9,
+      "maxObservedToIfrKm": 310.9,
+      "meanIfrToObservedKm": 146.8
+    },
+    "points": [
+      {
+        "ident": "FUO",
+        "lat": 23.0825,
+        "lon": 113.070833,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 22.98358,
+        "lon": 112.52687,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 22.99022,
+        "lon": 112.617,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 23.06799,
+        "lon": 112.92078,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 23.17128,
+        "lon": 113.1425,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS005",
+        "lat": 23.37675,
+        "lon": 113.93991,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS006",
+        "lat": 23.47141,
+        "lon": 114.08834,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS007",
+        "lat": 25.47571,
+        "lon": 119.07407,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS008",
+        "lat": 25.73058,
+        "lon": 119.35928,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS009",
+        "lat": 25.81659,
+        "lon": 119.40943,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS010",
+        "lat": 26.18756,
+        "lon": 119.53882,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS011",
+        "lat": 27.47978,
+        "lon": 120.43664,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "WNZ",
+        "lat": 27.910572,
+        "lon": 120.853465,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

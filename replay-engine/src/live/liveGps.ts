@@ -29,6 +29,7 @@ export interface NativeBridgeMessage {
 export interface LiveGpsSample {
   point: LocationPoint;
   bearingDegrees: number;
+  turnRateDegreesPerSecond: number;
   distanceFlownMeters: number;
   remainingDistanceMeters: number;
   elapsedSeconds: number;
@@ -38,6 +39,7 @@ export interface LiveGpsSample {
 
 const MAX_DEAD_RECKONING_SECONDS = 90;
 const MAX_ROUTE_POINTS = 5_000;
+const MAX_TURN_RATE_DEGREES_PER_SECOND = 30;
 
 export class LiveGpsTracker {
   private readonly routePoints: LocationPoint[] = [];
@@ -46,6 +48,7 @@ export class LiveGpsTracker {
   private latestRealPoint?: LocationPoint;
   private previousRealPoint?: LocationPoint;
   private latestBearingDegrees?: number;
+  private latestTurnRateDegreesPerSecond = 0;
 
   ingest(point: LocationPoint, receivedAtMs: number): void {
     if (this.latestRealPoint && Date.parse(point.timestamp) <= Date.parse(this.latestRealPoint.timestamp)) {
@@ -56,7 +59,22 @@ export class LiveGpsTracker {
     this.latestReceiptMs = receivedAtMs;
     this.previousRealPoint = this.latestRealPoint;
     this.latestRealPoint = point;
-    this.latestBearingDegrees = resolveBearingDegrees(point, this.previousRealPoint);
+    const nextBearingDegrees = resolveBearingDegrees(point, this.previousRealPoint);
+    if (this.latestBearingDegrees !== undefined && nextBearingDegrees !== undefined && this.previousRealPoint) {
+      const elapsedSeconds = Math.max(
+        0.25,
+        (Date.parse(point.timestamp) - Date.parse(this.previousRealPoint.timestamp)) / 1000
+      );
+      const measuredTurnRate = angleDeltaDegrees(this.latestBearingDegrees, nextBearingDegrees) / elapsedSeconds;
+      this.latestTurnRateDegreesPerSecond = clamp(
+        measuredTurnRate * 0.72 + this.latestTurnRateDegreesPerSecond * 0.28,
+        -MAX_TURN_RATE_DEGREES_PER_SECOND,
+        MAX_TURN_RATE_DEGREES_PER_SECOND
+      );
+    } else {
+      this.latestTurnRateDegreesPerSecond = 0;
+    }
+    this.latestBearingDegrees = nextBearingDegrees;
     this.routePoints.push(point);
     if (this.routePoints.length > MAX_ROUTE_POINTS) {
       this.routePoints.splice(0, this.routePoints.length - MAX_ROUTE_POINTS);
@@ -80,12 +98,16 @@ export class LiveGpsTracker {
       status === 'estimated'
         ? estimatePoint(this.latestRealPoint, bearingDegrees, gapSeconds)
         : this.latestRealPoint;
+    const turnRateDegreesPerSecond = status === 'lost'
+      ? 0
+      : this.latestTurnRateDegreesPerSecond * Math.max(0, 1 - gapSeconds / 10);
     const routePoints =
       status === 'estimated' ? [...this.routePoints, point] : [...this.routePoints];
 
     return {
       point,
       bearingDegrees,
+      turnRateDegreesPerSecond,
       distanceFlownMeters: routeDistanceMeters(routePoints),
       remainingDistanceMeters: haversineDistanceMeters(point, segment.destination),
       elapsedSeconds: this.firstReceiptMs === undefined ? 0 : Math.max(0, (nowMs - this.firstReceiptMs) / 1000),
@@ -224,6 +246,14 @@ function normalizeOptionalDegrees(value: number | null): number | undefined {
 
 function normalizeDegrees(value: number): number {
   return ((value % 360) + 360) % 360;
+}
+
+function angleDeltaDegrees(fromDegrees: number, toDegrees: number): number {
+  return ((((toDegrees - fromDegrees + 540) % 360) - 180) + 360) % 360 - 180;
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function normalizeLongitude(longitude: number): number {

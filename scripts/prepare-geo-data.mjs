@@ -101,11 +101,15 @@ const globalPlacesIndex = {
     },
     {
       name: 'Natural Earth',
-      attribution: 'Made with Natural Earth.'
+      attribution: 'Made with Natural Earth.',
+      license: 'Public domain',
+      licenseUrl: 'https://www.naturalearthdata.com/about/terms-of-use/'
     },
     {
       name: 'GeoNames',
-      attribution: 'Contains GeoNames data available under CC BY 4.0.'
+      attribution: 'Contains GeoNames data available under CC BY 4.0.',
+      license: 'CC BY 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by/4.0/'
     }
   ],
   contents: {
@@ -126,6 +130,7 @@ const manifest = {
     {
       name: 'Natural Earth',
       license: 'Public domain',
+      licenseUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
       attribution: 'Made with Natural Earth.',
       sourceUrl: 'https://www.naturalearthdata.com/',
           files: [
@@ -145,6 +150,7 @@ const manifest = {
     {
       name: 'GeoNames',
       license: 'CC BY 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
       attribution: 'Contains GeoNames data available under CC BY 4.0.',
       sourceUrl: 'https://download.geonames.org/export/dump/cities15000.zip',
       files: [fileEntry(relativePathForGeoNames(geonamesDataset))]

@@ -1,7 +1,7 @@
 import SwiftUI
 import WebKit
 
-struct ReplayEngineView: UIViewRepresentable {
+struct FlightView: UIViewRepresentable {
     @EnvironmentObject private var appModel: TravelGlobeAppModel
 
     func makeCoordinator() -> Coordinator {
@@ -12,8 +12,9 @@ struct ReplayEngineView: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.setURLSchemeHandler(ReplayAssetSchemeHandler(), forURLScheme: "travelglobe")
         let assetBaseLiteral = Self.javascriptStringLiteral(Self.replayAssetBaseURL)
+        let initialModeLiteral = Self.javascriptStringLiteral(appModel.flightMode.rawValue)
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);",
+            source: "window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral); window.__TRAVEL_GLOBE_INITIAL_FLIGHT_MODE__ = \(initialModeLiteral);",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -33,15 +34,15 @@ struct ReplayEngineView: UIViewRepresentable {
 
         if TravelGlobeAppModel.replayEngineIndexURL() != nil,
            let url = URL(string: "\(Self.replayAssetBaseURL)index.html") {
-            appModel.updateReplayEngineStatus("loading index.html")
+            appModel.updateFlightViewStatus("loading index.html")
             webView.load(URLRequest(url: url))
         } else {
-            appModel.updateReplayEngineStatus("missing index.html")
+            appModel.updateFlightViewStatus("missing index.html")
             webView.loadHTMLString("""
             <!doctype html>
             <html>
               <body style="margin:0;background:#030914;color:white;font:16px -apple-system;padding:24px;">
-                <h1>Replay Engine not found</h1>
+            <h1>Flight view not found</h1>
                 <p>The app bundle is missing index.html.</p>
               </body>
             </html>
@@ -94,7 +95,7 @@ struct ReplayEngineView: UIViewRepresentable {
         private let appModel: TravelGlobeAppModel
         private var hasRuntimeDiagnostic = false
         private var didInjectReplayBundle = false
-        private var isReplayReady = false
+        private var isFlightReady = false
         private var lastSentLiveLocationId: UUID?
         private var sentBridgeMessageIds = Set<UUID>()
 
@@ -109,7 +110,7 @@ struct ReplayEngineView: UIViewRepresentable {
                     guard let self else { return }
                     if (result as? Bool) == true {
                         Task { @MainActor in
-                            self.appModel.updateReplayEngineStatus("loaded")
+                            self.appModel.updateFlightViewStatus("loaded")
                         }
                         Task { @MainActor in
                             self.markReplayReady(webView)
@@ -136,13 +137,13 @@ struct ReplayEngineView: UIViewRepresentable {
             }
             hasRuntimeDiagnostic = true
             Task { @MainActor in
-                appModel.updateReplayEngineStatus(body)
+            appModel.updateFlightViewStatus(body)
             }
         }
 
         private func report(_ error: Error) {
             Task { @MainActor in
-                appModel.updateReplayEngineStatus("load error \(error.localizedDescription)")
+            appModel.updateFlightViewStatus("load error \(error.localizedDescription)")
             }
         }
 
@@ -152,31 +153,31 @@ struct ReplayEngineView: UIViewRepresentable {
 
             guard let scriptURL = OfflinePackDownloadService.replayAssetURL(relativePath: "index.js") else {
                 Task { @MainActor in
-                    appModel.updateReplayEngineStatus("missing index.js")
+                    appModel.updateFlightViewStatus("missing index.js")
                 }
                 return
             }
 
             do {
                 let source = try String(contentsOf: scriptURL, encoding: .utf8)
-                let assetBaseLiteral = ReplayEngineView.javascriptStringLiteral(ReplayEngineView.replayAssetBaseURL)
+                let assetBaseLiteral = FlightView.javascriptStringLiteral(FlightView.replayAssetBaseURL)
                 let bootstrappedSource = """
                 window.__TRAVEL_GLOBE_ASSET_BASE__ = \(assetBaseLiteral);
                 \(source)
                 void 0;
                 """
                 Task { @MainActor in
-                    appModel.updateReplayEngineStatus("injecting")
+                    appModel.updateFlightViewStatus("injecting")
                 }
                 webView.evaluateJavaScript(bootstrappedSource) { [weak self] _, error in
                     guard let self else { return }
                     if let error {
                         Task { @MainActor in
-                            self.appModel.updateReplayEngineStatus("inject error \(error.localizedDescription)")
+                            self.appModel.updateFlightViewStatus("inject error \(error.localizedDescription)")
                         }
                     } else if !self.hasRuntimeDiagnostic {
                         Task { @MainActor in
-                            self.appModel.updateReplayEngineStatus("injected")
+                            self.appModel.updateFlightViewStatus("injected")
                         }
                         Task { @MainActor in
                             self.markReplayReady(webView)
@@ -185,14 +186,14 @@ struct ReplayEngineView: UIViewRepresentable {
                 }
             } catch {
                 Task { @MainActor in
-                    appModel.updateReplayEngineStatus("script read error \(error.localizedDescription)")
+                    appModel.updateFlightViewStatus("script read error \(error.localizedDescription)")
                 }
             }
         }
 
         @MainActor
         func sendLatestLiveLocation(to webView: WKWebView) {
-            guard isReplayReady else {
+            guard isFlightReady else {
                 return
             }
             for message in appModel.outboundBridgeMessages where !sentBridgeMessageIds.contains(message.id) {
@@ -215,7 +216,7 @@ struct ReplayEngineView: UIViewRepresentable {
 
         @MainActor
         private func markReplayReady(_ webView: WKWebView) {
-            isReplayReady = true
+            isFlightReady = true
             sendLatestLiveLocation(to: webView)
         }
     }
@@ -257,7 +258,7 @@ final class ReplayAssetSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private func fail(_ urlSchemeTask: WKURLSchemeTask, url: URL?, statusCode: Int) {
         let response = HTTPURLResponse(
-            url: url ?? URL(string: ReplayEngineView.replayAssetBaseURL)!,
+            url: url ?? URL(string: FlightView.replayAssetBaseURL)!,
             statusCode: statusCode,
             httpVersion: "HTTP/1.1",
             headerFields: [

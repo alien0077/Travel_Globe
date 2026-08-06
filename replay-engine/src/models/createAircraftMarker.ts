@@ -15,6 +15,11 @@ import {
 export const AIRCRAFT_MODEL_TARGET_SIZE = 0.16;
 export const AIRCRAFT_VISUAL_ALTITUDE_FLOOR_METERS = 3500;
 
+export interface AircraftAttitude {
+  rollDegrees?: number;
+  pitchDegrees?: number;
+}
+
 interface AircraftModelCorrection {
   rotation?: [number, number, number];
   scaleMultiplier?: number;
@@ -276,7 +281,8 @@ function createLoadingAircraftSilhouette(): THREE.Group {
 export function placeAircraftMarker(
   marker: THREE.Group,
   point: GeographicPoint,
-  bearingDegrees: number
+  bearingDegrees: number,
+  attitude: AircraftAttitude = {}
 ): void {
   const visualPoint = {
     ...point,
@@ -289,6 +295,8 @@ export function placeAircraftMarker(
   const forward = forwardVector(normal, bearingDegrees);
   marker.up.copy(normal);
   marker.lookAt(marker.position.clone().add(forward));
+  marker.rotateZ(THREE.MathUtils.degToRad(attitude.rollDegrees ?? 0));
+  marker.rotateX(THREE.MathUtils.degToRad(attitude.pitchDegrees ?? 0));
 }
 
 function forwardVector(normal: THREE.Vector3, bearingDegrees: number): THREE.Vector3 {

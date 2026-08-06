@@ -1,8 +1,8 @@
 {
   "id": "aviation-airgraph",
   "version": "0.2.0",
-  "generatedAt": "1970-01-01T00:00:00+00:00",
-  "generatedFrom": "sha256:c58141daae01f2c580e697929daf2298227211509f4e3c3095f54b4b5fe78894",
+  "generatedAt": "2026-07-30T06:44:05.567552+00:00",
+  "generatedFrom": "sha256:2288765312139073f4bc5c695c2784fb6243b41ba1494e8570f1f0f5dbc921a3",
   "sourceMode": "flightgear-gpl-2.0",
   "licenseMode": "gpl-2.0-or-later",
   "license": {
@@ -20,9 +20,9 @@
         "GLOBAL"
       ],
       "airports": 0,
-      "points": 26742,
-      "airways": 8541,
-      "segments": 57217
+      "points": 136788,
+      "airways": 8609,
+      "segments": 57822
     }
   ],
   "sources": [
@@ -42,8 +42,8 @@
     "airgraph": [
       {
         "path": "shared/offline-packs/aviation/regions/global.airgraph.json.gz",
-        "bytes": 942138,
-        "sha256": "f6bf426980fb34fba3f20dde4f5b8d99d94f92370d849835228a8dc3b62d9ede",
+        "bytes": 2458459,
+        "sha256": "59ebecc8970ba225f147df95b826f87d27f8103fcd2918d987f7666f5168aa94",
         "contentType": "application/json+gzip",
         "public": true
       }
@@ -67,15 +67,15 @@
     "reports": [
       {
         "path": "shared/offline-packs/aviation/coverage_report.json",
-        "bytes": 733,
-        "sha256": "1c98c5e702e839570f10d4478c0a934f35b4ffafd07594e64ea463661f4e7001",
+        "bytes": 741,
+        "sha256": "92e1e6785d5dacc0b7c2eecbdffd4fda2e39ea598ec81cbc486fb06a49598c86",
         "contentType": "application/json",
         "public": true
       },
       {
         "path": "shared/offline-packs/aviation/validation_report.json",
-        "bytes": 276,
-        "sha256": "54aeae03e36e6a2fe00f871eed9e1b7cac895461fe2fb7bc8b64e2cc7f40ec43",
+        "bytes": 284,
+        "sha256": "288768f44c2b13184fb038e40088fb7ccc50f7b0ba7bf25b8d5903b6fc1a143d",
         "contentType": "application/json",
         "public": true
       }

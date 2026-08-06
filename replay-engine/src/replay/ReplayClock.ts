@@ -1,7 +1,7 @@
 export class ReplayClock {
   readonly durationSeconds: number;
   currentSeconds = 0;
-  speed = 5;
+  speed = 1;
   isPlaying = true;
 
   constructor(durationSeconds: number) {

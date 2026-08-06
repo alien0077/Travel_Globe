@@ -16,7 +16,7 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var locationPermissionStatus = "Location: not checked"
     @Published var photoPermissionStatus = "Photos: not checked"
     @Published var notificationPermissionStatus = "Notifications: not checked"
-    @Published var replayEngineStatus = "Replay Engine: not checked"
+    @Published var flightViewStatus = "Flight view: not checked"
     @Published var offlinePackUpdateStatus = "Offline data: not checked"
     @Published var latestLiveLocationMessage: NativeBridgeMessage?
     @Published var outboundBridgeMessages: [NativeBridgeMessage] = []
@@ -25,6 +25,9 @@ final class TravelGlobeAppModel: ObservableObject {
     @Published var selectedFlightPlanKey = ""
     @Published var recordingPlanStatus = "No flight plan applied"
     @Published var visitPointStatus = "No visit points"
+    @Published var flightMode: FlightMode = .simulation
+    @Published var isLiveLocationActive = false
+    @Published var flightStatus = "尚未啟用 Live GPS"
 
     let locationRecorder: LocationRecorder
     let bridge = TravelGlobeBridge()
@@ -78,6 +81,32 @@ final class TravelGlobeAppModel: ObservableObject {
             await refreshDiagnostics()
         } catch {
             diagnostics.append(.error("Unable to start recording: \(error.localizedDescription)"))
+        }
+    }
+
+    func startLiveFlight() async {
+        flightMode = .live
+        isLiveLocationActive = true
+        flightStatus = "Live GPS 啟動中，等待定位..."
+        locationRecorder.startLiveUpdates()
+        enqueueFlightModeMessage()
+        await refreshDiagnostics()
+    }
+
+    func stopLiveFlight() async {
+        await locationRecorder.stop()
+        isLiveLocationActive = false
+        flightMode = .simulation
+        flightStatus = "Live GPS 已停止，現在是模擬航線"
+        enqueueFlightModeMessage()
+        await refreshDiagnostics()
+    }
+
+    func selectFlightMode(_ mode: FlightMode) {
+        if mode == .live {
+            Task { await startLiveFlight() }
+        } else {
+            Task { await stopLiveFlight() }
         }
     }
 
@@ -193,7 +222,7 @@ final class TravelGlobeAppModel: ObservableObject {
         locationPermissionStatus = "Location: \(Self.locationStatusText(CLLocationManager.authorizationStatus()))"
         photoPermissionStatus = "Photos: \(Self.photoStatusText(PHPhotoLibrary.authorizationStatus(for: .readWrite)))"
         await refreshNotificationPermissionStatus()
-        replayEngineStatus = "Replay Engine: \(Self.replayEngineIndexURL() == nil ? "missing index.html" : "index.html found")"
+        flightViewStatus = "Flight view: \(Self.replayEngineIndexURL() == nil ? "missing index.html" : "index.html found")"
 
         do {
             let journeys = try await repository.recentJourneys(limit: 3)
@@ -214,7 +243,7 @@ final class TravelGlobeAppModel: ObservableObject {
                 .info(locationPermissionStatus),
                 .info(photoPermissionStatus),
                 .info(notificationPermissionStatus),
-                .info(replayEngineStatus),
+                .info(flightViewStatus),
                 .info(offlinePackUpdateStatus),
                 .info("Flight plan: \(recordingPlanStatus)"),
                 .info("Visit points: \(visitPointStatus)"),
@@ -226,8 +255,8 @@ final class TravelGlobeAppModel: ObservableObject {
         }
     }
 
-    func updateReplayEngineStatus(_ status: String) {
-        replayEngineStatus = "Replay Engine: \(status)"
+    func updateFlightViewStatus(_ status: String) {
+        flightViewStatus = "Flight view: \(status)"
     }
 
     func checkForOfflinePackUpdates(force: Bool = false) async {
@@ -250,7 +279,7 @@ final class TravelGlobeAppModel: ObservableObject {
             case .updated:
                 offlinePackUpdateStatus = "Offline data: updated \(Self.formatBytes(result.downloadedBytes))"
                 await refreshDiagnostics()
-                replayEngineStatus = "Replay Engine: updated data ready; reopen Replay"
+                flightViewStatus = "Flight view: updated data ready"
             }
         } catch {
             offlinePackUpdateStatus = "Offline data: update failed \(error.localizedDescription)"
@@ -272,7 +301,7 @@ final class TravelGlobeAppModel: ObservableObject {
     func loadLatestJourneyInReplay() async {
         do {
             guard let journey = try await repository.recentJourneys(limit: 1).first else {
-                replayEngineStatus = "Replay Engine: no stored journey"
+                flightViewStatus = "Flight view: no stored journey"
                 return
             }
             let points = try await repository.locationPoints(journeyId: journey.id, since: nil)
@@ -282,10 +311,10 @@ final class TravelGlobeAppModel: ObservableObject {
             activeVisitPointCount = visitPoints.count
             enqueueRecordingStatus("recording.completed", journey: journey, points: points)
             enqueueVisitPointsStatus("visitPoints.sync", journey: journey, points: visitPoints)
-            replayEngineStatus = "Replay Engine: queued latest stored journey"
+            flightViewStatus = "Flight view: queued latest stored journey"
         } catch {
-            replayEngineStatus = "Replay Engine: load latest error \(error.localizedDescription)"
-            diagnostics.append(.error(replayEngineStatus))
+            flightViewStatus = "Flight view: load latest error \(error.localizedDescription)"
+            diagnostics.append(.error(flightViewStatus))
         }
     }
 
@@ -311,6 +340,16 @@ final class TravelGlobeAppModel: ObservableObject {
             exportFileMessage(message)
         case "recording.loadLatest":
             Task { await loadLatestJourneyInReplay() }
+        case "flight.mode.set":
+            guard
+                let data = message.payload.data(using: .utf8),
+                let payload = try? JSONDecoder().decode(FlightModePayload.self, from: data),
+                let mode = FlightMode(rawValue: payload.mode)
+            else {
+                diagnostics.append(.error("Unable to decode flight mode from Flight view"))
+                return
+            }
+            selectFlightMode(mode)
         default:
             break
         }
@@ -321,7 +360,7 @@ final class TravelGlobeAppModel: ObservableObject {
             let data = message.payload.data(using: .utf8),
             let plan = try? JSONDecoder().decode(FlightPlanRecord.self, from: data)
         else {
-            diagnostics.append(.error("Unable to decode flight plan from Replay Engine"))
+            diagnostics.append(.error("Unable to decode flight plan from Flight view"))
             return
         }
         upsertFlightPlan(plan)
@@ -338,7 +377,7 @@ final class TravelGlobeAppModel: ObservableObject {
             let data = message.payload.data(using: .utf8),
             let notification = try? JSONDecoder().decode(NotificationSchedulePayload.self, from: data)
         else {
-            diagnostics.append(.error("Unable to decode notification request from Replay Engine"))
+            diagnostics.append(.error("Unable to decode notification request from Flight view"))
             return
         }
         notificationService.schedule(
@@ -354,7 +393,7 @@ final class TravelGlobeAppModel: ObservableObject {
             let payload = try? JSONDecoder().decode(FileExportPayload.self, from: data),
             let fileData = Data(base64Encoded: payload.base64)
         else {
-            diagnostics.append(.error("Unable to decode export file from Replay Engine"))
+            diagnostics.append(.error("Unable to decode export file from Flight view"))
             return
         }
 
@@ -431,6 +470,10 @@ final class TravelGlobeAppModel: ObservableObject {
             type: type,
             payload: RecordingStatusPayload(journey: journey, points: points)
         )
+    }
+
+    private func enqueueFlightModeMessage() {
+        enqueueBridgeMessage(type: "flight.mode", payload: FlightModePayload(mode: flightMode.rawValue))
     }
 
     private func enqueueVisitPointsStatus(_ type: String, journey: JourneyRecord, points: [VisitPointRecord]) {
@@ -583,6 +626,10 @@ private struct FlightPlanStatusPayload: Encodable {
         plannedRoute = plan.plannedRoute
         self.status = status
     }
+}
+
+private struct FlightModePayload: Codable {
+    var mode: String
 }
 
 private struct NotificationSchedulePayload: Decodable {

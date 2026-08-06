@@ -106,7 +106,7 @@ export class BrowserRuntimeAdapter implements RuntimeAdapter {
   getLocationCapability(): LocationCapability {
     return {
       canRecord: false,
-      reason: 'Browser replay only; native recording is available in the iOS shell'
+      reason: '瀏覽器可使用模擬航線；Live GPS 由 iOS 飛行頁面提供'
     };
   }
 }

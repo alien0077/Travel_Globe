@@ -8,6 +8,7 @@ import math
 import re
 import sys
 import tarfile
+import zlib
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -651,7 +652,9 @@ def _iter_trace_payloads_from_tarfile(handle: BinaryIO, label: str) -> Iterable[
             extracted = archive.extractfile(member)
             if extracted is None:
                 continue
-            raw = _maybe_decompress_gzip(extracted.read())
+            raw = _try_decompress_gzip(extracted.read(), f"{label}:{member.name}")
+            if raw is None:
+                continue
             traces += 1
             if traces % 10000 == 0:
                 print(f"read {traces:,} traces from {label}", file=sys.stderr, flush=True)
@@ -663,7 +666,7 @@ def _read_trace_file(path: Path) -> bytes | None:
         if path.suffix == ".gz":
             with gzip.open(path, "rb") as handle:
                 return handle.read()
-        return _maybe_decompress_gzip(path.read_bytes())
+        return _try_decompress_gzip(path.read_bytes(), str(path))
     except OSError:
         return None
 
@@ -791,3 +794,11 @@ def _maybe_decompress_gzip(raw: bytes) -> bytes:
     if raw.startswith(b"\x1f\x8b"):
         return gzip.decompress(raw)
     return raw
+
+
+def _try_decompress_gzip(raw: bytes, label: str) -> bytes | None:
+    try:
+        return _maybe_decompress_gzip(raw)
+    except (EOFError, OSError, zlib.error) as exc:
+        print(f"skip corrupt trace payload {label}: {exc}", file=sys.stderr, flush=True)
+        return None

@@ -20,6 +20,11 @@
     <dict/>
     <key>UIRequiresFullScreen</key>
     <true/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Travel Globe records your journey route so it can replay your trip later.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

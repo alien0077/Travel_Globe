@@ -18,6 +18,20 @@ enum RecordingProfile: String, Codable {
     case balanced
 }
 
+enum FlightMode: String, CaseIterable, Codable {
+    case live
+    case simulation
+
+    var label: String {
+        switch self {
+        case .live:
+            return "Live GPS"
+        case .simulation:
+            return "模擬航線"
+        }
+    }
+}
+
 struct RecordingDiagnostic: Identifiable, Equatable {
     var id = UUID()
     var level: Level

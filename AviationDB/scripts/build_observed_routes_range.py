@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import re
 import subprocess
@@ -58,6 +59,16 @@ def main() -> int:
     parser.add_argument("--signature-samples", type=int, default=14)
     parser.add_argument("--signature-quantum-deg", type=float, default=0.5)
     parser.add_argument("--max-track-detour-ratio", type=float, default=2.6)
+    parser.add_argument(
+        "--seen-trace-index",
+        type=Path,
+        help="Optional newline-delimited SHA1 index of raw trace payloads already processed by earlier days.",
+    )
+    parser.add_argument(
+        "--write-new-trace-index",
+        type=Path,
+        help="Optional path for newline-delimited SHA1 hashes of raw trace payloads accepted as new in this run.",
+    )
     args = parser.parse_args()
 
     if args.days <= 0:
@@ -109,11 +120,10 @@ def main() -> int:
         release_dir.mkdir(parents=True, exist_ok=True)
         parts = [_download_with_curl(url, release_dir) for url in entry.urls]
         print(f"[{index}/{len(dates)}] processing {entry.date}", file=sys.stderr, flush=True)
-        day_groups, day_stats = build_observed_routes_from_payloads(
-            iter_trace_payloads_from_split_tar(parts),
-            airport_index,
-            options,
-        )
+        payloads = iter_trace_payloads_from_split_tar(parts)
+        if args.seen_trace_index or args.write_new_trace_index:
+            payloads = filter_new_trace_payloads(payloads, args.seen_trace_index, args.write_new_trace_index)
+        day_groups, day_stats = build_observed_routes_from_payloads(payloads, airport_index, options)
         _merge_groups(groups, day_groups)
         stats = _merge_stats(stats, day_stats)
         source_urls.extend(url for url in entry.urls if url not in source_urls)
@@ -204,6 +214,56 @@ def _download_with_curl(url: str, release_dir: Path) -> Path:
         raise last_error or RuntimeError(f"Unable to download {url}")
     print(f"downloaded asset: {target.name} ({target.stat().st_size} bytes)", file=sys.stderr, flush=True)
     return target
+
+
+def filter_new_trace_payloads(
+    payloads: Iterable[tuple[str, bytes]],
+    seen_index: Path | None,
+    new_index: Path | None,
+) -> Iterable[tuple[str, bytes]]:
+    seen = _load_trace_hash_index(seen_index)
+    accepted_hashes: set[str] = set()
+    total = 0
+    duplicate = 0
+    new_count = 0
+    handle = None
+    if new_index is not None:
+        new_index.parent.mkdir(parents=True, exist_ok=True)
+        new_index.unlink(missing_ok=True)
+        handle = new_index.open("w", encoding="utf-8")
+    try:
+        for source_name, payload in payloads:
+            total += 1
+            digest = hashlib.sha1(payload).hexdigest()
+            if digest in seen or digest in accepted_hashes:
+                duplicate += 1
+                continue
+            accepted_hashes.add(digest)
+            new_count += 1
+            if handle is not None:
+                handle.write(digest + "\n")
+            yield source_name, payload
+    finally:
+        if handle is not None:
+            handle.close()
+        print(
+            f"trace diff: total={total} new={new_count} duplicate={duplicate} "
+            f"seen_index={seen_index or ''} new_index={new_index or ''}",
+            file=sys.stderr,
+            flush=True,
+        )
+
+
+def _load_trace_hash_index(path: Path | None) -> set[str]:
+    if path is None or not path.exists():
+        return set()
+    hashes: set[str] = set()
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            value = line.strip().split()[0] if line.strip() else ""
+            if re.fullmatch(r"[0-9a-fA-F]{40}", value):
+                hashes.add(value.lower())
+    return hashes
 
 
 def _append_download_chunk(target: Path, chunk: Path, headers: Path, offset: int) -> int:

@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:41.506549+00:00",
+  "route": "CUN-DFW",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 1031.97,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-23"
+    },
+    "metrics": {
+      "distanceKm": 1791.7,
+      "detourRatio": 1.081,
+      "meanObservedToIfrKm": 74.3,
+      "maxObservedToIfrKm": 207.7,
+      "meanIfrToObservedKm": 124.9
+    },
+    "points": [
+      {
+        "ident": "CUN",
+        "lat": 21.040817,
+        "lon": -86.87347,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 21.12159,
+        "lon": -86.78706,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 21.14905,
+        "lon": -86.84815,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 21.18625,
+        "lon": -86.87307,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 21.74399,
+        "lon": -86.91961,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS005",
+        "lat": 26.8079,
+        "lon": -89.11507,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS006",
+        "lat": 27.36877,
+        "lon": -89.57786,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS007",
+        "lat": 28.48192,
+        "lon": -90.5761,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS008",
+        "lat": 29.51891,
+        "lon": -91.53184,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS009",
+        "lat": 30.61789,
+        "lon": -92.57317,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS010",
+        "lat": 31.58383,
+        "lon": -93.51788,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS011",
+        "lat": 31.616,
+        "lon": -93.58413,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS012",
+        "lat": 31.77177,
+        "lon": -94.19726,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS013",
+        "lat": 32.27457,
+        "lon": -96.30789,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS014",
+        "lat": 32.79062,
+        "lon": -96.9098,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS015",
+        "lat": 33.11842,
+        "lon": -96.91287,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS016",
+        "lat": 33.14231,
+        "lon": -96.93142,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS017",
+        "lat": 33.12871,
+        "lon": -96.98893,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS018",
+        "lat": 33.07924,
+        "lon": -97.02202,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS019",
+        "lat": 32.87935,
+        "lon": -97.03337,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS020",
+        "lat": 32.89279,
+        "lon": -97.04643,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "DFW",
+        "lat": 32.896801,
+        "lon": -97.038002,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

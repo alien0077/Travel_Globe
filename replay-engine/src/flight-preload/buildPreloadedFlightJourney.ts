@@ -5,7 +5,7 @@ import {
   interpolateGreatCircle
 } from '../geo/geodesy';
 import { DEFAULT_AIRCRAFT_TYPE } from '../models/aircraftModelLibrary';
-import { findAirgraphRoute, type AirgraphRouteResult } from './airgraphIndex';
+import type { AirgraphRouteResult } from './airgraphIndex';
 import { findAirportByIata, findOpenFlightsRoute, normalizeIata, type AirportRecord } from './airportIndex';
 import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from './flightScheduleIndex';
 import { findRouteShape } from './routeShapeIndex';
@@ -73,10 +73,11 @@ export function buildPreloadedFlightJourney(
       : schedule?.defaultAircraftType
         ? 'offline-schedule-index'
         : 'default';
-  const airgraphRoute = preferredRoute ?? findAirgraphRoute(origin, destination);
-  const hasAirwayRoute = airgraphRoute?.method === 'airway_graph';
-  const hasRouteShape = airgraphRoute?.source === 'aviationdb-route-shapes';
-  const hasPlannedRoute = Boolean(airgraphRoute && (hasAirwayRoute || hasRouteShape));
+  const airgraphRoute = preferredRoute;
+  const hasAirwayRoute = airgraphRoute?.method === 'directed_airway_graph' || airgraphRoute?.method === 'airway_graph';
+  const hasWaypointCorridor = false;
+  const hasPairFallbackShape = false;
+  const hasPlannedRoute = Boolean(airgraphRoute && (hasAirwayRoute || hasWaypointCorridor || hasPairFallbackShape));
   const routeDistanceMeters = hasPlannedRoute && airgraphRoute && airgraphRoute.distanceMeters > 0
     ? airgraphRoute.distanceMeters
     : distanceMeters;
@@ -305,7 +306,7 @@ function buildPreloadWarning(
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
   const routeNote = airgraphRoute?.source === 'aviationdb-route-shapes'
-    ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線 airport-pair 與航路點 corridor 近似，尚非正式 filed route。`
+    ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個已驗證航路點；每段都來自離線 airway graph。`
     : airgraphRoute
     ? ` 已使用 AviationDB ${airgraphRoute.region} airway graph 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線航路圖近似，尚非正式 filed route。`
     : ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';

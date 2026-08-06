@@ -57,7 +57,6 @@ import {
   formatBytes,
   getBundledOfflinePackSizeBytes
 } from '../offline/offlinePacks';
-import { reduceAutoRecordingState, type AutoRecordingContext } from '../recording/autoRecorder';
 import { ReplayClock } from '../replay/ReplayClock';
 import { getRouteTimeBounds, sampleReplayAt, type ReplaySample } from '../replay/buildReplayFrames';
 import { summarizeJourney } from '../statistics/journeyStatistics';
@@ -74,6 +73,8 @@ import {
 import type { TravelNotification } from '../notifications/notificationRules';
 import { buildPlanSummary } from '../travel-plan/planEngine';
 
+type FlightMode = 'live' | 'simulation';
+
 export class TravelGlobeApp {
   private readonly root: HTMLElement;
   private readonly adapter: BrowserRuntimeAdapter;
@@ -86,12 +87,12 @@ export class TravelGlobeApp {
   private routeLandmarks: GeographicFeature[] = [];
   private cameraMode: CameraMode = 'flightPreview';
   private lastFrameMs?: number;
-  private autoRecordingContext?: AutoRecordingContext;
   private travelRecords: TravelRecord[] = [];
   private activeRecordId?: string;
   private activeRegion: TravelRegion | 'all' = 'all';
   private liveGps = new LiveGpsTracker();
-  private isLiveGpsMode = false;
+  private flightMode: FlightMode = 'simulation';
+  private initialFlightMode: FlightMode = 'simulation';
   private savedJourneys: SavedJourneySummary[] = [];
   private recordEditUndoStack: Journey[] = [];
   private scheduledNotificationIds = new Set<string>();
@@ -101,6 +102,7 @@ export class TravelGlobeApp {
   private shellEventController?: AbortController;
   private isPilotHudEnabled = true;
   private isPilotViewRailExpanded = false;
+  private isReferenceMenuOpen = false;
   private pilotHudPreviousBearingDegrees?: number;
   private pilotHudSmoothedRollDegrees = 0;
 
@@ -108,6 +110,7 @@ export class TravelGlobeApp {
   private readonly cockpitWindow = document.createElement('section');
   private readonly pilotHudToggle = document.createElement('button');
   private readonly playButton = document.createElement('button');
+  private readonly modeSelect = document.createElement('select');
   private readonly speedSelect = document.createElement('select');
   private readonly scrubber = document.createElement('input');
   private readonly hudTitle = document.createElement('div');
@@ -123,6 +126,15 @@ export class TravelGlobeApp {
   private readonly recordPreview = document.createElement('article');
   private readonly viewRail = document.createElement('nav');
   private readonly pilotHud = document.createElement('div');
+  private readonly referenceTopbar = document.createElement('header');
+  private readonly referenceClock = document.createElement('span');
+  private readonly referenceSeat = document.createElement('strong');
+  private readonly referenceRoute = document.createElement('span');
+  private readonly referenceViewTitle = document.createElement('div');
+  private readonly referenceSidePanel = document.createElement('aside');
+  private readonly referenceBottomNav = document.createElement('nav');
+  private readonly referenceMenu = document.createElement('section');
+  private readonly referenceMenuButton = document.createElement('button');
   private readonly productPanel = document.createElement('section');
   private readonly preloadPanel = document.createElement('section');
   private readonly aviationstackApiKeyInput = document.createElement('input');
@@ -140,6 +152,9 @@ export class TravelGlobeApp {
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
     this.adapter = new BrowserRuntimeAdapter(journey);
+    const nativeInitialMode = (window as Window & { __TRAVEL_GLOBE_INITIAL_FLIGHT_MODE__?: string }).__TRAVEL_GLOBE_INITIAL_FLIGHT_MODE__;
+    this.initialFlightMode = nativeInitialMode === 'live' ? 'live' : 'simulation';
+    this.flightMode = this.initialFlightMode;
     window.addEventListener('travelglobe:native', this.handleNativeEvent);
   }
 
@@ -157,7 +172,7 @@ export class TravelGlobeApp {
     this.travelRecords = buildTravelRecords(journey);
     this.activeRecordId = this.travelRecords[0]?.id;
     this.liveGps = new LiveGpsTracker();
-    this.isLiveGpsMode = false;
+    this.flightMode = this.initialFlightMode;
     this.pilotHudPreviousBearingDegrees = undefined;
     this.pilotHudSmoothedRollDegrees = 0;
     const bounds = getRouteTimeBounds(this.segment);
@@ -183,6 +198,8 @@ export class TravelGlobeApp {
     const renderSignal = this.shellEventController.signal;
     const isCompactViewport = window.matchMedia('(max-width: 720px)').matches;
     this.root.className = isCompactViewport ? 'app-shell flight-system-shell is-compact' : 'app-shell flight-system-shell';
+    this.root.classList.add('reference-flight-ui');
+    this.isReferenceMenuOpen = false;
     this.viewport.className = 'globe-viewport';
 
     const overlay = document.createElement('section');
@@ -211,6 +228,57 @@ export class TravelGlobeApp {
       Object.assign(document.createElement('div'), { className: 'cockpit-right-post' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-glare-shield' })
     );
+
+    this.referenceTopbar.className = 'reference-topbar';
+    this.referenceClock.className = 'reference-clock';
+    this.referenceSeat.className = 'reference-seat';
+    this.referenceRoute.className = 'reference-route';
+    this.referenceViewTitle.className = 'reference-view-title';
+    const flightSummary = document.createElement('div');
+    flightSummary.className = 'reference-flight-summary';
+    flightSummary.append(this.referenceClock, this.referenceSeat, this.referenceRoute);
+    const headerActions = document.createElement('div');
+    headerActions.className = 'reference-header-actions';
+    for (const item of [
+      ['☾', '夜間模式'], ['♧', '服務'], ['♙', '座位資訊'], ['⌖', '目的地'],
+      ['✈', '飛行360°'], ['♡', '收藏'], ['⚙', '設定'], ['⏻', '離開']
+    ]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'reference-header-action';
+      button.textContent = item[0];
+      button.title = item[1];
+      button.setAttribute('aria-label', item[1]);
+      if (item[1] === '飛行360°') {
+        button.addEventListener('click', () => this.activateCameraMode('flightPreview'), { signal: renderSignal });
+      } else if (item[1] === '設定') {
+        button.addEventListener('click', () => this.setReferenceMenuOpen(true), { signal: renderSignal });
+      }
+      headerActions.append(button);
+    }
+    this.referenceTopbar.replaceChildren(flightSummary, headerActions);
+
+    this.referenceSidePanel.className = 'reference-side-panel';
+    this.referenceBottomNav.className = 'reference-bottom-nav';
+    this.referenceMenu.className = 'reference-menu';
+    this.referenceMenu.setAttribute('aria-label', '飛行功能選單');
+    this.referenceMenu.hidden = true;
+    this.referenceMenuButton.type = 'button';
+    this.referenceMenuButton.className = 'reference-menu-button';
+    this.referenceMenuButton.textContent = '☰';
+    this.referenceMenuButton.setAttribute('aria-label', '開啟飛行功能選單');
+    this.referenceMenuButton.setAttribute('aria-expanded', 'false');
+    this.referenceMenuButton.addEventListener('click', () => {
+      this.setReferenceMenuOpen(!this.isReferenceMenuOpen);
+    }, { signal: renderSignal });
+    this.referenceBottomNav.append(
+      referenceNavButton('◉', '探索世界', () => this.activateCameraMode('global')),
+      referenceNavButton('✈', '飛機360°', () => this.activateCameraMode('flightPreview')),
+      referenceNavButton('⌖', '目的地指南', () => this.setReferenceMenuOpen(true)),
+      this.referenceMenuButton
+    );
+    this.referenceViewTitle.textContent = '飛機360°';
+    this.referenceMenu.replaceChildren(this.renderReferenceMenu(renderSignal));
 
     this.viewRail.className = 'view-rail';
     this.viewRail.setAttribute('aria-label', '飛行視角');
@@ -245,10 +313,7 @@ export class TravelGlobeApp {
             this.syncViewRail();
             return;
           }
-          this.cameraMode = mode;
-          this.isPilotViewRailExpanded = false;
-          this.scene?.prepareForTimelineJump();
-          this.syncViewRail();
+          this.activateCameraMode(mode);
         };
         button.addEventListener('pointerdown', (event) => {
           event.stopPropagation();
@@ -297,7 +362,7 @@ export class TravelGlobeApp {
     this.preloadPanel.className = 'preload-panel';
     const preloadShell = document.createElement('details');
     preloadShell.className = 'dock-panel preload-panel-shell';
-    preloadShell.open = false;
+    preloadShell.open = true;
     const preloadSummary = document.createElement('summary');
     preloadSummary.className = 'panel-summary panel-title';
     preloadSummary.textContent = '航班預載 / API key';
@@ -336,11 +401,30 @@ export class TravelGlobeApp {
     this.playButton.type = 'button';
     this.playButton.className = 'control-button';
     this.playButton.addEventListener('click', () => {
+      if (this.flightMode === 'live') {
+        return;
+      }
       this.clock?.togglePlayback();
       this.syncPlayButton();
     }, { signal: renderSignal });
 
-    this.speedSelect.className = 'control-select';
+    this.modeSelect.className = 'control-select flight-mode-select';
+    this.modeSelect.replaceChildren();
+    for (const mode of [
+      { value: 'live', label: 'Live GPS' },
+      { value: 'simulation', label: '模擬航線' }
+    ] as const) {
+      const option = document.createElement('option');
+      option.value = mode.value;
+      option.textContent = mode.label;
+      this.modeSelect.appendChild(option);
+    }
+    this.modeSelect.value = this.flightMode;
+    this.modeSelect.addEventListener('change', () => {
+      this.setFlightMode(this.modeSelect.value as FlightMode, true);
+    }, { signal: renderSignal });
+
+    this.speedSelect.className = 'control-select flight-speed-select';
     this.speedSelect.replaceChildren();
     for (const speed of [1, 5, 20, 100]) {
       const option = document.createElement('option');
@@ -348,7 +432,7 @@ export class TravelGlobeApp {
       option.textContent = `${speed}x`;
       this.speedSelect.appendChild(option);
     }
-    this.speedSelect.value = '5';
+    this.speedSelect.value = '1';
     this.speedSelect.addEventListener('change', () => {
       this.clock?.setSpeed(Number(this.speedSelect.value));
     }, { signal: renderSignal });
@@ -414,7 +498,7 @@ export class TravelGlobeApp {
     bindTouchAction(packButton, () => {
       productShell.open = true;
       syncDrawerPanelState(productShell);
-      this.capability.textContent = '離線資料已內建在目前 Replay build / iOS bundle；不需要另外啟用或取消。';
+      this.capability.textContent = '離線資料已內建在目前 Flight build / iOS bundle；不需要另外啟用或取消。';
       this.renderProductPanel();
     }, renderSignal);
 
@@ -478,13 +562,28 @@ export class TravelGlobeApp {
     drawerBody.append(actionGrid, this.capability, this.belowMe, preloadShell, productShell, timeline);
     systemDrawer.append(systemSummary, drawerBody);
 
-    controls.append(this.playButton, this.speedSelect, this.scrubber, this.hudStats);
+    controls.append(this.modeSelect, this.playButton, this.speedSelect, this.scrubber, this.hudStats);
     dock.append(systemDrawer);
-    overlay.append(this.cockpitWindow, hud, this.viewRail, dock, this.pilotHud, this.pilotHudToggle, controls);
+    overlay.append(
+      this.cockpitWindow,
+      this.referenceTopbar,
+      this.referenceViewTitle,
+      this.referenceSidePanel,
+      this.referenceBottomNav,
+      this.referenceMenu,
+      hud,
+      this.viewRail,
+      dock,
+      this.pilotHud,
+      this.pilotHudToggle,
+      controls
+    );
     this.root.replaceChildren(this.viewport, overlay, this.fileInput, this.mediaInput);
 
-    this.hudTitle.textContent = 'FLIGHT REPLAY';
+    this.hudTitle.textContent = 'FLIGHT';
     this.hudRoute.textContent = `${journey.title} | ${segment.origin.iataCode ?? segment.origin.name} to ${segment.destination.iataCode ?? segment.destination.name}`;
+    this.referenceSeat.textContent = stringValue(segment.metadata.seat, '33B');
+    this.referenceRoute.textContent = `${segment.origin.iataCode ?? segment.origin.name}  →  ${segment.destination.iataCode ?? segment.destination.name}`;
     this.capability.textContent = this.adapter.getLocationCapability().reason ?? 'Standalone browser replay';
     this.renderRegionFilters();
     this.renderTimeline();
@@ -504,14 +603,30 @@ export class TravelGlobeApp {
     const deltaSeconds = Math.min(0.08, (timeMs - previous) / 1000);
     this.lastFrameMs = timeMs;
 
-    const liveSample = this.isLiveGpsMode ? this.liveGps.sample(timeMs, this.segment) : undefined;
-    if (liveSample) {
-      this.scene.update(liveSample.point, liveSample.bearingDegrees, this.cameraMode, liveSample.routePoints);
+    if (this.flightMode === 'live') {
+      const liveSample = this.liveGps.sample(timeMs, this.segment);
+      if (!liveSample) {
+        this.syncPlayButton();
+        this.geoNotice.textContent = 'Live GPS：等待 iPhone GPS 定位，不會播放模擬航線';
+        return;
+      }
+      this.scene.update(
+        liveSample.point,
+        liveSample.bearingDegrees,
+        this.cameraMode,
+        liveSample.routePoints,
+        liveAircraftAttitude(liveSample.point, liveSample.turnRateDegreesPerSecond)
+      );
       this.scrubber.value = String(
         Math.round(Math.min(1, liveSample.distanceFlownMeters / Math.max(1, this.flightOverlay?.totalDistanceMeters ?? 1)) * 1000)
       );
       this.syncPlayButton();
-      this.updateHud(liveSample, liveSample.elapsedSeconds, liveSample.status);
+      this.updateHud(
+        liveSample,
+        liveSample.elapsedSeconds,
+        liveSample.status,
+        liveSample.turnRateDegreesPerSecond
+      );
       return;
     }
 
@@ -528,9 +643,9 @@ export class TravelGlobeApp {
   private updateHud(
     sample: ReplaySample,
     elapsedSeconds: number,
-    liveStatus?: LiveGpsStatus
+    liveStatus?: LiveGpsStatus,
+    liveTurnRateDegreesPerSecond?: number
   ): void {
-    const point = sample.point;
     if (!this.journey || !this.segment || !this.flightOverlay) {
       return;
     }
@@ -541,6 +656,8 @@ export class TravelGlobeApp {
 
     this.hudTitle.textContent = metrics.flightNumber;
     this.hudRoute.textContent = `${metrics.routeLabel} | ${localizePhase(metrics.phaseLabel)} | ETA ${metrics.etaLabel}`;
+    this.referenceClock.textContent = `${metrics.etaLabel}  抵達目的地的時間`;
+    this.referenceViewTitle.textContent = referenceViewLabel(this.cameraMode);
     this.hudStats.replaceChildren(
       metricItem('剩餘距離', metrics.remainingDistanceLabel),
       metricItem('預計抵達', metrics.etaLabel),
@@ -556,7 +673,8 @@ export class TravelGlobeApp {
       `T+${elapsedMinutes}:${elapsedRemainder}`,
       `偏離 ${formatDistance(deviationMeters)}`
     ].filter(Boolean).join(' | ');
-    this.renderPilotHud(metrics, sample);
+    this.renderPilotHud(metrics, sample, liveTurnRateDegreesPerSecond);
+    this.renderReferenceFlightCards(metrics, sample);
 
     this.renderBelowMe(sample);
     if (liveStatus === 'lost') {
@@ -564,20 +682,9 @@ export class TravelGlobeApp {
     } else if (liveStatus === 'estimated') {
       this.geoNotice.textContent = 'Live GPS：短暫斷訊，畫面以速度與航向暫時推算';
     } else if (liveStatus === 'live') {
-      this.geoNotice.textContent = `Live GPS：recording | 真實 GPS 軌跡 ${formatDistance(sample.distanceFlownMeters)}`;
+      this.geoNotice.textContent = `Live GPS：真實 GPS 軌跡 ${formatDistance(sample.distanceFlownMeters)}`;
     }
 
-    this.autoRecordingContext = reduceAutoRecordingState(
-      this.autoRecordingContext ?? {
-        home: this.journey.segments[0].origin,
-        state: 'Idle'
-      },
-      {
-        timestamp: point.timestamp,
-        location: point,
-        speedMetersPerSecond: point.speedMetersPerSecond ?? 0
-      }
-    );
     if (!this.isProductPanelOpen()) {
       this.renderProductPanel(sample.point);
     }
@@ -589,11 +696,146 @@ export class TravelGlobeApp {
   }
 
   private syncPlayButton(): void {
-    if (this.isLiveGpsMode) {
+    this.modeSelect.value = this.flightMode;
+    this.speedSelect.disabled = this.flightMode === 'live';
+    if (this.flightMode === 'live') {
       this.playButton.textContent = 'LIVE';
       return;
     }
     this.playButton.textContent = this.clock?.isPlaying ? '暫停' : '播放';
+  }
+
+  private activateCameraMode(mode: CameraMode): void {
+    this.cameraMode = mode;
+    this.isPilotViewRailExpanded = false;
+    this.scene?.prepareForTimelineJump();
+    this.referenceViewTitle.textContent = referenceViewLabel(mode);
+    this.setReferenceMenuOpen(false);
+    this.syncViewRail();
+  }
+
+  private setReferenceMenuOpen(isOpen: boolean): void {
+    this.isReferenceMenuOpen = isOpen;
+    this.referenceMenu.hidden = !isOpen;
+    this.referenceMenuButton.classList.toggle('is-open', isOpen);
+    this.referenceMenuButton.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  private renderReferenceMenu(renderSignal: AbortSignal): HTMLElement {
+    const menuBody = document.createElement('div');
+    menuBody.className = 'reference-menu-body';
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'reference-menu-close';
+    closeButton.textContent = '×';
+    closeButton.setAttribute('aria-label', '關閉選單');
+    closeButton.addEventListener('click', () => this.setReferenceMenuOpen(false), { signal: renderSignal });
+
+    const menuTitle = document.createElement('h2');
+    menuTitle.textContent = '飛行功能';
+    const actionGrid = document.createElement('div');
+    actionGrid.className = 'reference-menu-grid';
+    const actions: Array<[string, string, () => void]> = [
+      ['ⓘ', '航班資訊', () => this.setReferenceMenuOpen(false)],
+      ['◎', '距離', () => this.setReferenceMenuOpen(false)],
+      ['⌁', '航線圖', () => this.activateCameraMode('totalRoute')],
+      ['▤', '街道圖', () => this.activateCameraMode('overhead')],
+      ['⌖', '目的地指南', () => this.setReferenceMenuOpen(false)],
+      ['▶', '自動播放', () => {
+        if (this.flightMode !== 'live') {
+          this.clock?.togglePlayback();
+          this.syncPlayButton();
+        }
+        this.setReferenceMenuOpen(false);
+      }],
+      ['↻', '變加方向', () => this.activateCameraMode('global')]
+    ];
+    for (const [icon, label, action] of actions) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'reference-menu-item';
+      button.append(referenceMenuIcon(icon), document.createElement('span'));
+      button.lastElementChild!.textContent = label;
+      button.addEventListener('click', action, { signal: renderSignal });
+      actionGrid.append(button);
+    }
+
+    const viewTitle = document.createElement('h3');
+    viewTitle.textContent = '視角';
+    const viewGrid = document.createElement('div');
+    viewGrid.className = 'reference-menu-view-grid';
+    const views: Array<[CameraMode, string, string]> = [
+      ['global', '◉', '瀏覽世界'],
+      ['leftWindow', '◐', '左方視角'],
+      ['flightPreview', '✈', '飛機360°'],
+      ['rightWindow', '◑', '右方視角'],
+      ['totalRoute', '⌁', '飛行路線'],
+      ['pilotView', '▣', '駕駛艙視角'],
+      ['cockpit', '▥', '飛機視角']
+    ];
+    for (const [mode, icon, label] of views) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'reference-view-item';
+      button.dataset.mode = mode;
+      button.append(referenceMenuIcon(icon), document.createElement('span'));
+      button.lastElementChild!.textContent = label;
+      button.addEventListener('click', () => this.activateCameraMode(mode), { signal: renderSignal });
+      viewGrid.append(button);
+    }
+
+    const advancedButton = document.createElement('button');
+    advancedButton.type = 'button';
+    advancedButton.className = 'reference-menu-advanced';
+    advancedButton.textContent = '更多設定與航班預載';
+    advancedButton.addEventListener('click', () => {
+      this.setReferenceMenuOpen(false);
+      const drawer = this.root.querySelector<HTMLElement>('.system-drawer');
+      drawer?.classList.add('is-open');
+      drawer?.querySelector<HTMLElement>('.drawer-body')?.removeAttribute('hidden');
+    }, { signal: renderSignal });
+    menuBody.append(closeButton, menuTitle, actionGrid, viewTitle, viewGrid, advancedButton);
+    return menuBody;
+  }
+
+  private renderReferenceFlightCards(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
+    this.referenceSidePanel.replaceChildren(
+      referenceInfoCard('探索・附近', this.geoNotice.textContent || '等待航線附近資料', '⌖'),
+      referenceInfoCard('地面速度', metrics.groundSpeedKmh, '✈'),
+      referenceInfoCard('探索・目的地', `${this.segment?.destination.name ?? '目的地'} ${metrics.remainingDistanceLabel}`, '⌖'),
+      referenceInfoCard('剩餘距離', metrics.remainingDistanceLabel, '✈'),
+      referenceInfoCard('下方地點', summarizeBelowMe(sample.point, sample.bearingDegrees, this.routeLandmarks).belowLabel, '⌄')
+    );
+  }
+
+  private setFlightMode(mode: FlightMode, notifyNative: boolean): void {
+    if (this.flightMode === mode && !notifyNative) {
+      this.syncPlayButton();
+      return;
+    }
+    this.flightMode = mode;
+    this.pilotHudPreviousBearingDegrees = undefined;
+    this.pilotHudSmoothedRollDegrees = 0;
+
+    if (mode === 'live') {
+      this.liveGps = new LiveGpsTracker();
+      this.clock && (this.clock.isPlaying = false);
+      this.capability.textContent = 'Live GPS：等待 iPhone GPS 定位';
+    } else {
+      this.liveGps = new LiveGpsTracker();
+      if (this.clock) {
+        this.clock.currentSeconds = 0;
+        this.clock.setSpeed(1);
+        this.clock.isPlaying = true;
+      }
+      this.speedSelect.value = '1';
+      this.capability.textContent = '模擬航線：使用目前航線資料';
+    }
+
+    this.syncPlayButton();
+    if (notifyNative) {
+      postNativeMessage('flight.mode.set', { mode });
+    }
   }
 
   private syncViewRail(): void {
@@ -615,12 +857,17 @@ export class TravelGlobeApp {
     }
   }
 
-  private renderPilotHud(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
+  private renderPilotHud(
+    metrics: ReturnType<typeof buildFlightHudMetrics>,
+    sample: ReplaySample,
+    liveTurnRateDegreesPerSecond?: number
+  ): void {
     const attitude = buildPilotAttitude(
       this.segment,
       sample,
-      this.isLiveGpsMode ? this.pilotHudPreviousBearingDegrees : undefined,
-      this.isLiveGpsMode ? 'live' : 'route'
+      this.flightMode === 'live' ? this.pilotHudPreviousBearingDegrees : undefined,
+      this.flightMode === 'live' ? 'live' : 'route',
+      liveTurnRateDegreesPerSecond
     );
     this.pilotHudSmoothedRollDegrees += (attitude.rollDegrees - this.pilotHudSmoothedRollDegrees) * 0.12;
     if (Math.abs(this.pilotHudSmoothedRollDegrees) < 0.8) {
@@ -791,8 +1038,8 @@ export class TravelGlobeApp {
       const sentToNative = postNativeMessage('flightPlan.apply', flightPlanPayloadFromJourney(result.journey));
       const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
       const nativeHint = sentToNative
-        ? '已送至 iOS，按 Start recording 會綁定這條航線。'
-        : '瀏覽器模式只會預載航線；iOS GPS 綁定需在 app 內使用。';
+        ? '已送至 iOS，這條航線可直接在 Flight 頁面切換模擬或 Live GPS。'
+        : '瀏覽器模式會預載航線；Live GPS 請在 iOS Flight 頁面使用。';
       this.preloadStatus.textContent = `${message} ${nativeHint}`;
       this.capability.textContent = `${message} ${nativeHint}`;
     } catch (error) {
@@ -1283,7 +1530,7 @@ export class TravelGlobeApp {
     if (!this.segment || !this.clock) {
       throw new Error('No active segment');
     }
-    const liveSample = this.isLiveGpsMode ? this.liveGps.sample(performance.now(), this.segment) : undefined;
+    const liveSample = this.flightMode === 'live' ? this.liveGps.sample(performance.now(), this.segment) : undefined;
     return liveSample?.point ?? sampleReplayAt(this.segment, this.clock.currentSeconds).point;
   }
 
@@ -1427,7 +1674,6 @@ export class TravelGlobeApp {
       ['Offline', `Bundled | ${coreOfflinePacks.length} packs | ${formatBytes(getBundledOfflinePackSizeBytes())}`],
       ['Data', `${airportIndex.airports} airports | ${airportIndex.navaids} navaids`],
       ['Flight context', `${flightContextCount} radio/nav records`],
-      ['Recording', this.autoRecordingContext?.state ?? 'Idle'],
       ['Notice', notifications.length > 0 ? notifications.map((item) => item.title).join(', ') : 'clear']
     ];
 
@@ -1465,7 +1711,7 @@ export class TravelGlobeApp {
 
     const packDescription = document.createElement('div');
     packDescription.className = 'pack-description';
-    packDescription.textContent = 'Core Global Atlas 與 FlightGear Global Airway Graph 已隨目前 Replay build / iOS bundle 內建；離線時直接可用。';
+    packDescription.textContent = 'Core Global Atlas 與 FlightGear Global Airway Graph 已隨目前 Flight build / iOS bundle 內建；離線時直接可用。';
 
     const airportDetails = document.createElement('div');
     airportDetails.className = 'atlas-section-grid';
@@ -1790,22 +2036,27 @@ export class TravelGlobeApp {
       return;
     }
     const nativeMessage = (event as CustomEvent<unknown>).detail;
+    const mode = parseNativePayload<{ mode?: string }>(nativeMessage, 'flight.mode');
+    if (mode?.mode === 'live' || mode?.mode === 'simulation') {
+      this.setFlightMode(mode.mode, false);
+      return;
+    }
     const completed = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.completed');
     if (completed) {
       const completedJourney = completed.webJourneyId === this.journey.id
         ? completeJourneyFromRecording(this.journey, completed)
         : createJourneyFromNativeRecording(completed);
       if (!completedJourney) {
-        this.capability.textContent = 'Live GPS recording：GPS 點不足，無法建立 replay journey';
+        this.capability.textContent = 'Live GPS：GPS 點不足，無法更新旅程';
         return;
       }
       void this.loadJourney(completedJourney);
-      this.capability.textContent = 'Live GPS recording：已完成並寫入旅遊紀錄';
+      this.capability.textContent = 'Live GPS：已完成並寫入旅遊紀錄';
       return;
     }
     const started = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.started');
     if (started) {
-      this.capability.textContent = `Live GPS recording：${started.flightNumber ?? 'GPS'} 已開始`;
+      this.capability.textContent = `Live GPS：${started.flightNumber ?? 'GPS'} 已開始`;
       return;
     }
     const addedVisitPoint = parseNativePayload<NativeVisitPointsPayload>(nativeMessage, 'visitPoint.added');
@@ -1839,13 +2090,10 @@ export class TravelGlobeApp {
     if (!point) {
       return;
     }
-    if (!this.isLiveGpsMode) {
-      this.pilotHudPreviousBearingDegrees = undefined;
-      this.pilotHudSmoothedRollDegrees = 0;
-    }
-    this.isLiveGpsMode = true;
     this.liveGps.ingest(point, performance.now());
-    this.capability.textContent = 'Live GPS recording：已接收 iPhone CoreLocation 真實定位';
+    if (this.flightMode === 'live') {
+      this.capability.textContent = 'Live GPS：已接收 iPhone CoreLocation 真實定位';
+    }
   };
 
   private async applyNativeVisitPoints(payload: NativeVisitPointsPayload, focusNewest: boolean): Promise<void> {
@@ -1977,6 +2225,57 @@ function metricItem(label: string, value: string): HTMLElement {
   return item;
 }
 
+function referenceNavButton(icon: string, label: string, action: () => void): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'reference-nav-button';
+  button.append(referenceMenuIcon(icon), document.createElement('span'));
+  button.lastElementChild!.textContent = label;
+  button.addEventListener('click', action);
+  return button;
+}
+
+function referenceMenuIcon(icon: string): HTMLElement {
+  const element = document.createElement('span');
+  element.className = 'reference-menu-icon';
+  element.textContent = icon;
+  element.setAttribute('aria-hidden', 'true');
+  return element;
+}
+
+function referenceInfoCard(title: string, value: string, icon: string): HTMLElement {
+  const card = document.createElement('article');
+  card.className = 'reference-info-card';
+  card.append(referenceMenuIcon(icon), document.createElement('div'));
+  const body = card.lastElementChild!;
+  const heading = document.createElement('span');
+  heading.textContent = title;
+  const detail = document.createElement('strong');
+  detail.textContent = value;
+  body.append(heading, detail);
+  return card;
+}
+
+function referenceViewLabel(mode: CameraMode): string {
+  const labels: Partial<Record<CameraMode, string>> = {
+    global: '瀏覽世界',
+    flightPreview: '飛機360°',
+    totalRoute: '飛行路線',
+    midFlight: '飛行路線',
+    overhead: '街道圖',
+    commandCenter: '塔台視角',
+    pilotView: '駕駛艙視角',
+    cockpit: '飛機視角',
+    leftWindow: '左方視角',
+    rightWindow: '右方視角',
+    tail: '飛機視角',
+    topDown: '街道圖',
+    follow: '飛機360°',
+    orbit: '飛機360°'
+  };
+  return labels[mode] ?? '飛行畫面';
+}
+
 interface PilotAttitude {
   pitchDegrees: number;
   rollDegrees: number;
@@ -2043,7 +2342,8 @@ function buildPilotAttitude(
   segment: JourneySegment | undefined,
   sample: ReplaySample,
   previousLiveBearingDegrees?: number,
-  turnSource: 'route' | 'live' = 'route'
+  turnSource: 'route' | 'live' = 'route',
+  liveTurnRateDegreesPerSecond?: number
 ): PilotAttitude {
   const headingDegrees = Math.round(sample.bearingDegrees);
   const point = sample.point;
@@ -2062,7 +2362,9 @@ function buildPilotAttitude(
     ? routeTurnRateForReplayWindow(adjacent, sample.bearingDegrees)
     : 0;
   const rollDegrees = turnSource === 'live'
-    ? liveBankAngleForTurn(liveTurnDegrees)
+    ? liveTurnRateDegreesPerSecond === undefined
+      ? liveBankAngleForTurn(liveTurnDegrees)
+      : liveBankAngleForTurnRate(liveTurnRateDegreesPerSecond, speedMetersPerSecond)
     : routeBankAngleForTurnRate(routeTurnRateDegreesPerMinute);
   const ias = estimatedIasKnots(speedMetersPerSecond, altitudeMeters);
 
@@ -2072,6 +2374,15 @@ function buildPilotAttitude(
     headingLabel: `HDG ${headingDegrees.toString().padStart(3, '0')}`,
     iasKnots: Math.round(ias).toString(),
     iasTicks: speedTicks(ias)
+  };
+}
+
+function liveAircraftAttitude(
+  point: LocationPoint,
+  turnRateDegreesPerSecond: number
+): { rollDegrees: number } {
+  return {
+    rollDegrees: liveBankAngleForTurnRate(turnRateDegreesPerSecond, point.speedMetersPerSecond ?? 0)
   };
 }
 
@@ -2089,6 +2400,15 @@ function liveBankAngleForTurn(turnDegrees: number): number {
     return 0;
   }
   return clamp(-turnDegrees * 0.32, -10, 10);
+}
+
+function liveBankAngleForTurnRate(turnRateDegreesPerSecond: number, speedMetersPerSecond: number): number {
+  if (Math.abs(turnRateDegreesPerSecond) < 0.05 || speedMetersPerSecond < 8) {
+    return 0;
+  }
+  const lateralAcceleration = speedMetersPerSecond * (turnRateDegreesPerSecond * Math.PI / 180);
+  const bankDegrees = Math.atan2(lateralAcceleration, 9.80665) * 180 / Math.PI;
+  return clamp(-bankDegrees, -18, 18);
 }
 
 function pitchAngleForVerticalSpeed(verticalSpeedMetersPerSecond: number, speedMetersPerSecond: number): number {

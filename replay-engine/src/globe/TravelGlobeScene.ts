@@ -14,7 +14,7 @@ import {
   haversineDistanceMeters,
   interpolateGreatCircle
 } from '../geo/geodesy';
-import { createAircraftMarker, placeAircraftMarker } from '../models/createAircraftMarker';
+import { createAircraftMarker, placeAircraftMarker, type AircraftAttitude } from '../models/createAircraftMarker';
 import { createRouteTrack, updateRouteTrack, type RouteTrack } from '../route/createRouteLine';
 import { simulatedCloudCoverFraction } from '../weather/simulatedCloudCover';
 import { createGlobe, createStarField, shouldRenderGlobeLabel } from './createGlobe';
@@ -130,7 +130,17 @@ export class TravelGlobeScene {
     this.resize();
   }
 
-  update(point: LocationPoint, bearingDegrees: number, cameraMode: CameraMode, actualRoutePoints: LocationPoint[]): void {
+  update(
+    point: LocationPoint,
+    bearingDegrees: number,
+    cameraMode: CameraMode,
+    actualRoutePoints: LocationPoint[],
+    aircraftAttitude: AircraftAttitude = {}
+  ): void {
+    if (cameraMode !== this.currentCameraMode) {
+      this.activePointers.clear();
+      this.previousPinchDistance = undefined;
+    }
     const snapCamera = shouldSnapCamera(this.currentPoint, point, this.previousCameraMode, cameraMode);
     if (snapCamera && this.currentPoint) {
       this.suppressLabelsUntilMs = performance.now() + 180;
@@ -145,7 +155,7 @@ export class TravelGlobeScene {
     this.container.dataset.nearGroundFocus = nearGroundStrength.toFixed(3);
     this.container.dataset.airportMarkerPlacement = 'surface-plane';
     this.container.dataset.cityLightPlacement = this.cityLights.userData.surfaceLocked === true ? 'surface-plane' : 'floating';
-    placeAircraftMarker(this.aircraft, point, bearingDegrees);
+    placeAircraftMarker(this.aircraft, point, bearingDegrees, aircraftAttitude);
     this.aircraft.scale.setScalar(lerp(1, 0.095, nearGroundStrength));
     this.aircraft.visible = cameraMode !== 'pilotView';
     this.updateAirportMarkers(point, nearGroundStrength, cameraMode);
@@ -226,12 +236,18 @@ export class TravelGlobeScene {
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
+    if (isInteractionLockedCamera(this.currentCameraMode)) {
+      return;
+    }
     this.renderer.domElement.setPointerCapture(event.pointerId);
     this.activePointers.set(event.pointerId, event);
     this.previousPinchDistance = this.currentPinchDistance();
   };
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
+    if (isInteractionLockedCamera(this.currentCameraMode)) {
+      return;
+    }
     const previous = this.activePointers.get(event.pointerId);
     if (!previous) {
       return;
@@ -261,6 +277,9 @@ export class TravelGlobeScene {
   };
 
   private readonly handleWheel = (event: WheelEvent): void => {
+    if (isInteractionLockedCamera(this.currentCameraMode)) {
+      return;
+    }
     event.preventDefault();
     this.cameraController.zoomBy(event.deltaY * 0.002);
   };
@@ -457,6 +476,10 @@ export class TravelGlobeScene {
     this.focusedAirportLabel.style.opacity = '1';
     this.focusedAirportLabel.style.transform = `translate(${x}px, ${y}px) scale(${(1.16 + airportFocus.strength * 0.2).toFixed(3)})`;
   }
+}
+
+function isInteractionLockedCamera(mode: CameraMode): boolean {
+  return mode === 'pilotView' || mode === 'cockpit' || mode === 'leftWindow' || mode === 'rightWindow';
 }
 
 function createSkyDome(): THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> {

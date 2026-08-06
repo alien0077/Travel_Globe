@@ -9,8 +9,7 @@ struct RootView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
-                    recorderCard
-                    replayCard
+                    flightCard
                     diagnosticsCard
                 }
                 .padding(.horizontal, 20)
@@ -37,42 +36,41 @@ struct RootView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Flight Recorder")
+            Text("Flight")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text("Record, inspect, and replay offline journeys.")
+            Text("Live GPS 或使用目前航線進行模擬")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 4)
     }
 
-    private var recorderCard: some View {
-        DashboardCard(title: "Recorder") {
+    private var flightCard: some View {
+        DashboardCard(title: "Flight") {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 12) {
-                    MetricBlock(title: "State", value: appModel.recordingState.rawValue.capitalized)
-                    MetricBlock(title: "GPS", value: "\(appModel.activeLocationPointCount) points")
-                    MetricBlock(title: "Visits", value: "\(appModel.activeVisitPointCount)")
+                Picker(
+                    "模式",
+                    selection: Binding(
+                        get: { appModel.flightMode },
+                        set: { appModel.selectFlightMode($0) }
+                    )
+                ) {
+                    Text("Live GPS").tag(FlightMode.live)
+                    Text("模擬航線").tag(FlightMode.simulation)
                 }
+                .pickerStyle(.segmented)
 
-                Text(appModel.latestJourneySummary)
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-
-                StatusPill(text: "真實飛行：先選 Record Into，再按 Start；Replay Engine 用來看 LIVE 地球")
+                StatusPill(text: appModel.flightStatus)
                 StatusPill(text: appModel.recordingPlanStatus)
-                StatusPill(text: appModel.visitPointStatus)
 
                 if !appModel.flightPlans.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Record Into")
+                        Text("模擬航線 / Flight plan")
                             .font(.caption.weight(.bold))
                             .foregroundStyle(.secondary)
                         Picker(
-                            "Record Into",
+                            "Flight plan",
                             selection: Binding(
                                 get: { appModel.selectedFlightPlanKey },
                                 set: { appModel.selectFlightPlan($0) }
@@ -89,11 +87,11 @@ struct RootView: View {
                 }
 
                 HStack(spacing: 10) {
-                    ActionButton(title: "Start") {
-                        Task { await appModel.startFlightRecording() }
+                    ActionButton(title: "開始 Live") {
+                        Task { await appModel.startLiveFlight() }
                     }
-                    ActionButton(title: "Stop", style: .secondary) {
-                        Task { await appModel.stopRecording() }
+                    ActionButton(title: "停止 Live", style: .secondary) {
+                        Task { await appModel.stopLiveFlight() }
                     }
                 }
 
@@ -105,41 +103,10 @@ struct RootView: View {
                         Task { await appModel.importPhotoGPSVisitPoints() }
                     }
                 }
-            }
-        }
-    }
 
-    private var replayCard: some View {
-        DashboardCard(title: "Replay") {
-            VStack(alignment: .leading, spacing: 12) {
-                NavigationLink {
-                    ReplayEngineView()
-                        .ignoresSafeArea(.container, edges: .bottom)
-                        .navigationTitle("Replay")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    HStack {
-                        Text("Open Replay Engine")
-                            .font(.headline)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.vertical, 4)
-                }
-
-                StatusPill(text: appModel.replayEngineStatus)
-                StatusPill(text: appModel.offlinePackUpdateStatus)
-
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ActionButton(title: "載入最新紀錄", style: .secondary) {
-                        Task { await appModel.loadLatestJourneyInReplay() }
-                    }
-                    ActionButton(title: "更新離線資料", style: .secondary) {
-                        Task { await appModel.checkForOfflinePackUpdates(force: true) }
-                    }
-                }
+                FlightView()
+                    .frame(height: 640)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
     }

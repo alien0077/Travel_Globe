@@ -230,7 +230,7 @@
           <strong>Travel Globe 使用手冊</strong>
           <span>飛行回放、視角切換、航跡匯出與離線使用指南</span>
         </div>
-        <a class="back" href="./index.html">返回 Replay Engine</a>
+        <a class="back" href="./index.html">返回 Flight</a>
       </header>
 
       <div class="layout">
@@ -384,7 +384,7 @@
               </tr>
               <tr>
                 <th><code>套用航線</code></th>
-                <td>建立 planned journey，刷新地球航線、HUD、timeline、Travel Atlas，並在 iOS WebView 內把 flight plan 送回 native 作為後續 GPS recording 的目標。</td>
+                <td>建立 planned journey，刷新地球航線、HUD、timeline、Travel Atlas，並把 flight plan 送回 iOS Flight 頁面供 Live GPS 或模擬使用。</td>
               </tr>
             </table>
           </section>
@@ -430,7 +430,7 @@
               </tr>
               <tr>
                 <th>通知</th>
-                <td>Replay Engine 會把目前 notification rules 送到 iOS native local notification；瀏覽器模式只會顯示提醒狀態。</td>
+                <td>Flight 頁面會把目前 notification rules 送到 iOS native local notification；瀏覽器模式只會顯示提醒狀態。</td>
               </tr>
             </table>
           </section>
@@ -459,42 +459,41 @@
 
           <section id="offline">
             <h2>離線使用</h2>
-            <p>Replay Engine 目前的核心回放不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、GeoNames 全球城市、OurAirports 機場/頻率/導航台索引、FlightGear 全球航路圖、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可回放已內建或已匯入的旅程。</p>
+            <p>Flight 頁面的核心模擬不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、GeoNames 全球城市、OurAirports 機場/頻率/導航台索引、FlightGear 全球航路圖、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可使用模擬或 Live GPS。</p>
             <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key 查詢航班；成功後會寫入本機航班快取。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 planned route、事件、ETA 和旅遊紀錄。航線會優先使用 FlightGear GPL v2 全球 airway graph 連接起降機場附近航路點；找不到可連接路徑時才退回 Great Circle estimate。OpenFlights <code>routes.dat</code> 只在 aviationstack 或使用者沒有提供機型時，用相同起降機場的 equipment code 補機型。</p>
           </section>
 
           <section id="updates">
             <h2>離線資料自動更新</h2>
-            <p>Web 版的離線資料跟著 GitHub Pages 部署更新。iOS app 也會在啟動或回到前景時檢查 <code>https://alien0077.github.io/Travel_Globe/</code> 上的 Replay Engine 與 <code>offline-packs/core-global</code> manifest；若遠端資料比本機新，會在有網路時下載到 app sandbox，驗證 SHA256 後切換成新版。</p>
-            <p>iOS 下載內容包含 <code>index.html</code>、<code>index.js</code>、<code>index.css</code>、<code>readme.html</code>，以及 Core Global Atlas 的 geo/airport/aviation context JSON、FlightGear 全球航路圖與 GPL v2 授權聲明。下載失敗或校驗失敗時會保留 app bundle 內建版本，不會破壞原本可離線使用的 Replay Engine。</p>
-            <p>若想立刻檢查，可在 iOS 主畫面 Replay 卡片按 <code>更新離線資料</code>。更新完成後重新打開 Replay Engine，即會優先使用下載版；沒有網路時仍使用上次成功下載版或 app 內建版。</p>
+            <p>Web 版的離線資料跟著 GitHub Pages 部署更新。iOS app 也會在啟動或回到前景時檢查 <code>https://alien0077.github.io/Travel_Globe/</code> 上的 Flight 資料與 <code>offline-packs/core-global</code> manifest；若遠端資料比本機新，會在有網路時下載到 app sandbox，驗證 SHA256 後切換成新版。</p>
+            <p>iOS 下載內容包含 <code>index.html</code>、<code>index.js</code>、<code>index.css</code>、<code>readme.html</code>，以及 Core Global Atlas 的 geo/airport/aviation context JSON、FlightGear 全球航路圖與 GPL v2 授權聲明。下載失敗或校驗失敗時會保留 app bundle 內建版本，不會破壞原本可離線使用的 Flight 頁面。</p>
+            <p>若想立刻檢查，可在 iOS Flight 頁面按 <code>更新離線資料</code>。更新完成後重新載入 Flight，即會優先使用下載版；沒有網路時仍使用上次成功下載版或 app 內建版。</p>
           </section>
 
           <section id="live-gps">
             <h2>Live GPS 飛行模式</h2>
-            <p>iOS app 可用 iPhone CoreLocation 接收真實 GPS，透過 native bridge 即時送進 Replay Engine。此模式不需要行動網路；飛航模式下 GPS 仍可能可用，但定位品質會受座位、窗邊距離、機身遮蔽與首次定位時間影響。</p>
+            <p>iOS Flight 頁面可用 iPhone CoreLocation 接收真實 GPS，透過 native bridge 即時更新地球位置。Live 模式不會建立 GPS recording，也不會使用模擬速度；此模式不需要行動網路，但定位品質會受座位、窗邊距離、機身遮蔽與首次定位時間影響。</p>
             <ol>
-              <li>起飛前先開 Travel Globe。若有網路，可先在主畫面按 <code>更新離線資料</code>，讓 app 抓 GitHub Pages 上最新的 Replay Engine 與離線 pack。</li>
-              <li>按 <code>Open Replay Engine</code>，手機版再按右側「… / 更多」，在「航班預載 / API key」輸入 aviationstack API key（可留空）、航班、起飛/抵達、日期、時間與機型，按 <code>套用航線</code>。可重複套用多個 flight plan；此時只建立待飛行航線，不會建立完成的旅遊紀錄。</li>
-              <li>按左上返回回到 iOS 主畫面，在 <code>Record Into</code> 選單挑要錄入的行程，再按 <code>Start</code>。iOS 會把 GPS recording 綁到被選到航線的 <code>segmentId</code>；若沒有套用航線，則建立 GPS-only recording。</li>
-              <li>按 <code>Open Replay Engine</code> 回到地球畫面。收到第一筆 GPS 後，控制列會進入 <code>LIVE</code>，HUD 會顯示 <code>Live GPS</code> 或 GPS 狀態。</li>
+              <li>起飛前先開 Travel Globe。若有網路，可先在 Flight 頁面按 <code>更新離線資料</code>，讓 app 抓 GitHub Pages 上最新的 Flight 資料與離線 pack。</li>
+              <li>在 iOS 主畫面的 Flight 頁面選擇航線；需要建立新航線時，在 Flight 畫面的「更多」開啟「航班預載 / API key」。</li>
+              <li>同一個 Flight 畫面直接切換 <code>Live GPS</code> 或 <code>模擬航線</code>。Live 會等待 iPhone GPS；模擬會沿目前航線前進，速度控制從 <code>1x</code> 開始。</li>
               <li>若需要開飛航模式，開啟後把手機放在靠窗位置，等待 GPS 重新定位。定位恢復後飛機會繼續沿真實位置移動。</li>
               <li>短暫斷訊時，畫面會用最後可信速度與航向最多推算 90 秒，HUD 會顯示 GPS 推算；超過 90 秒會停止外推，飛機停在最後可信位置並顯示 <code>GPS signal lost</code>。</li>
-              <li>落地或不需要紀錄時回到 iOS 主畫面按 <code>Stop</code>，旅程會保存成真實 GPS 航跡，並把 completed journey 回寫到 Replay Engine 的旅遊紀錄與 Travel Atlas。</li>
+              <li>不需要 Live 時切回 <code>模擬航線</code>；不會自動把 GPS 變成回放，也不會因切頁而繼承 <code>5x</code>。</li>
             </ol>
-            <p>資料庫只保存品質合格且有意義變化的真實 GPS 點；畫面推算點只留在記憶體，不會寫入 SQLite，也不會污染 GPX/KML 或之後的飛行紀錄。飛行 profile 會丟棄座標無效、水平精度過差或時間倒退的點，並以至少 5 秒、超過 250 公尺、航向或高度明顯變化作為保存門檻。</p>
-            <p>如果只是想在某個小鎮、車站、景點留下「到此一遊」，不用開始整段 GPS recording。回到 iOS 主畫面按 <code>GPS打卡</code> 會抓一次目前 CoreLocation 並新增到目前行程；按 <code>照片打卡</code> 會從該行程時間範圍內含 GPS 的照片匯入打卡點。兩者都寫入 <code>visit_points</code>，不會改動原始飛行 GPS 航跡。</p>
+            <p>Live 模式的 GPS 點只留在即時畫面與記憶體，不會寫入 SQLite；短暫斷訊的推算點也不會污染 GPX/KML 或旅遊紀錄。若要留下地點，請使用 GPS 打卡或照片打卡。</p>
+            <p>如果只是想在某個小鎮、車站、景點留下「到此一遊」，回到 iOS Flight 頁面按 <code>GPS打卡</code> 會抓一次目前 CoreLocation 並新增到目前行程；按 <code>照片打卡</code> 會從該行程時間範圍內含 GPS 的照片匯入打卡點。</p>
           </section>
 
           <section id="travel-records">
             <h2>旅遊紀錄流程</h2>
             <ol>
               <li><strong>套用航線</strong>：只建立 planned flight plan，包含航班號、起降機場、機型、預估航線與 <code>segmentId</code>。可先建立多筆；這一步不算完成旅遊紀錄。</li>
-              <li><strong>選擇行程並開始 GPS</strong>：按 iOS 主畫面的 <code>Record Into</code> 選單挑目標 flight plan，再按 <code>Start</code>。native recording 會使用被選到的 flight plan；每個真實 GPS 點都會保存同一個 <code>segmentId</code>，用來對回該航段。</li>
-              <li><strong>停止 GPS</strong>：按 <code>Stop</code> 後，app 才把 recording 標記為 completed，產生實際 GPS 航跡、起訖事件、旅遊紀錄與 Travel Atlas 摘要。</li>
-              <li><strong>GPS打卡 / 照片打卡</strong>：在 iOS 主畫面可把目前 GPS 或照片 EXIF GPS 加到目前行程。Replay Engine 收到 native bridge 後會顯示成「GPS打卡」或「照片打卡」旅遊紀錄。</li>
+              <li><strong>切換飛行模式</strong>：在 iOS Flight 頁面選擇 <code>Live GPS</code> 或 <code>模擬航線</code>。Live 只使用即時定位；模擬只使用目前的 flight plan。</li>
+              <li><strong>停止 Live</strong>：停止即時定位並回到模擬航線；Live 不會產生 GPS recording。</li>
+              <li><strong>GPS打卡 / 照片打卡</strong>：在 iOS Flight 頁面可把目前 GPS 或照片 EXIF GPS 加到目前行程；Flight 收到 native bridge 後會顯示成「GPS打卡」或「照片打卡」旅遊紀錄。</li>
               <li><strong>人工編輯</strong>：在「旅遊紀錄」面板可新增事件、修改目前紀錄、調整分類/時間、附加本機照片縮圖、復原上次編輯、隱藏紀錄，或編輯航線摘要。人工修改只寫入 edit overlay、media metadata 或 journey metadata，不會改掉原始 GPS 點。</li>
-              <li><strong>資料對應</strong>：GPS record 是原始軌跡；Visit Point 是同一行程下的到此一遊點；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。刪除/隱藏旅遊事件不會刪除 SQLite 裡的真實 GPS。</li>
+              <li><strong>資料對應</strong>：Visit Point 是同一行程下的到此一遊點；Travel Record 是同一個 <code>segmentId</code> 下整理出的旅遊事件。Live GPS 本身不會保存成原始軌跡。</li>
             </ol>
             <h3>旅遊紀錄面板控制項</h3>
             <table class="hud-table">
@@ -532,7 +531,7 @@
               </tr>
               <tr>
                 <th><code>隱藏/刪除 / 隱藏紀錄</code></th>
-                <td>在紀錄卡內顯示確認訊息，確認後把目前旅遊事件標記為 hidden；原始 GPS、segment 與 SQLite 紀錄仍保留，可用 <code>復原</code> 取回。</td>
+                <td>在紀錄卡內顯示確認隱藏訊息，確認隱藏後把目前旅遊事件標記為 hidden；原始 GPS、segment 與 SQLite 紀錄仍保留，可用 <code>復原</code> 取回。</td>
               </tr>
               <tr>
                 <th><code>編輯航線 / 編輯航線摘要</code></th>
@@ -544,33 +543,32 @@
           <section id="sources">
             <h2>資料來源</h2>
             <ul>
-              <li>Airport and runway data provided by OurAirports. 頻率與導航台資料也來自 OurAirports 離線 CSV。</li>
-              <li>Made with Natural Earth. Natural Earth 提供 50m 國界/海岸線、10m populated places 與 geography region points。</li>
-              <li>Contains GeoNames data available under CC BY 4.0. GeoNames cities15000 提供全球城市/地名候選，並由 Travel Globe 轉成離線 global places 與 spatial grid index。</li>
+              <li>Airport and runway data provided by <a href="https://ourairports.com/data/">OurAirports</a>，資料為 Public Domain。頻率與導航台資料也來自 OurAirports 離線 CSV。</li>
+              <li><a href="https://www.naturalearthdata.com/">Made with Natural Earth</a>；Natural Earth 提供 50m 國界/海岸線、10m populated places 與 geography region points，依其 <a href="https://www.naturalearthdata.com/about/terms-of-use/">使用條款</a>標示為 Public Domain。</li>
+              <li>Contains <a href="https://www.geonames.org/about.html">GeoNames</a> data available under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>。GeoNames cities15000 提供全球城市/地名候選，並由 Travel Globe 轉成離線 global places 與 spatial grid index。</li>
               <li>NASA Visible Earth / Blue Marble 與 Earth lights/cloud/specular texture 提供地球影像素材；Travel Globe 不代表 NASA 背書。</li>
               <li>FlightGear navdata 提供全球航路圖與航路點，依 GNU GPL v2 散布；完整聲明位於 <code>offline-packs/aviation/FLIGHTGEAR_LICENSE.txt</code> 與 <code>offline-packs/aviation/licenses/GPL-2.0.txt</code>。</li>
-              <li>OpenFlights <code>routes.dat</code> 提供歷史 airline route graph 與 equipment code；Replay Engine 只用它補缺失的機型代碼與 Travel Atlas route context，不使用它覆蓋 aviationstack 的起降、時間、航空公司或航線。routes.dat 不包含 waypoint 或實際 filed route geometry，因此畫面線段仍以起訖機場插值呈現，真實飛行位置以 iOS GPS 為準。</li>
+              <li><a href="https://openflights.org/data.php">OpenFlights</a> <code>routes.dat</code> 提供歷史 airline route graph 與 equipment code；其資料庫依 <a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL</a>／<a href="https://opendatacommons.org/licenses/dbcl/1-0/">DbCL</a> 授權，衍生 route graph 也保留相應來源與授權標示。Flight 只用它補缺失的機型代碼與 Travel Atlas route context，不使用它覆蓋 aviationstack 的起降、時間、航空公司或航線。routes.dat 不包含 waypoint 或實際 filed route geometry，因此畫面線段仍以起訖機場插值呈現，真實飛行位置以 iOS GPS 為準。</li>
               <li>飛機模型庫只接受 CC0 或 CC BY、可商業使用、可修改、非 Editorial 的 GLB/glTF 模型；若模型來自 Sketchfab，App 會保留作者、授權、模型連結與 Sketchfab 來源標示，並可套用 Travel Globe 中性塗裝。</li>
               <li>Bundled aircraft model attribution: A320 Airbus A320-200 V2 by Dlourine; A321 Airbus +A321Neo Wizzair by CloudHubOmniTeam; A350 Airbus A350 by jhag; A380 Airbus A380 - 800 by Nobilis 2; B737 Indonesian Government Boeing 737-800 by Muhamad Mirza Arrafi; B767 boeing 767(american) by 1883; B777 Boeing 777-300ER Model by hakai315; B787 Boeing 787-9 by Nobilis 2. All are listed as Creative Commons Attribution via Sketchfab in the bundled <code>license.json</code> files.</li>
-              <li>aviationstack 可用使用者自己的本機 API key 查詢即時航班並快取 origin/destination/time 等資訊；免費層仍不提供完整 filed route、waypoints 或歷史航跡。</li>
+              <li>aviationstack 可用使用者自己的本機 API key 查詢即時航班並快取 origin/destination/time 等資訊；免費層仍不提供完整 filed route、waypoints 或歷史航跡。完整第三方授權整理請見 <a href="./THIRD_PARTY_NOTICES.html">第三方授權說明</a>。</li>
             </ul>
           </section>
 
           <section id="ios">
             <h2>iOS App 使用</h2>
             <ul>
-              <li><code>Start</code>：在 Recorder 卡片開始紀錄真實 GPS 航跡；這是真實飛行的錄製入口。</li>
-              <li><code>Stop</code>：停止並保存旅程。</li>
-              <li><code>Record Into</code>：選擇這次 GPS recording 要寫入哪一筆已預載 flight plan；若沒有選到合適航線，會建立 GPS-only recording。</li>
-              <li><code>Open Replay Engine</code>：打開內嵌 Web Replay Engine；用來預載航線、看 live 地球、看回放與匯出。</li>
+              <li><code>開始 Live</code>：在 Flight 頁面啟用即時 GPS；只更新畫面，不建立 GPS recording。</li>
+              <li><code>停止 Live</code>：停止即時 GPS，回到模擬航線。</li>
+              <li><code>Live GPS / 模擬航線</code>：在同一個 Flight 頁面切換即時定位與目前航線模擬。</li>
               <li><code>GPS打卡</code>：用目前 iPhone GPS 在目前行程新增一筆 visit point。</li>
               <li><code>照片打卡</code>：從行程時間範圍內有 GPS 的 PhotoKit 照片匯入 visit points。</li>
-              <li><code>載入最新紀錄</code>：把 SQLite 最新 journey queue 回 Replay Engine，適合 app 重新打開後繼續看剛錄完的旅程。</li>
-              <li><code>更新離線資料</code>：有網路時檢查 GitHub Pages 上由 GitHub Actions 發布的新 Replay Engine 與 offline pack，下載成功後下次打開 Replay Engine 會使用新版資料。</li>
+              <li><code>載入最新紀錄</code>：把 SQLite 最新 journey queue 回 Flight，適合 app 重新打開後繼續看已保存的旅程。</li>
+              <li><code>更新離線資料</code>：有網路時檢查 GitHub Pages 上由 GitHub Actions 發布的新 Flight 資料與 offline pack，下載成功後下次載入 Flight 會使用新版資料。</li>
               <li><code>Photos</code>：要求或更新 PhotoKit 權限，用於照片 GPS 匯入。</li>
-              <li><code>Notifications</code>：要求或更新通知權限；Replay Engine notification rules 會透過 native bridge 排程 local notification。</li>
+              <li><code>Notifications</code>：要求或更新通知權限；Flight notification rules 會透過 native bridge 排程 local notification。</li>
             </ul>
-            <p>實際飛行時的建議順序是：先在 Replay Engine 套用航線，再回 iOS 主畫面選 <code>Record Into</code> 並按 <code>Start</code>，最後回 Replay Engine 看 live 地球；飛行中不要用瀏覽器版本紀錄，因為 live GPS bridge 只存在 iOS app 內嵌 WKWebView。</p>
+            <p>實際飛行時直接留在 iOS Flight 頁面：選好航線後切到 <code>Live GPS</code>，等待定位即可。若要測試或展示，切到 <code>模擬航線</code>，再使用速度與時間軸控制。</p>
           </section>
 
           <section id="tips">

@@ -1,11 +1,12 @@
 {
   "id": "core-global",
   "version": "1.0.0",
-  "generatedAt": "2026-07-16T08:34:51.196Z",
+  "generatedAt": "2026-08-06T11:38:52.407Z",
   "sources": [
     {
       "name": "Natural Earth",
       "license": "Public domain",
+      "licenseUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
       "attribution": "Made with Natural Earth.",
       "sourceUrl": "https://www.naturalearthdata.com/",
       "files": [
@@ -47,6 +48,7 @@
     {
       "name": "GeoNames",
       "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
       "attribution": "Contains GeoNames data available under CC BY 4.0.",
       "sourceUrl": "https://download.geonames.org/export/dump/cities15000.zip",
       "files": [
@@ -121,13 +123,13 @@
       },
       {
         "path": "shared/offline-packs/core-global/global-places.json",
-        "bytes": 9708187,
-        "sha256": "1673e0b92a123ffcfc8b9c8bb697ebdd900c9b7e109bba1b0050349e90d3d2c7"
+        "bytes": 9708363,
+        "sha256": "324d2460424edfe742c9dddcc3039dcb5ab228fdd9ab6f658fe8a25c64d5a672"
       },
       {
         "path": "shared/offline-packs/core-global/geo-spatial-index.json",
         "bytes": 1314868,
-        "sha256": "52d0c0f2d0a5657cc74e731998ea7b33537f97819b3a4c7118dc006627d04747"
+        "sha256": "c36062602efe1c2157453af9a46f0a4a88471e7535d004e9e85e259907d7f758"
       }
     ]
   }

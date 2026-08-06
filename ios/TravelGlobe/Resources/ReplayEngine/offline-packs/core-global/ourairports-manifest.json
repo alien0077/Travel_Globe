@@ -4,6 +4,8 @@
   "generatedFrom": "sha256:4599d198d94d0934b0628f8ae0398657e89c67be5578b6f0f656152babfa88c2",
   "source": {
     "name": "OurAirports",
+    "license": "Public domain",
+    "licenseUrl": "https://ourairports.com/data/",
     "attribution": "Airport and runway data provided by OurAirports.",
     "urls": {
       "airports": "https://davidmegginson.github.io/ourairports-data/airports.csv",
@@ -67,13 +69,13 @@
     "aviationCore": [
       {
         "path": "shared/offline-packs/core-global/airports-index.json",
-        "bytes": 2318933,
-        "sha256": "03d0771f31c7f204b43ab4070516ffe2855f6074b6d4280622b3be38781418f9"
+        "bytes": 2319155,
+        "sha256": "945c9df8a32ec663012fd86cb53914dced30d38eedc9ee59b7dc309c9ff1b7e3"
       },
       {
         "path": "shared/offline-packs/core-global/aviation-context-index.json",
-        "bytes": 15049731,
-        "sha256": "616bdec67e77272e55f355cf6aaef5699fb06e47bd7bbfa8abd597689ae00276"
+        "bytes": 15049953,
+        "sha256": "1a742e6a18919a5a519794142633055b6652996b59e1af75efa3c6f0c3c76cc4"
       }
     ]
   }

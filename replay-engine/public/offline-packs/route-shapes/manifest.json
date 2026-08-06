@@ -1,20 +1,33 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-29T03:34:00.964451+00:00",
+  "generatedAt": "2026-07-31T13:38:45.084214+00:00",
   "pack": "global.route-shapes.json.gz",
   "summary": {
     "routesConsidered": 19497,
-    "routeShapes": 19497,
-    "skipped": 0,
+    "routeShapes": 17491,
+    "skipped": 2006,
     "methods": {
-      "great_circle_pair_fallback": 10336,
-      "great_circle_waypoint_corridor": 9161
+      "directed_airway_graph": 16715,
+      "approximate_direct_fallback": 776,
+      "route_unavailable": 2006
+    },
+    "recoveredFromUnavailable": 15,
+    "prunedExcessiveDetour": 2635,
+    "maxExistingDetour": 1.85,
+    "approximateDirectFallback": 776,
+    "approximateDirectFallbackPolicy": {
+      "bestSource": "static_route_graph",
+      "minKm": 20.0,
+      "maxKm": 300.0,
+      "excludedSources": [
+        "airport_connectivity_fallback"
+      ]
     }
   },
   "bytes": {
-    "json": 36272851,
-    "gzip": 4450811,
-    "runtimeJson": 13112912
+    "json": 38452212,
+    "gzip": 4264988,
+    "runtimeJson": 17210428
   },
   "runtimePack": "global.route-shapes.runtime.json"
 }

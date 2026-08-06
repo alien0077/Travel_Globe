@@ -13,14 +13,13 @@ from typing import Any
 
 PROJECT = Path(__file__).resolve().parents[1]
 ROOT = PROJECT.parent
+sys.path.insert(0, str(PROJECT / "src"))
 sys.path.insert(0, str(PROJECT / "scripts"))
 
+from aviationdb.ifr_routing import select_ifr_route_shape  # noqa: E402
 from select_pair_route_shape import (  # noqa: E402
     airport_lookup,
-    build_great_circle_candidate,
-    build_great_circle_waypoint_candidate,
     no_adsb_support,
-    score_candidate,
 )
 
 
@@ -34,7 +33,7 @@ DEFAULT_STATUS = Path("/private/tmp/travel-globe-global-route-shapes/status.json
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Select great-circle-corridor waypoint shapes for fallback routes.")
+    parser = argparse.ArgumentParser(description="Select verified directed-airway route shapes for fallback routes.")
     parser.add_argument("--airport-index", type=Path, default=DEFAULT_AIRPORT_INDEX)
     parser.add_argument("--airgraph", type=Path, default=DEFAULT_AIRGRAPH)
     parser.add_argument("--route-fallback", type=Path, default=DEFAULT_ROUTE_FALLBACK)
@@ -64,12 +63,16 @@ def main() -> int:
         destination = airports.get(route.get("destinationIata"))
         if not origin or not destination:
             counters["skipped_missing_airport"] += 1
-            skipped.append({"id": route.get("id"), "reason": "missing_airport"})
+            skipped.append(skip_payload(route, origin, destination, "missing_airport"))
             continue
         pair_source = pair_source_from_route(route)
         selected = select_shape_for_route(airgraph_pack, origin, destination, route, pair_source)
-        selected_shapes.append(selected)
-        counters[selected["method"]] += 1
+        if selected.get("routeUnavailable"):
+            counters["route_unavailable"] += 1
+            skipped.append(skip_payload(route, origin, destination, selected.get("unavailableReason"), selected))
+        else:
+            selected_shapes.append(selected)
+            counters[selected["method"]] += 1
         if index % args.progress_every == 0:
             write_status(args.status, "running", total=len(route_rows), processed=index, counters=dict(counters))
 
@@ -83,7 +86,7 @@ def main() -> int:
             "methods": dict(counters),
         },
         "routeShapes": selected_shapes,
-        "skipped": skipped[:200],
+        "skipped": skipped,
     }
     write_outputs(pack, args.release_dir, args.shared_dir, args.public_dir)
     write_status(args.status, "complete", total=len(route_rows), processed=len(route_rows), counters=dict(counters))
@@ -115,19 +118,23 @@ def select_shape_for_route(
     route: dict[str, Any],
     pair_source: dict[str, Any],
 ) -> dict[str, Any]:
-    adsb_support = no_adsb_support()
-    candidates = [
-        candidate
-        for candidate in [
-            build_great_circle_waypoint_candidate(airgraph_pack, origin, destination),
-            build_great_circle_candidate(origin, destination),
-        ]
-        if candidate
-    ]
-    for candidate in candidates:
-        score_candidate(candidate, origin, destination, pair_source, adsb_support)
-    candidates.sort(key=lambda item: item["score"], reverse=True)
-    selected = candidates[0]
+    result = select_ifr_route_shape(
+        airgraph_pack,
+        origin,
+        destination,
+        route_id=route["id"],
+        pair_source=pair_source,
+        adsb_support=no_adsb_support(),
+        k=10,
+    )
+    if result.get("routeUnavailable"):
+        return {
+            "id": route["id"],
+            "routeUnavailable": True,
+            "unavailableReason": result.get("unavailableReason"),
+            "connectorDiagnostics": result.get("connectorDiagnostics") or {},
+        }
+    selected = result["selected"]
     return {
         "id": route["id"],
         "originIata": route["originIata"],
@@ -141,6 +148,41 @@ def select_shape_for_route(
         },
         "metrics": selected["metrics"],
         "points": selected["points"],
+    }
+
+
+def skip_payload(
+    route: dict[str, Any],
+    origin: dict[str, Any] | None,
+    destination: dict[str, Any] | None,
+    reason: str | None,
+    selected: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": route.get("id"),
+        "originIata": route.get("originIata"),
+        "destinationIata": route.get("destinationIata"),
+        "origin": airport_summary(origin),
+        "destination": airport_summary(destination),
+        "reason": reason or "unknown",
+        "bestSource": route.get("bestSource"),
+        "routeScore": route.get("routeScore"),
+        "openFlightsCount": route.get("openFlightsCount") or 0,
+        "sourceTypes": route.get("sourceTypes") or [],
+        "connectorDiagnostics": (selected or {}).get("connectorDiagnostics") or {},
+    }
+
+
+def airport_summary(airport: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not airport:
+        return None
+    return {
+        "iata": airport.get("iataCode") or airport.get("iata"),
+        "icao": airport.get("icaoCode") or airport.get("ident"),
+        "name": airport.get("name") or airport.get("airportName"),
+        "country": airport.get("country") or airport.get("countryName"),
+        "lat": airport.get("latitude") or airport.get("lat"),
+        "lon": airport.get("longitude") or airport.get("lon"),
     }
 
 

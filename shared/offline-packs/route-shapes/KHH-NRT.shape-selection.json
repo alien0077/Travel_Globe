@@ -1,32 +1,31 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-07-29T01:04:45.165225+00:00",
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-30T06:50:44.128895+00:00",
   "route": "KHH-NRT",
-  "pairSource": {
-    "exists": true,
-    "source": "OpenFlights historical route graph",
-    "count": 5,
-    "aircraftTypes": [
-      "321",
-      "738",
-      "763",
-      "767"
-    ]
-  },
-  "adsbSupport": {
-    "diagnosticDate": "2026-07-22",
-    "corridorCandidates": 145,
-    "strictOriginDestinationCandidates": 0
-  },
+  "routeUnavailable": false,
   "selected": {
-    "method": "great_circle_waypoint_corridor",
-    "score": 112.97,
-    "reason": "Real airgraph waypoints near the airport-pair great-circle corridor score best.",
+    "method": "directed_airway_graph",
+    "score": 2137.85,
+    "reason": "Directed airway route with validated segment connectivity and lowest final score.",
     "provenance": {
-      "source": "openflights-pair-plus-airgraph-waypoints-near-great-circle",
-      "note": "Uses real airgraph waypoints selected by proximity to the airport-pair great-circle corridor; airway segment connectivity is not implied.",
-      "waypointCount": 9,
-      "maxWaypointCorridorKm": 13.2
+      "source": "aviationdb-directed-airgraph",
+      "originConnector": {
+        "ident": "HCN",
+        "lat": 21.928056,
+        "lon": 120.843889,
+        "pointType": "SIGNIFICANT_POINT",
+        "distanceNm": 47.66,
+        "cost": 59.58
+      },
+      "destinationConnector": {
+        "ident": "PANDA",
+        "lat": 34.792172,
+        "lon": 140.29575,
+        "pointType": "SIGNIFICANT_POINT",
+        "distanceNm": 58.8,
+        "cost": 113.09
+      },
+      "waypointCount": 16
     },
     "points": [
       {
@@ -36,76 +35,100 @@
         "pointType": "AIRPORT"
       },
       {
-        "ident": "WAGON",
-        "lat": 23.588056,
-        "lon": 121.773889,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.073,
-        "greatCircleDistanceKm": 6.5
+        "ident": "HCN",
+        "lat": 21.928056,
+        "lon": 120.843889,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "SEDKU",
-        "lat": 24.933333,
-        "lon": 124.0,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.181,
-        "greatCircleDistanceKm": 4.1
+        "ident": "BONEY",
+        "lat": 21.383333,
+        "lon": 121.866667,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "MYC11",
-        "lat": 26.387334,
-        "lon": 126.298187,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.294,
-        "greatCircleDistanceKm": 9.3
+        "ident": "MEVIN",
+        "lat": 21.0,
+        "lon": 122.55,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "CHAMP",
-        "lat": 27.919417,
-        "lon": 128.534619,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.407,
-        "greatCircleDistanceKm": 4.0
+        "ident": "ELMAS",
+        "lat": 20.449594,
+        "lon": 125.000156,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "EMILY",
-        "lat": 28.736822,
-        "lon": 129.771194,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.469,
-        "greatCircleDistanceKm": 3.7
+        "ident": "BISIG",
+        "lat": 21.0,
+        "lon": 125.266667,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "TONAR",
-        "lat": 29.890697,
-        "lon": 131.686939,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.562,
-        "greatCircleDistanceKm": 13.2
+        "ident": "SAKON",
+        "lat": 24.120897,
+        "lon": 126.698172,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "WEBER",
-        "lat": 32.169139,
-        "lon": 134.997222,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.73,
-        "greatCircleDistanceKm": 4.4
+        "ident": "TIC",
+        "lat": 26.160867,
+        "lon": 127.800825,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "MAYON",
-        "lat": 32.870453,
-        "lon": 136.044947,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.782,
-        "greatCircleDistanceKm": 3.4
+        "ident": "TAMAK",
+        "lat": 27.531408,
+        "lon": 129.098189,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
-        "ident": "CELLO",
-        "lat": 33.998608,
-        "lon": 137.920167,
-        "pointType": "SIGNIFICANT_POINT",
-        "greatCircleT": 0.873,
-        "greatCircleDistanceKm": 12.8
+        "ident": "SHIBK",
+        "lat": 29.654019,
+        "lon": 132.0806,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "NIKAI",
+        "lat": 31.874992,
+        "lon": 135.316114,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "JERID",
+        "lat": 32.463128,
+        "lon": 136.219578,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "MISAK",
+        "lat": 33.086978,
+        "lon": 137.42065,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "MJE",
+        "lat": 34.119031,
+        "lon": 139.498458,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "BAFFY",
+        "lat": 34.473933,
+        "lon": 139.950686,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "ORGAN",
+        "lat": 34.735025,
+        "lon": 140.284817,
+        "pointType": "SIGNIFICANT_POINT"
+      },
+      {
+        "ident": "PANDA",
+        "lat": 34.792172,
+        "lon": 140.29575,
+        "pointType": "SIGNIFICANT_POINT"
       },
       {
         "ident": "NRT",
@@ -114,318 +137,309 @@
         "pointType": "AIRPORT"
       }
     ],
+    "airways": [
+      {
+        "from": "HCN",
+        "to": "BONEY",
+        "airway": "R596",
+        "direction": "both",
+        "distanceNm": 65.78,
+        "minAltitudeFt": 5000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "BONEY",
+        "to": "MEVIN",
+        "airway": "R596",
+        "direction": "both",
+        "distanceNm": 44.64,
+        "minAltitudeFt": 6000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "MEVIN",
+        "to": "ELMAS",
+        "airway": "R596",
+        "direction": "both",
+        "distanceNm": 141.5,
+        "minAltitudeFt": 5500,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "ELMAS",
+        "to": "BISIG",
+        "airway": "A582",
+        "direction": "both",
+        "distanceNm": 36.28,
+        "minAltitudeFt": 6500,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "BISIG",
+        "to": "SAKON",
+        "airway": "A582",
+        "direction": "both",
+        "distanceNm": 203.49,
+        "minAltitudeFt": 6000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "SAKON",
+        "to": "TIC",
+        "airway": "A582",
+        "direction": "both",
+        "distanceNm": 136.35,
+        "minAltitudeFt": 15000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "TIC",
+        "to": "TAMAK",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 107.71,
+        "minAltitudeFt": 25000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "TAMAK",
+        "to": "SHIBK",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 202.37,
+        "minAltitudeFt": 29000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "SHIBK",
+        "to": "NIKAI",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 213.63,
+        "minAltitudeFt": 29000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "NIKAI",
+        "to": "JERID",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 57.92,
+        "minAltitudeFt": 25000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "JERID",
+        "to": "MISAK",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 71.27,
+        "minAltitudeFt": 25000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "MISAK",
+        "to": "MJE",
+        "airway": "Y57",
+        "direction": "both",
+        "distanceNm": 120.97,
+        "minAltitudeFt": 25000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "MJE",
+        "to": "BAFFY",
+        "airway": "A1",
+        "direction": "both",
+        "distanceNm": 30.94,
+        "minAltitudeFt": 6000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "BAFFY",
+        "to": "ORGAN",
+        "airway": "A1",
+        "direction": "both",
+        "distanceNm": 22.77,
+        "minAltitudeFt": 6000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      },
+      {
+        "from": "ORGAN",
+        "to": "PANDA",
+        "airway": "V18",
+        "direction": "both",
+        "distanceNm": 3.47,
+        "minAltitudeFt": 5000,
+        "maxAltitudeFt": 60000,
+        "source": "flightgear",
+        "airacCycle": null,
+        "confidence": 0.78
+      }
+    ],
     "metrics": {
-      "distanceKm": 2436.0,
-      "directKm": 2428.0,
-      "detourRatio": 1.003,
-      "greatCircleMeanDeviationKm": 5.6,
-      "greatCircleMaxDeviationKm": 13.2,
-      "southPenaltyKm": 0.0,
-      "earlyEastPenaltyKm": 2.6,
-      "taiwanSideHeuristic": [
-        {
-          "ident": "KHH",
-          "lat": 22.577101,
-          "lon": 120.349998,
-          "side": "west_or_strait"
-        },
-        {
-          "ident": "WAGON",
-          "lat": 23.588056,
-          "lon": 121.773889,
-          "side": "east"
-        },
-        {
-          "ident": "SEDKU",
-          "lat": 24.933333,
-          "lon": 124.0,
-          "side": "east"
-        },
-        {
-          "ident": "MYC11",
-          "lat": 26.387334,
-          "lon": 126.298187,
-          "side": "east"
-        }
-      ]
+      "distanceNm": 1565.57,
+      "directNm": 1311.0,
+      "detourRatio": 1.194,
+      "greatCircleMeanDeviationNm": 72.73,
+      "greatCircleMaxDeviationNm": 247.97
+    },
+    "edgeValidation": {
+      "valid": true,
+      "invalidSegments": []
+    },
+    "scoreBreakdown": {
+      "distance": 1949.06,
+      "turn": 21.0,
+      "backtracking": 0,
+      "airwayChanges": 40.0,
+      "greatCircleDeviation": 72.73,
+      "connector": 172.67,
+      "historicalBonus": 8.0,
+      "adsbBonus": 0.0,
+      "detour": 3.12
     }
+  },
+  "greatCircleReference": {
+    "method": "great_circle_reference_only",
+    "points": [
+      {
+        "ident": "GC00",
+        "lat": 22.577101,
+        "lon": 120.349998
+      },
+      {
+        "ident": "GC01",
+        "lat": 23.778906,
+        "lon": 121.836249
+      },
+      {
+        "ident": "GC02",
+        "lat": 24.966222,
+        "lon": 123.350061
+      },
+      {
+        "ident": "GC03",
+        "lat": 26.137937,
+        "lon": 124.893174
+      },
+      {
+        "ident": "GC04",
+        "lat": 27.292885,
+        "lon": 126.467346
+      },
+      {
+        "ident": "GC05",
+        "lat": 28.429842,
+        "lon": 128.074348
+      },
+      {
+        "ident": "GC06",
+        "lat": 29.547521,
+        "lon": 129.715953
+      },
+      {
+        "ident": "GC07",
+        "lat": 30.644574,
+        "lon": 131.393927
+      },
+      {
+        "ident": "GC08",
+        "lat": 31.719588,
+        "lon": 133.110014
+      },
+      {
+        "ident": "GC09",
+        "lat": 32.771079,
+        "lon": 134.865923
+      },
+      {
+        "ident": "GC10",
+        "lat": 33.797498,
+        "lon": 136.663309
+      },
+      {
+        "ident": "GC11",
+        "lat": 34.797228,
+        "lon": 138.503747
+      },
+      {
+        "ident": "GC12",
+        "lat": 35.76858,
+        "lon": 140.388714
+      }
+    ]
+  },
+  "connectorDiagnostics": {
+    "departureConnectorCount": 11,
+    "arrivalConnectorCount": 30
   },
   "candidates": [
     {
-      "method": "great_circle_waypoint_corridor",
+      "method": "directed_airway_graph",
+      "score": 2137.85,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
       "provenance": {
-        "source": "openflights-pair-plus-airgraph-waypoints-near-great-circle",
-        "note": "Uses real airgraph waypoints selected by proximity to the airport-pair great-circle corridor; airway segment connectivity is not implied.",
-        "waypointCount": 9,
-        "maxWaypointCorridorKm": 13.2
-      },
-      "points": [
-        {
-          "ident": "KHH",
-          "lat": 22.577101,
-          "lon": 120.349998,
-          "pointType": "AIRPORT"
-        },
-        {
-          "ident": "WAGON",
-          "lat": 23.588056,
-          "lon": 121.773889,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.073,
-          "greatCircleDistanceKm": 6.5
-        },
-        {
-          "ident": "SEDKU",
-          "lat": 24.933333,
-          "lon": 124.0,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.181,
-          "greatCircleDistanceKm": 4.1
-        },
-        {
-          "ident": "MYC11",
-          "lat": 26.387334,
-          "lon": 126.298187,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.294,
-          "greatCircleDistanceKm": 9.3
-        },
-        {
-          "ident": "CHAMP",
-          "lat": 27.919417,
-          "lon": 128.534619,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.407,
-          "greatCircleDistanceKm": 4.0
-        },
-        {
-          "ident": "EMILY",
-          "lat": 28.736822,
-          "lon": 129.771194,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.469,
-          "greatCircleDistanceKm": 3.7
-        },
-        {
-          "ident": "TONAR",
-          "lat": 29.890697,
-          "lon": 131.686939,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.562,
-          "greatCircleDistanceKm": 13.2
-        },
-        {
-          "ident": "WEBER",
-          "lat": 32.169139,
-          "lon": 134.997222,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.73,
-          "greatCircleDistanceKm": 4.4
-        },
-        {
-          "ident": "MAYON",
-          "lat": 32.870453,
-          "lon": 136.044947,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.782,
-          "greatCircleDistanceKm": 3.4
-        },
-        {
-          "ident": "CELLO",
-          "lat": 33.998608,
-          "lon": 137.920167,
-          "pointType": "SIGNIFICANT_POINT",
-          "greatCircleT": 0.873,
-          "greatCircleDistanceKm": 12.8
-        },
-        {
-          "ident": "NRT",
-          "lat": 35.76858,
-          "lon": 140.388714,
-          "pointType": "AIRPORT"
-        }
-      ],
-      "metrics": {
-        "distanceKm": 2436.0,
-        "directKm": 2428.0,
-        "detourRatio": 1.003,
-        "greatCircleMeanDeviationKm": 5.6,
-        "greatCircleMaxDeviationKm": 13.2,
-        "southPenaltyKm": 0.0,
-        "earlyEastPenaltyKm": 2.6,
-        "taiwanSideHeuristic": [
-          {
-            "ident": "KHH",
-            "lat": 22.577101,
-            "lon": 120.349998,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "WAGON",
-            "lat": 23.588056,
-            "lon": 121.773889,
-            "side": "east"
-          },
-          {
-            "ident": "SEDKU",
-            "lat": 24.933333,
-            "lon": 124.0,
-            "side": "east"
-          },
-          {
-            "ident": "MYC11",
-            "lat": 26.387334,
-            "lon": 126.298187,
-            "side": "east"
-          }
-        ]
-      },
-      "score": 112.97,
-      "selectionReason": "Real airgraph waypoints near the airport-pair great-circle corridor score best."
-    },
-    {
-      "method": "great_circle_pair_fallback",
-      "provenance": {
-        "source": "openflights-pair-plus-great-circle",
-        "note": "Selected when airgraph shortest path conflicts with great-circle/ADSB scoring."
-      },
-      "points": [
-        {
-          "ident": "KHH",
-          "lat": 22.577101,
-          "lon": 120.349998,
-          "pointType": "AIRPORT"
-        },
-        {
-          "ident": "GC01",
-          "lat": 23.778906,
-          "lon": 121.836249,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC02",
-          "lat": 24.966222,
-          "lon": 123.350061,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC03",
-          "lat": 26.137937,
-          "lon": 124.893174,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC04",
-          "lat": 27.292885,
-          "lon": 126.467346,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC05",
-          "lat": 28.429842,
-          "lon": 128.074348,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC06",
-          "lat": 29.547521,
-          "lon": 129.715953,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC07",
-          "lat": 30.644574,
-          "lon": 131.393927,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC08",
-          "lat": 31.719588,
-          "lon": 133.110014,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC09",
-          "lat": 32.771079,
-          "lon": 134.865923,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC10",
-          "lat": 33.797498,
-          "lon": 136.663309,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "GC11",
-          "lat": 34.797228,
-          "lon": 138.503747,
-          "pointType": "GREAT_CIRCLE_INTERPOLATED"
-        },
-        {
-          "ident": "NRT",
-          "lat": 35.76858,
-          "lon": 140.388714,
-          "pointType": "AIRPORT"
-        }
-      ],
-      "metrics": {
-        "distanceKm": 2428.0,
-        "directKm": 2428.0,
-        "detourRatio": 1.0,
-        "greatCircleMeanDeviationKm": 43.6,
-        "greatCircleMaxDeviationKm": 71.2,
-        "southPenaltyKm": 0.0,
-        "earlyEastPenaltyKm": 0.0,
-        "taiwanSideHeuristic": [
-          {
-            "ident": "KHH",
-            "lat": 22.577101,
-            "lon": 120.349998,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "GC01",
-            "lat": 23.778906,
-            "lon": 121.836249,
-            "side": "east"
-          },
-          {
-            "ident": "GC02",
-            "lat": 24.966222,
-            "lon": 123.350061,
-            "side": "east"
-          },
-          {
-            "ident": "GC03",
-            "lat": 26.137937,
-            "lon": 124.893174,
-            "side": "east"
-          }
-        ]
-      },
-      "score": 64.26,
-      "selectionReason": "Great-circle pair fallback has lower detour/south/east penalty than available airgraph path."
-    },
-    {
-      "method": "airgraph_shortest_path",
-      "provenance": {
-        "source": "aviationdb-airgraph",
+        "source": "aviationdb-directed-airgraph",
         "originConnector": {
-          "ident": "MENON",
-          "lat": 22.805936,
-          "lon": 120.143699,
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
           "pointType": "SIGNIFICANT_POINT",
-          "distanceKm": 33.1
+          "distanceNm": 47.66,
+          "cost": 59.58
         },
         "destinationConnector": {
-          "ident": "TYE",
-          "lat": 35.783586,
-          "lon": 140.262986,
+          "ident": "PANDA",
+          "lat": 34.792172,
+          "lon": 140.29575,
           "pointType": "SIGNIFICANT_POINT",
-          "distanceKm": 11.5
+          "distanceNm": 58.8,
+          "cost": 113.09
         },
-        "waypointCount": 19
+        "waypointCount": 16
       },
       "points": [
         {
@@ -435,16 +449,361 @@
           "pointType": "AIRPORT"
         },
         {
-          "ident": "MENON",
-          "lat": 22.805936,
-          "lon": 120.143699,
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
           "pointType": "SIGNIFICANT_POINT"
         },
         {
-          "ident": "PARPA",
-          "lat": 22.0325,
-          "lon": 120.036389,
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
           "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELMAS",
+          "lat": 20.449594,
+          "lon": 125.000156,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIG",
+          "lat": 21.0,
+          "lon": 125.266667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKON",
+          "lat": 24.120897,
+          "lon": 126.698172,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TIC",
+          "lat": 26.160867,
+          "lon": 127.800825,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAMAK",
+          "lat": 27.531408,
+          "lon": 129.098189,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SHIBK",
+          "lat": 29.654019,
+          "lon": 132.0806,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NIKAI",
+          "lat": 31.874992,
+          "lon": 135.316114,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "JERID",
+          "lat": 32.463128,
+          "lon": 136.219578,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MISAK",
+          "lat": 33.086978,
+          "lon": 137.42065,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MJE",
+          "lat": 34.119031,
+          "lon": 139.498458,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BAFFY",
+          "lat": 34.473933,
+          "lon": 139.950686,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ORGAN",
+          "lat": 34.735025,
+          "lon": 140.284817,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PANDA",
+          "lat": 34.792172,
+          "lon": 140.29575,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "ELMAS",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 141.5,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELMAS",
+          "to": "BISIG",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 36.28,
+          "minAltitudeFt": 6500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIG",
+          "to": "SAKON",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 203.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKON",
+          "to": "TIC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 136.35,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TIC",
+          "to": "TAMAK",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 107.71,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAMAK",
+          "to": "SHIBK",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 202.37,
+          "minAltitudeFt": 29000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SHIBK",
+          "to": "NIKAI",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 213.63,
+          "minAltitudeFt": 29000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NIKAI",
+          "to": "JERID",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 57.92,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "JERID",
+          "to": "MISAK",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 71.27,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MISAK",
+          "to": "MJE",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 120.97,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MJE",
+          "to": "BAFFY",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 30.94,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BAFFY",
+          "to": "ORGAN",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 22.77,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ORGAN",
+          "to": "PANDA",
+          "airway": "V18",
+          "direction": "both",
+          "distanceNm": 3.47,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1565.57,
+        "directNm": 1311.0,
+        "detourRatio": 1.194,
+        "greatCircleMeanDeviationNm": 72.73,
+        "greatCircleMaxDeviationNm": 247.97
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 1949.06,
+        "turn": 21.0,
+        "backtracking": 0,
+        "airwayChanges": 40.0,
+        "greatCircleDeviation": 72.73,
+        "connector": 172.67,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 3.12
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        36659,
+        15066,
+        107341,
+        117170,
+        115278,
+        109534,
+        84982,
+        60964,
+        79616,
+        79832,
+        11257,
+        90744,
+        92988
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 2274.33,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "CAVIA",
+          "lat": 34.891897,
+          "lon": 139.889811,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 58.03,
+          "cost": 112.08
+        },
+        "waypointCount": 17
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
         },
         {
           "ident": "HCN",
@@ -525,6 +884,1675 @@
           "pointType": "SIGNIFICANT_POINT"
         },
         {
+          "ident": "MJE",
+          "lat": 34.119031,
+          "lon": 139.498458,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BAFFY",
+          "lat": 34.473933,
+          "lon": 139.950686,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BOSOH",
+          "lat": 34.599417,
+          "lon": 139.930633,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CAVIA",
+          "lat": 34.891897,
+          "lon": 139.889811,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "SADEK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 143.83,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SADEK",
+          "to": "MY",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 129.6,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MY",
+          "to": "OK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 150.79,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OK",
+          "to": "TOPAT",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 96.97,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TOPAT",
+          "to": "MD",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 96.94,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MD",
+          "to": "BIXAK",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 158.96,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BIXAK",
+          "to": "DOVAG",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 55.35,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DOVAG",
+          "to": "OLDUP",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 122.31,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OLDUP",
+          "to": "BUBDO",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 103.59,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BUBDO",
+          "to": "GULEG",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 115.91,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "GULEG",
+          "to": "MJE",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 100.06,
+          "minAltitudeFt": 12000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MJE",
+          "to": "BAFFY",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 30.94,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BAFFY",
+          "to": "BOSOH",
+          "airway": "B586",
+          "direction": "both",
+          "distanceNm": 7.6,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BOSOH",
+          "to": "CAVIA",
+          "airway": "B586",
+          "direction": "both",
+          "distanceNm": 17.68,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1546.63,
+        "directNm": 1311.0,
+        "detourRatio": 1.18,
+        "greatCircleMeanDeviationNm": 80.67,
+        "greatCircleMaxDeviationNm": 186.82
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 2072.14,
+        "turn": 38.53,
+        "backtracking": 0,
+        "airwayChanges": 50.0,
+        "greatCircleDeviation": 80.67,
+        "connector": 171.66,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 0.0
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        107147,
+        82553,
+        88938,
+        118769,
+        77818,
+        15196,
+        32670,
+        89462,
+        18035,
+        48241,
+        79832,
+        11257,
+        16713,
+        20446
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 2448.74,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "PQ",
+          "lat": 34.993933,
+          "lon": 139.8751,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 52.87,
+          "cost": 105.62
+        },
+        "waypointCount": 18
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELMAS",
+          "lat": 20.449594,
+          "lon": 125.000156,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIG",
+          "lat": 21.0,
+          "lon": 125.266667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKON",
+          "lat": 24.120897,
+          "lon": 126.698172,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TIC",
+          "lat": 26.160867,
+          "lon": 127.800825,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ONC",
+          "lat": 27.432883,
+          "lon": 128.698964,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KAITO",
+          "lat": 27.740836,
+          "lon": 128.966381,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "WARDO",
+          "lat": 28.539069,
+          "lon": 130.088617,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TONAR",
+          "lat": 29.890697,
+          "lon": 131.686939,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "WEBER",
+          "lat": 32.169139,
+          "lon": 134.997222,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MAYON",
+          "lat": 32.870453,
+          "lon": 136.044947,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SOPHY",
+          "lat": 33.454103,
+          "lon": 137.365775,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKAK",
+          "lat": 33.720075,
+          "lon": 137.797006,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKIT",
+          "lat": 33.869508,
+          "lon": 138.041147,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "XA",
+          "lat": 34.688822,
+          "lon": 139.396564,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PQ",
+          "lat": 34.993933,
+          "lon": 139.8751,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "ELMAS",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 141.5,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELMAS",
+          "to": "BISIG",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 36.28,
+          "minAltitudeFt": 6500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIG",
+          "to": "SAKON",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 203.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKON",
+          "to": "TIC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 136.35,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TIC",
+          "to": "ONC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 90.27,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ONC",
+          "to": "KAITO",
+          "airway": "B597",
+          "direction": "both",
+          "distanceNm": 23.33,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KAITO",
+          "to": "WARDO",
+          "airway": "Y52",
+          "direction": "both",
+          "distanceNm": 76.33,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "WARDO",
+          "to": "TONAR",
+          "airway": "Y52",
+          "direction": "both",
+          "distanceNm": 116.62,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TONAR",
+          "to": "WEBER",
+          "airway": "Y52",
+          "direction": "both",
+          "distanceNm": 218.42,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "WEBER",
+          "to": "MAYON",
+          "airway": "Y52",
+          "direction": "both",
+          "distanceNm": 67.72,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MAYON",
+          "to": "SOPHY",
+          "airway": "Y52",
+          "direction": "both",
+          "distanceNm": 75.07,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SOPHY",
+          "to": "SAKAK",
+          "airway": "W28-Y52",
+          "direction": "both",
+          "distanceNm": 26.84,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKAK",
+          "to": "SAKIT",
+          "airway": "W28",
+          "direction": "both",
+          "distanceNm": 15.13,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKIT",
+          "to": "XA",
+          "airway": "W28",
+          "direction": "both",
+          "distanceNm": 83.31,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "XA",
+          "to": "PQ",
+          "airway": "W23",
+          "direction": "both",
+          "distanceNm": 29.86,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1551.5,
+        "directNm": 1311.0,
+        "detourRatio": 1.183,
+        "greatCircleMeanDeviationNm": 57.04,
+        "greatCircleMaxDeviationNm": 247.97
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 2269.78,
+        "turn": 21.0,
+        "backtracking": 0,
+        "airwayChanges": 60.0,
+        "greatCircleDeviation": 57.04,
+        "connector": 165.2,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 0.76
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        36659,
+        15066,
+        107341,
+        117170,
+        90115,
+        64038,
+        127266,
+        118665,
+        127702,
+        77481,
+        111973,
+        107300,
+        107321,
+        131101,
+        97338
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 2718.46,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "HYE",
+          "lat": 35.255825,
+          "lon": 139.587522,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 49.81,
+          "cost": 101.76
+        },
+        "waypointCount": 21
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SADEK",
+          "lat": 23.004319,
+          "lon": 123.965083,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MY",
+          "lat": 24.788083,
+          "lon": 125.294547,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OK",
+          "lat": 26.101736,
+          "lon": 127.665103,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ON",
+          "lat": 27.42995,
+          "lon": 128.708075,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CHAMP",
+          "lat": 27.919417,
+          "lon": 128.534619,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "GUPTI",
+          "lat": 29.023464,
+          "lon": 128.155183,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "RUSAR",
+          "lat": 29.865028,
+          "lon": 127.837142,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ESBIS",
+          "lat": 31.253481,
+          "lon": 127.381317,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "FU",
+          "lat": 32.670772,
+          "lon": 128.831439,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAE",
+          "lat": 33.220344,
+          "lon": 131.70325,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KTE",
+          "lat": 34.212497,
+          "lon": 134.022592,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MIZKI",
+          "lat": 34.309564,
+          "lon": 134.507297,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PROOF",
+          "lat": 34.381347,
+          "lon": 134.873031,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SKE",
+          "lat": 34.491947,
+          "lon": 135.448331,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "LABEL",
+          "lat": 34.587806,
+          "lon": 136.18125,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KOZUN",
+          "lat": 34.946992,
+          "lon": 136.930325,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HORAI",
+          "lat": 35.051294,
+          "lon": 137.687214,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HYE",
+          "lat": 35.255825,
+          "lon": 139.587522,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "SADEK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 143.83,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SADEK",
+          "to": "MY",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 129.6,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MY",
+          "to": "OK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 150.79,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OK",
+          "to": "ON",
+          "airway": "A586",
+          "direction": "both",
+          "distanceNm": 97.39,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ON",
+          "to": "CHAMP",
+          "airway": "A586",
+          "direction": "both",
+          "distanceNm": 30.8,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "CHAMP",
+          "to": "GUPTI",
+          "airway": "A586",
+          "direction": "both",
+          "distanceNm": 69.25,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "GUPTI",
+          "to": "RUSAR",
+          "airway": "A586",
+          "direction": "both",
+          "distanceNm": 53.19,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "RUSAR",
+          "to": "ESBIS",
+          "airway": "A586",
+          "direction": "both",
+          "distanceNm": 86.63,
+          "minAltitudeFt": 7000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ESBIS",
+          "to": "FU",
+          "airway": "OTR30",
+          "direction": "both",
+          "distanceNm": 112.68,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "FU",
+          "to": "TAE",
+          "airway": "V17-Y23",
+          "direction": "both",
+          "distanceNm": 148.41,
+          "minAltitudeFt": 21000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAE",
+          "to": "KTE",
+          "airway": "V17",
+          "direction": "both",
+          "distanceNm": 130.25,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KTE",
+          "to": "MIZKI",
+          "airway": "V17",
+          "direction": "both",
+          "distanceNm": 24.75,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MIZKI",
+          "to": "PROOF",
+          "airway": "V17",
+          "direction": "both",
+          "distanceNm": 18.64,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "PROOF",
+          "to": "SKE",
+          "airway": "V17-Y50",
+          "direction": "both",
+          "distanceNm": 29.25,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SKE",
+          "to": "LABEL",
+          "airway": "V17-Y50",
+          "direction": "both",
+          "distanceNm": 36.7,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "LABEL",
+          "to": "KOZUN",
+          "airway": "Y50",
+          "direction": "both",
+          "distanceNm": 42.78,
+          "minAltitudeFt": 21000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KOZUN",
+          "to": "HORAI",
+          "airway": "Y50",
+          "direction": "both",
+          "distanceNm": 37.75,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HORAI",
+          "to": "HYE",
+          "airway": "Y50",
+          "direction": "both",
+          "distanceNm": 94.09,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1644.66,
+        "directNm": 1311.0,
+        "detourRatio": 1.255,
+        "greatCircleMeanDeviationNm": 83.02,
+        "greatCircleMaxDeviationNm": 215.55
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 2510.53,
+        "turn": 38.2,
+        "backtracking": 0,
+        "airwayChanges": 70.0,
+        "greatCircleDeviation": 83.02,
+        "connector": 161.34,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 16.39
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        107147,
+        82553,
+        88938,
+        90083,
+        22486,
+        48401,
+        106435,
+        38142,
+        43424,
+        114935,
+        68706,
+        79813,
+        97627,
+        110609,
+        69793,
+        68058,
+        52726,
+        54171
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 2938.8,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "MAMAS",
+          "lat": 34.827778,
+          "lon": 140.531089,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 56.92,
+          "cost": 110.73
+        },
+        "waypointCount": 21
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELMAS",
+          "lat": 20.449594,
+          "lon": 125.000156,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIG",
+          "lat": 21.0,
+          "lon": 125.266667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKON",
+          "lat": 24.120897,
+          "lon": 126.698172,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TIC",
+          "lat": 26.160867,
+          "lon": 127.800825,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ONC",
+          "lat": 27.432883,
+          "lon": 128.698964,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DONAN",
+          "lat": 27.858878,
+          "lon": 129.271778,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "POMAS",
+          "lat": 28.5041,
+          "lon": 130.144192,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SABAN",
+          "lat": 29.770389,
+          "lon": 131.880956,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "GURAR",
+          "lat": 31.236936,
+          "lon": 133.997403,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DEMPA",
+          "lat": 32.111311,
+          "lon": 135.292267,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAPOP",
+          "lat": 32.666819,
+          "lon": 136.132461,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BUROI",
+          "lat": 33.275628,
+          "lon": 137.504344,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAERU",
+          "lat": 33.736497,
+          "lon": 138.253286,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NJC",
+          "lat": 34.3481,
+          "lon": 139.271253,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PERRY",
+          "lat": 34.533417,
+          "lon": 139.756797,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BOSOH",
+          "lat": 34.599417,
+          "lon": 139.930633,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ORGAN",
+          "lat": 34.735025,
+          "lon": 140.284817,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MAMAS",
+          "lat": 34.827778,
+          "lon": 140.531089,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "ELMAS",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 141.5,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELMAS",
+          "to": "BISIG",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 36.28,
+          "minAltitudeFt": 6500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIG",
+          "to": "SAKON",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 203.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKON",
+          "to": "TIC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 136.35,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TIC",
+          "to": "ONC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 90.27,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ONC",
+          "to": "DONAN",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 39.78,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DONAN",
+          "to": "POMAS",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 60.27,
+          "minAltitudeFt": 10000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "POMAS",
+          "to": "SABAN",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 118.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SABAN",
+          "to": "GURAR",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 140.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "GURAR",
+          "to": "DEMPA",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 84.46,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DEMPA",
+          "to": "TAPOP",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 54.1,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAPOP",
+          "to": "BUROI",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 78.17,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BUROI",
+          "to": "TAERU",
+          "airway": "Y573",
+          "direction": "both",
+          "distanceNm": 46.6,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAERU",
+          "to": "NJC",
+          "airway": "Y573",
+          "direction": "both",
+          "distanceNm": 62.56,
+          "minAltitudeFt": 21000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NJC",
+          "to": "PERRY",
+          "airway": "V18",
+          "direction": "both",
+          "distanceNm": 26.49,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "PERRY",
+          "to": "BOSOH",
+          "airway": "V18-Y231",
+          "direction": "both",
+          "distanceNm": 9.46,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BOSOH",
+          "to": "ORGAN",
+          "airway": "V18-Y231",
+          "direction": "both",
+          "distanceNm": 19.29,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ORGAN",
+          "to": "MAMAS",
+          "airway": "G597-Y231",
+          "direction": "both",
+          "distanceNm": 13.36,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1576.58,
+        "directNm": 1311.0,
+        "detourRatio": 1.203,
+        "greatCircleMeanDeviationNm": 59.88,
+        "greatCircleMaxDeviationNm": 247.97
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 2750.52,
+        "turn": 21.0,
+        "backtracking": 0,
+        "airwayChanges": 60.0,
+        "greatCircleDeviation": 59.88,
+        "connector": 170.31,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 4.97
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        36659,
+        15066,
+        107341,
+        117170,
+        90115,
+        32325,
+        96814,
+        107002,
+        48413,
+        29187,
+        115477,
+        18630,
+        114945,
+        85488,
+        94465,
+        16713,
+        90744,
+        76510
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 3175.26,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "PQE",
+          "lat": 34.946394,
+          "lon": 139.895528,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 54.95,
+          "cost": 108.23
+        },
+        "waypointCount": 15
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SADEK",
+          "lat": 23.004319,
+          "lon": 123.965083,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MY",
+          "lat": 24.788083,
+          "lon": 125.294547,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OK",
+          "lat": 26.101736,
+          "lon": 127.665103,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TOPAT",
+          "lat": 25.972689,
+          "lon": 129.456797,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MD",
+          "lat": 25.840572,
+          "lon": 131.245844,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SABGU",
+          "lat": 25.497553,
+          "lon": 134.989125,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MAKDA",
+          "lat": 27.270725,
+          "lon": 135.850683,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAXON",
+          "lat": 30.003803,
+          "lon": 137.238833,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MAPDO",
+          "lat": 32.61355,
+          "lon": 138.645306,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
           "ident": "HCE",
           "lat": 33.11435,
           "lon": 139.788483,
@@ -543,9 +2571,407 @@
           "pointType": "SIGNIFICANT_POINT"
         },
         {
-          "ident": "TYE",
-          "lat": 35.783586,
-          "lon": 140.262986,
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "SADEK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 143.83,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SADEK",
+          "to": "MY",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 129.6,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MY",
+          "to": "OK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 150.79,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OK",
+          "to": "TOPAT",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 96.97,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TOPAT",
+          "to": "MD",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 96.94,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MD",
+          "to": "SABGU",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 203.6,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SABGU",
+          "to": "MAKDA",
+          "airway": "A339",
+          "direction": "both",
+          "distanceNm": 116.11,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MAKDA",
+          "to": "TAXON",
+          "airway": "A339",
+          "direction": "both",
+          "distanceNm": 179.66,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAXON",
+          "to": "MAPDO",
+          "airway": "A339",
+          "direction": "both",
+          "distanceNm": 172.5,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MAPDO",
+          "to": "HCE",
+          "airway": "OTR27",
+          "direction": "both",
+          "distanceNm": 65.02,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HCE",
+          "to": "SANGO",
+          "airway": "3E41",
+          "direction": "both",
+          "distanceNm": 16.01,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SANGO",
+          "to": "PQE",
+          "airway": "3E41",
+          "direction": "both",
+          "distanceNm": 94.12,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1678.18,
+        "directNm": 1311.0,
+        "detourRatio": 1.28,
+        "greatCircleMeanDeviationNm": 111.53,
+        "greatCircleMaxDeviationNm": 320.98
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 2941.16,
+        "turn": 52.27,
+        "backtracking": 0,
+        "airwayChanges": 50.0,
+        "greatCircleDeviation": 111.53,
+        "connector": 167.81,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 22.02
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        107147,
+        82553,
+        88938,
+        118769,
+        77818,
+        107034,
+        76299,
+        115737,
+        76733,
+        49944,
+        107642,
+        97340
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 3413.56,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "CAVIA",
+          "lat": 34.891897,
+          "lon": 139.889811,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 58.03,
+          "cost": 112.08
+        },
+        "waypointCount": 26
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELMAS",
+          "lat": 20.449594,
+          "lon": 125.000156,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIG",
+          "lat": 21.0,
+          "lon": 125.266667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKON",
+          "lat": 24.120897,
+          "lon": 126.698172,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "YURIX",
+          "lat": 27.488053,
+          "lon": 127.6149,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "RUSAR",
+          "lat": 29.865028,
+          "lon": 127.837142,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KOSHI",
+          "lat": 31.288503,
+          "lon": 129.964714,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KAZAN",
+          "lat": 31.385036,
+          "lon": 130.111267,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HKC",
+          "lat": 31.697222,
+          "lon": 130.582942,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "JINGU",
+          "lat": 31.902725,
+          "lon": 131.048667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "FENIX",
+          "lat": 32.141783,
+          "lon": 131.591481,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SUC",
+          "lat": 32.755969,
+          "lon": 132.996647,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "RYOMA",
+          "lat": 33.510297,
+          "lon": 134.376197,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TOSAR",
+          "lat": 33.500586,
+          "lon": 134.598672,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PADOC",
+          "lat": 33.482883,
+          "lon": 134.997222,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KISEI",
+          "lat": 33.467822,
+          "lon": 135.328892,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KEC",
+          "lat": 33.447742,
+          "lon": 135.794494,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEIWA",
+          "lat": 33.689411,
+          "lon": 136.706481,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CELLO",
+          "lat": 33.998608,
+          "lon": 137.920167,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SETSU",
+          "lat": 34.222247,
+          "lon": 138.378911,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "VIOLA",
+          "lat": 34.547797,
+          "lon": 139.057433,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "XAC",
+          "lat": 34.712253,
+          "lon": 139.414017,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SPENS",
+          "lat": 34.740208,
+          "lon": 139.640314,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CAVIA",
+          "lat": 34.891897,
+          "lon": 139.889811,
           "pointType": "SIGNIFICANT_POINT"
         },
         {
@@ -555,73 +2981,1900 @@
           "pointType": "AIRPORT"
         }
       ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "ELMAS",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 141.5,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELMAS",
+          "to": "BISIG",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 36.28,
+          "minAltitudeFt": 6500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIG",
+          "to": "SAKON",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 203.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKON",
+          "to": "YURIX",
+          "airway": "Y27",
+          "direction": "both",
+          "distanceNm": 208.15,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "YURIX",
+          "to": "RUSAR",
+          "airway": "Y27",
+          "direction": "both",
+          "distanceNm": 143.19,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "RUSAR",
+          "to": "KOSHI",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 139.28,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KOSHI",
+          "to": "KAZAN",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 9.49,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KAZAN",
+          "to": "HKC",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 30.56,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HKC",
+          "to": "JINGU",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 26.78,
+          "minAltitudeFt": 9000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "JINGU",
+          "to": "FENIX",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 31.14,
+          "minAltitudeFt": 9000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "FENIX",
+          "to": "SUC",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 80.18,
+          "minAltitudeFt": 9000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SUC",
+          "to": "RYOMA",
+          "airway": "V71",
+          "direction": "both",
+          "distanceNm": 82.84,
+          "minAltitudeFt": 7000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "RYOMA",
+          "to": "TOSAR",
+          "airway": "V37",
+          "direction": "both",
+          "distanceNm": 11.15,
+          "minAltitudeFt": 10000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TOSAR",
+          "to": "PADOC",
+          "airway": "V37",
+          "direction": "both",
+          "distanceNm": 19.98,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "PADOC",
+          "to": "KISEI",
+          "airway": "V37",
+          "direction": "both",
+          "distanceNm": 16.64,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KISEI",
+          "to": "KEC",
+          "airway": "V37",
+          "direction": "both",
+          "distanceNm": 23.35,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KEC",
+          "to": "MEIWA",
+          "airway": "Y21",
+          "direction": "both",
+          "distanceNm": 47.88,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEIWA",
+          "to": "CELLO",
+          "airway": "Y21",
+          "direction": "both",
+          "distanceNm": 63.31,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "CELLO",
+          "to": "SETSU",
+          "airway": "Y21",
+          "direction": "both",
+          "distanceNm": 26.46,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SETSU",
+          "to": "VIOLA",
+          "airway": "Y21",
+          "direction": "both",
+          "distanceNm": 38.89,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "VIOLA",
+          "to": "XAC",
+          "airway": "Y21",
+          "direction": "both",
+          "distanceNm": 20.2,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "XAC",
+          "to": "SPENS",
+          "airway": "V17-Y211",
+          "direction": "both",
+          "distanceNm": 11.29,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SPENS",
+          "to": "CAVIA",
+          "airway": "V17",
+          "direction": "both",
+          "distanceNm": 15.3,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
       "metrics": {
-        "distanceKm": 3050.9,
-        "directKm": 2428.0,
-        "detourRatio": 1.257,
-        "greatCircleMeanDeviationKm": 143.9,
-        "greatCircleMaxDeviationKm": 346.0,
-        "southPenaltyKm": 174.4,
-        "earlyEastPenaltyKm": 171.6,
-        "taiwanSideHeuristic": [
-          {
-            "ident": "KHH",
-            "lat": 22.577101,
-            "lon": 120.349998,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "MENON",
-            "lat": 22.805936,
-            "lon": 120.143699,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "PARPA",
-            "lat": 22.0325,
-            "lon": 120.036389,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "HCN",
-            "lat": 21.928056,
-            "lon": 120.843889,
-            "side": "west_or_strait"
-          },
-          {
-            "ident": "SADEK",
-            "lat": 23.004319,
-            "lon": 123.965083,
-            "side": "east"
-          },
-          {
-            "ident": "MY",
-            "lat": 24.788083,
-            "lon": 125.294547,
-            "side": "east"
-          },
-          {
-            "ident": "OK",
-            "lat": 26.101736,
-            "lon": 127.665103,
-            "side": "east"
-          },
-          {
-            "ident": "TOPAT",
-            "lat": 25.972689,
-            "lon": 129.456797,
-            "side": "east"
-          },
-          {
-            "ident": "MD",
-            "lat": 25.840572,
-            "lon": 131.245844,
-            "side": "east"
-          }
-        ]
+        "distanceNm": 1643.43,
+        "directNm": 1311.0,
+        "detourRatio": 1.254,
+        "greatCircleMeanDeviationNm": 74.35,
+        "greatCircleMaxDeviationNm": 247.97
       },
-      "score": -160.48,
-      "selectionReason": "Airgraph path remains close enough to great-circle scoring."
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 3211.49,
+        "turn": 22.23,
+        "backtracking": 0,
+        "airwayChanges": 80.0,
+        "greatCircleDeviation": 74.35,
+        "connector": 171.66,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 16.19
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        36659,
+        15066,
+        107341,
+        133467,
+        106435,
+        67865,
+        64721,
+        51759,
+        61623,
+        40727,
+        113563,
+        106747,
+        118912,
+        92681,
+        66523,
+        65029,
+        78163,
+        21258,
+        109122,
+        125099,
+        131109,
+        112521,
+        20446
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 3825.85,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "YU",
+          "lat": 35.199078,
+          "lon": 139.614653,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 51.0,
+          "cost": 103.25
+        },
+        "waypointCount": 18
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SADEK",
+          "lat": 23.004319,
+          "lon": 123.965083,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MY",
+          "lat": 24.788083,
+          "lon": 125.294547,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OK",
+          "lat": 26.101736,
+          "lon": 127.665103,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIS",
+          "lat": 26.789231,
+          "lon": 126.549256,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ONC",
+          "lat": 27.432883,
+          "lon": 128.698964,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAMAK",
+          "lat": 27.531408,
+          "lon": 129.098189,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SHIBK",
+          "lat": 29.654019,
+          "lon": 132.0806,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NIKAI",
+          "lat": 31.874992,
+          "lon": 135.316114,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "JERID",
+          "lat": 32.463128,
+          "lon": 136.219578,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SOPHY",
+          "lat": 33.454103,
+          "lon": 137.365775,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKAK",
+          "lat": 33.720075,
+          "lon": 137.797006,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKIT",
+          "lat": 33.869508,
+          "lon": 138.041147,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "XA",
+          "lat": 34.688822,
+          "lon": 139.396564,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HATSU",
+          "lat": 34.978047,
+          "lon": 139.519319,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "YU",
+          "lat": 35.199078,
+          "lon": 139.614653,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "SADEK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 143.83,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SADEK",
+          "to": "MY",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 129.6,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MY",
+          "to": "OK",
+          "airway": "B462",
+          "direction": "both",
+          "distanceNm": 150.79,
+          "minAltitudeFt": 4000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OK",
+          "to": "BISIS",
+          "airway": "R583",
+          "direction": "both",
+          "distanceNm": 72.81,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIS",
+          "to": "ONC",
+          "airway": "G581",
+          "direction": "both",
+          "distanceNm": 121.21,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ONC",
+          "to": "TAMAK",
+          "airway": "V73",
+          "direction": "both",
+          "distanceNm": 22.07,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAMAK",
+          "to": "SHIBK",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 202.37,
+          "minAltitudeFt": 29000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SHIBK",
+          "to": "NIKAI",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 213.63,
+          "minAltitudeFt": 29000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NIKAI",
+          "to": "JERID",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 57.92,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "JERID",
+          "to": "SOPHY",
+          "airway": "Y571",
+          "direction": "both",
+          "distanceNm": 82.91,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SOPHY",
+          "to": "SAKAK",
+          "airway": "W28-Y52",
+          "direction": "both",
+          "distanceNm": 26.84,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKAK",
+          "to": "SAKIT",
+          "airway": "W28",
+          "direction": "both",
+          "distanceNm": 15.13,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKIT",
+          "to": "XA",
+          "airway": "W28",
+          "direction": "both",
+          "distanceNm": 83.31,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "XA",
+          "to": "HATSU",
+          "airway": "W14",
+          "direction": "both",
+          "distanceNm": 18.39,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HATSU",
+          "to": "YU",
+          "airway": "W14",
+          "direction": "both",
+          "distanceNm": 14.07,
+          "minAltitudeFt": 3000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1563.98,
+        "directNm": 1311.0,
+        "detourRatio": 1.193,
+        "greatCircleMeanDeviationNm": 37.14,
+        "greatCircleMaxDeviationNm": 144.58
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 3548.52,
+        "turn": 119.64,
+        "backtracking": 0,
+        "airwayChanges": 90.0,
+        "greatCircleDeviation": 37.14,
+        "connector": 162.83,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 2.85
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        107147,
+        82553,
+        88938,
+        15069,
+        90115,
+        115278,
+        109534,
+        84982,
+        60964,
+        111973,
+        107300,
+        107321,
+        131101,
+        49682,
+        133324
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 4059.47,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "TOROX",
+          "lat": 23.353889,
+          "lon": 119.908056,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 52.65,
+          "cost": 65.81
+        },
+        "destinationConnector": {
+          "ident": "CVC",
+          "lat": 35.726469,
+          "lon": 140.799428,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 20.17,
+          "cost": 64.76
+        },
+        "waypointCount": 37
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "TOROX",
+          "lat": 23.353889,
+          "lon": 119.908056,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MKG",
+          "lat": 23.595444,
+          "lon": 119.637278,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KADLO",
+          "lat": 22.955056,
+          "lon": 118.541722,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELATO",
+          "lat": 22.333334,
+          "lon": 117.5,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MAGOG",
+          "lat": 22.288333,
+          "lon": 115.823333,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CH",
+          "lat": 22.219542,
+          "lon": 114.030056,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAMOT",
+          "lat": 22.358334,
+          "lon": 113.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NLG",
+          "lat": 22.531667,
+          "lon": 113.563333,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "UBLIM",
+          "lat": 22.888333,
+          "lon": 113.67,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NOMAR",
+          "lat": 23.508333,
+          "lon": 113.856667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BILAT",
+          "lat": 23.868333,
+          "lon": 114.146667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MABAG",
+          "lat": 24.313333,
+          "lon": 114.506667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "KOW",
+          "lat": 25.821667,
+          "lon": 114.915,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NF",
+          "lat": 27.216667,
+          "lon": 116.566667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SHR",
+          "lat": 28.416667,
+          "lon": 117.966667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELNEX",
+          "lat": 29.631666,
+          "lon": 119.49,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TOL",
+          "lat": 29.763333,
+          "lon": 119.658333,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SX",
+          "lat": 30.883333,
+          "lon": 120.416667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "JTN",
+          "lat": 31.125,
+          "lon": 121.34,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NINAS",
+          "lat": 31.0,
+          "lon": 122.25,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "LASAN",
+          "lat": 31.0,
+          "lon": 122.425,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONGI",
+          "lat": 31.0,
+          "lon": 122.648333,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BOLEX",
+          "lat": 31.0,
+          "lon": 123.0,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "XEREN",
+          "lat": 31.333333,
+          "lon": 123.545,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "LAMEN",
+          "lat": 31.61,
+          "lon": 124.0,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SADLI",
+          "lat": 31.833333,
+          "lon": 124.998333,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NIRAT",
+          "lat": 32.065,
+          "lon": 126.058056,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ONIKU",
+          "lat": 32.195,
+          "lon": 126.654722,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "POTET",
+          "lat": 32.280025,
+          "lon": 127.039658,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "FU",
+          "lat": 32.670772,
+          "lon": 128.831439,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "IMARI",
+          "lat": 33.380803,
+          "lon": 129.928269,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DGC",
+          "lat": 33.676208,
+          "lon": 130.389628,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TTE",
+          "lat": 34.190711,
+          "lon": 131.016189,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "JEC",
+          "lat": 35.531117,
+          "lon": 133.093914,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAMON",
+          "lat": 36.242897,
+          "lon": 134.503319,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CHILY",
+          "lat": 36.200831,
+          "lon": 135.222539,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "CVC",
+          "lat": 35.726469,
+          "lon": 140.799428,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "TOROX",
+          "to": "MKG",
+          "airway": "W6",
+          "direction": "both",
+          "distanceNm": 20.8,
+          "minAltitudeFt": 4500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MKG",
+          "to": "KADLO",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 71.62,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KADLO",
+          "to": "ELATO",
+          "airway": "A1",
+          "direction": "both",
+          "distanceNm": 68.74,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELATO",
+          "to": "MAGOG",
+          "airway": "A1-G581",
+          "direction": "both",
+          "distanceNm": 93.17,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MAGOG",
+          "to": "CH",
+          "airway": "A1-G581",
+          "direction": "both",
+          "distanceNm": 99.73,
+          "minAltitudeFt": 8000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "CH",
+          "to": "TAMOT",
+          "airway": "B330",
+          "direction": "both",
+          "distanceNm": 12.32,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAMOT",
+          "to": "NLG",
+          "airway": "W18",
+          "direction": "both",
+          "distanceNm": 19.79,
+          "minAltitudeFt": 5100,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NLG",
+          "to": "UBLIM",
+          "airway": "W18",
+          "direction": "both",
+          "distanceNm": 22.21,
+          "minAltitudeFt": 3800,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "UBLIM",
+          "to": "NOMAR",
+          "airway": "W18",
+          "direction": "both",
+          "distanceNm": 38.62,
+          "minAltitudeFt": 6200,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NOMAR",
+          "to": "BILAT",
+          "airway": "W19",
+          "direction": "both",
+          "distanceNm": 26.86,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BILAT",
+          "to": "MABAG",
+          "airway": "W19",
+          "direction": "both",
+          "distanceNm": 33.21,
+          "minAltitudeFt": 6700,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MABAG",
+          "to": "KOW",
+          "airway": "W19",
+          "direction": "both",
+          "distanceNm": 93.24,
+          "minAltitudeFt": 6700,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "KOW",
+          "to": "NF",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 122.02,
+          "minAltitudeFt": 7800,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NF",
+          "to": "SHR",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 103.53,
+          "minAltitudeFt": 9000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SHR",
+          "to": "ELNEX",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 108.25,
+          "minAltitudeFt": 7000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELNEX",
+          "to": "TOL",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 11.81,
+          "minAltitudeFt": 7000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TOL",
+          "to": "SX",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 77.89,
+          "minAltitudeFt": 6100,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SX",
+          "to": "JTN",
+          "airway": "A599",
+          "direction": "both",
+          "distanceNm": 49.68,
+          "minAltitudeFt": 3500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "JTN",
+          "to": "NINAS",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 47.4,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NINAS",
+          "to": "LASAN",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 9.01,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "LASAN",
+          "to": "BONGI",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 11.49,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONGI",
+          "to": "BOLEX",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 18.1,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BOLEX",
+          "to": "XEREN",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 34.42,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "XEREN",
+          "to": "LAMEN",
+          "airway": "G327",
+          "direction": "both",
+          "distanceNm": 28.61,
+          "minAltitudeFt": 3600,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "LAMEN",
+          "to": "SADLI",
+          "airway": "A593",
+          "direction": "both",
+          "distanceNm": 52.72,
+          "minAltitudeFt": 24000,
+          "maxAltitudeFt": 41000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SADLI",
+          "to": "NIRAT",
+          "airway": "A593",
+          "direction": "both",
+          "distanceNm": 55.75,
+          "minAltitudeFt": 24000,
+          "maxAltitudeFt": 41000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "NIRAT",
+          "to": "ONIKU",
+          "airway": "A593",
+          "direction": "both",
+          "distanceNm": 31.32,
+          "minAltitudeFt": 24000,
+          "maxAltitudeFt": 41000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ONIKU",
+          "to": "POTET",
+          "airway": "A593",
+          "direction": "both",
+          "distanceNm": 20.2,
+          "minAltitudeFt": 24000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "POTET",
+          "to": "FU",
+          "airway": "A593",
+          "direction": "both",
+          "distanceNm": 93.74,
+          "minAltitudeFt": 21000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "FU",
+          "to": "IMARI",
+          "airway": "V28",
+          "direction": "both",
+          "distanceNm": 69.75,
+          "minAltitudeFt": 10000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "IMARI",
+          "to": "DGC",
+          "airway": "V28",
+          "direction": "both",
+          "distanceNm": 29.12,
+          "minAltitudeFt": 10000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DGC",
+          "to": "TTE",
+          "airway": "V30",
+          "direction": "both",
+          "distanceNm": 43.91,
+          "minAltitudeFt": 12000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TTE",
+          "to": "JEC",
+          "airway": "V30",
+          "direction": "both",
+          "distanceNm": 130.2,
+          "minAltitudeFt": 16000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "JEC",
+          "to": "SAMON",
+          "airway": "Y14",
+          "direction": "both",
+          "distanceNm": 80.79,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAMON",
+          "to": "CHILY",
+          "airway": "Y51",
+          "direction": "both",
+          "distanceNm": 34.93,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "CHILY",
+          "to": "CVC",
+          "airway": "Y51",
+          "direction": "both",
+          "distanceNm": 272.47,
+          "minAltitudeFt": 26000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 2210.27,
+        "directNm": 1311.0,
+        "detourRatio": 1.686,
+        "greatCircleMeanDeviationNm": 231.99,
+        "greatCircleMaxDeviationNm": 394.85
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 3788.17,
+        "turn": 37.41,
+        "backtracking": 0,
+        "airwayChanges": 120.0,
+        "greatCircleDeviation": 231.99,
+        "connector": 130.58,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 111.31
+      },
+      "nodePath": [
+        118881,
+        79915,
+        63939,
+        36383,
+        75980,
+        22382,
+        115326,
+        85542,
+        121025,
+        85908,
+        14785,
+        75405,
+        67998,
+        84506,
+        109684,
+        36686,
+        118497,
+        114601,
+        62934,
+        85165,
+        70625,
+        16483,
+        16340,
+        131261,
+        70210,
+        107168,
+        85265,
+        90192,
+        97070,
+        43424,
+        56615,
+        29943,
+        119760,
+        60516,
+        107561,
+        22699,
+        27135
+      ]
+    },
+    {
+      "method": "directed_airway_graph",
+      "score": 4162.24,
+      "selectionReason": "Directed airway route with validated segment connectivity and lowest final score.",
+      "provenance": {
+        "source": "aviationdb-directed-airgraph",
+        "originConnector": {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 47.66,
+          "cost": 59.58
+        },
+        "destinationConnector": {
+          "ident": "PQE",
+          "lat": 34.946394,
+          "lon": 139.895528,
+          "pointType": "SIGNIFICANT_POINT",
+          "distanceNm": 54.95,
+          "cost": 108.23
+        },
+        "waypointCount": 17
+      },
+      "points": [
+        {
+          "ident": "KHH",
+          "lat": 22.577101,
+          "lon": 120.349998,
+          "pointType": "AIRPORT"
+        },
+        {
+          "ident": "HCN",
+          "lat": 21.928056,
+          "lon": 120.843889,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BONEY",
+          "lat": 21.383333,
+          "lon": 121.866667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "MEVIN",
+          "lat": 21.0,
+          "lon": 122.55,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "ELMAS",
+          "lat": 20.449594,
+          "lon": 125.000156,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BISIG",
+          "lat": 21.0,
+          "lon": 125.266667,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SAKON",
+          "lat": 24.120897,
+          "lon": 126.698172,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TIC",
+          "lat": 26.160867,
+          "lon": 127.800825,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "TAMAK",
+          "lat": 27.531408,
+          "lon": 129.098189,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DELTA",
+          "lat": 27.870561,
+          "lon": 130.51445,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HIDEK",
+          "lat": 28.364164,
+          "lon": 132.750636,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "DOVAG",
+          "lat": 28.583883,
+          "lon": 133.814153,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "OLDUP",
+          "lat": 30.125417,
+          "lon": 135.342319,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "BUBDO",
+          "lat": 31.431969,
+          "lon": 136.653839,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "GULEG",
+          "lat": 32.876008,
+          "lon": 138.167281,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "HCE",
+          "lat": 33.11435,
+          "lon": 139.788483,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "SANGO",
+          "lat": 33.380678,
+          "lon": 139.803894,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "PQE",
+          "lat": 34.946394,
+          "lon": 139.895528,
+          "pointType": "SIGNIFICANT_POINT"
+        },
+        {
+          "ident": "NRT",
+          "lat": 35.76858,
+          "lon": 140.388714,
+          "pointType": "AIRPORT"
+        }
+      ],
+      "airways": [
+        {
+          "from": "HCN",
+          "to": "BONEY",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 65.78,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BONEY",
+          "to": "MEVIN",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 44.64,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "MEVIN",
+          "to": "ELMAS",
+          "airway": "R596",
+          "direction": "both",
+          "distanceNm": 141.5,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "ELMAS",
+          "to": "BISIG",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 36.28,
+          "minAltitudeFt": 6500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BISIG",
+          "to": "SAKON",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 203.49,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SAKON",
+          "to": "TIC",
+          "airway": "A582",
+          "direction": "both",
+          "distanceNm": 136.35,
+          "minAltitudeFt": 15000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TIC",
+          "to": "TAMAK",
+          "airway": "Y57",
+          "direction": "both",
+          "distanceNm": 107.71,
+          "minAltitudeFt": 25000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "TAMAK",
+          "to": "DELTA",
+          "airway": "V73",
+          "direction": "both",
+          "distanceNm": 77.99,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DELTA",
+          "to": "HIDEK",
+          "airway": "V73",
+          "direction": "both",
+          "distanceNm": 122.07,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HIDEK",
+          "to": "DOVAG",
+          "airway": "V73",
+          "direction": "both",
+          "distanceNm": 57.66,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "DOVAG",
+          "to": "OLDUP",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 122.31,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "OLDUP",
+          "to": "BUBDO",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 103.59,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "BUBDO",
+          "to": "GULEG",
+          "airway": "A590",
+          "direction": "both",
+          "distanceNm": 115.91,
+          "minAltitudeFt": 6000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "GULEG",
+          "to": "HCE",
+          "airway": "OTR25",
+          "direction": "both",
+          "distanceNm": 82.88,
+          "minAltitudeFt": 5500,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "HCE",
+          "to": "SANGO",
+          "airway": "3E41",
+          "direction": "both",
+          "distanceNm": 16.01,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        },
+        {
+          "from": "SANGO",
+          "to": "PQE",
+          "airway": "3E41",
+          "direction": "both",
+          "distanceNm": 94.12,
+          "minAltitudeFt": 5000,
+          "maxAltitudeFt": 60000,
+          "source": "flightgear",
+          "airacCycle": null,
+          "confidence": 0.78
+        }
+      ],
+      "metrics": {
+        "distanceNm": 1630.91,
+        "directNm": 1311.0,
+        "detourRatio": 1.244,
+        "greatCircleMeanDeviationNm": 95.52,
+        "greatCircleMaxDeviationNm": 247.97
+      },
+      "edgeValidation": {
+        "valid": true,
+        "invalidSegments": []
+      },
+      "scoreBreakdown": {
+        "distance": 3947.52,
+        "turn": 40.82,
+        "backtracking": 0,
+        "airwayChanges": 60.0,
+        "greatCircleDeviation": 95.52,
+        "connector": 167.81,
+        "historicalBonus": 8.0,
+        "adsbBonus": 0.0,
+        "detour": 14.08
+      },
+      "nodePath": [
+        49958,
+        16479,
+        78643,
+        36659,
+        15066,
+        107341,
+        117170,
+        115278,
+        29126,
+        51071,
+        32670,
+        89462,
+        18035,
+        48241,
+        49944,
+        107642,
+        97340
+      ]
     }
-  ]
+  ],
+  "pairSource": {
+    "exists": true,
+    "source": "OpenFlights historical route graph",
+    "count": 5,
+    "aircraftTypes": [
+      "321",
+      "738",
+      "763",
+      "767"
+    ]
+  },
+  "adsbSupport": {
+    "corridorCandidates": 0,
+    "strictOriginDestinationCandidates": 0
+  }
 }

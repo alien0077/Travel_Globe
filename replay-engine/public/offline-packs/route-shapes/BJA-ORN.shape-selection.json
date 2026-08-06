@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:38.076227+00:00",
+  "route": "BJA-ORN",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 1055.42,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-11"
+    },
+    "metrics": {
+      "distanceKm": 489.2,
+      "detourRatio": 0.932,
+      "meanObservedToIfrKm": 53.2,
+      "maxObservedToIfrKm": 188.2,
+      "meanIfrToObservedKm": 141.1
+    },
+    "points": [
+      {
+        "ident": "BJA",
+        "lat": 36.712547,
+        "lon": 5.069909,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 36.44384,
+        "lon": 4.73598,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 36.41172,
+        "lon": 2.95655,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 36.3634,
+        "lon": 1.50524,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 35.93879,
+        "lon": 0.25122,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS005",
+        "lat": 35.8483,
+        "lon": 0.05154,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS006",
+        "lat": 35.65073,
+        "lon": -0.53365,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "ORN",
+        "lat": 35.620648,
+        "lon": -0.622486,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

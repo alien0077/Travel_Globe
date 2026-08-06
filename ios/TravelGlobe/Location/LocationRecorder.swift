@@ -13,6 +13,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     private var activeJourneyId: UUID?
     private var activeSegmentId: String?
     private var profile: RecordingProfile = .balanced
+    private var isLiveOnly = false
     private var lastAcceptedPoint: LocationPointRecord?
     private var lastSavedPoint: LocationPointRecord?
     private var oneShotLocationRequest: OneShotLocationRequest?
@@ -28,6 +29,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     func start(journeyId: UUID, segmentId: String?, profile: RecordingProfile) async throws {
         activeJourneyId = journeyId
         activeSegmentId = segmentId
+        isLiveOnly = false
         self.profile = profile
         lastAcceptedPoint = nil
         lastSavedPoint = nil
@@ -37,13 +39,26 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         manager.startUpdatingLocation()
     }
 
+    func startLiveUpdates() {
+        activeJourneyId = UUID()
+        activeSegmentId = nil
+        isLiveOnly = true
+        lastAcceptedPoint = nil
+        lastSavedPoint = nil
+        configure(profile: .flight)
+        manager.requestWhenInUseAuthorization()
+        manager.requestAlwaysAuthorization()
+        manager.startUpdatingLocation()
+    }
+
     func stop() async {
         manager.stopUpdatingLocation()
-        if let activeJourneyId {
+        if let activeJourneyId, !isLiveOnly {
             try? await repository.completeJourney(id: activeJourneyId, endedAt: Date())
         }
         activeJourneyId = nil
         activeSegmentId = nil
+        isLiveOnly = false
         lastAcceptedPoint = nil
         lastSavedPoint = nil
     }
@@ -89,7 +104,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
             lastAcceptedPoint = point
             onLocationUpdate?(point)
 
-            guard shouldPersist(point) else {
+            guard !isLiveOnly, shouldPersist(point) else {
                 continue
             }
             lastSavedPoint = point

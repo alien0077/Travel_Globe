@@ -142,6 +142,8 @@ const output = {
   generatedFrom: `sha256:${sourceFingerprint}`,
   source: {
     name: 'OurAirports',
+    license: 'Public domain',
+    licenseUrl: 'https://ourairports.com/data/',
     attribution: 'Airport and runway data provided by OurAirports.',
     urls: {
       airports: 'https://davidmegginson.github.io/ourairports-data/airports.csv',
@@ -155,6 +157,10 @@ const output = {
   routeGraphSource: {
     name: 'OpenFlights',
     license: 'ODbL / DbCL',
+    licenseUrls: [
+      'https://opendatacommons.org/licenses/odbl/1-0/',
+      'https://opendatacommons.org/licenses/dbcl/1-0/'
+    ],
     attribution: 'Route graph derived from OpenFlights routes.dat.',
     sourceUrl: 'https://openflights.org/data.php',
     note: 'Historical route graph, not a live timetable. OpenFlights states route data is static and not suitable for navigation.'

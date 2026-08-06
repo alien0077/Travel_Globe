@@ -69,7 +69,9 @@ for (const viewport of [
     const viewButtons = [...document.querySelectorAll('.view-mode-button')];
     const activeViewButton = document.querySelector('.view-mode-button.is-active');
     const controls = [...document.querySelectorAll('.control-button')].map((button) => button.textContent);
-    const speedOptionCount = document.querySelectorAll('.control-select option').length;
+    const modeSelect = document.querySelector('.flight-mode-select');
+    const speedSelect = document.querySelector('.flight-speed-select');
+    const speedOptionCount = speedSelect?.querySelectorAll('option').length ?? 0;
     const cameraOptions = viewButtons.map((button) => button.getAttribute('aria-label') ?? '');
     const timelineItems = document.querySelectorAll('.timeline-item').length;
     const productText = document.querySelector('.product-panel')?.textContent ?? '';
@@ -150,6 +152,9 @@ for (const viewport of [
         controls.includes('KML') &&
         controls.includes('Journal') &&
         controls.includes('Pack') &&
+        modeSelect instanceof HTMLSelectElement &&
+        modeSelect.value === 'simulation' &&
+        modeSelect.querySelectorAll('option').length === 2 &&
         speedOptionCount === 4 &&
         activeViewButton instanceof HTMLButtonElement &&
         activeViewButton.dataset.mode === 'flightPreview' &&
@@ -176,7 +181,7 @@ for (const viewport of [
         previewText.includes('隱藏紀錄') &&
         previewText.includes('編輯航線摘要') &&
         previewText.includes('本機歷史旅程') &&
-        productText.includes('0 B') &&
+        /Bundled\s*\|\s*\d+ packs\s*\|/.test(productText) &&
         (window.innerWidth <= 640 || centerShowsGlobe) &&
         (window.innerWidth <= 640 || pageHasNoVerticalScroll),
       reason: '',
@@ -246,7 +251,12 @@ for (const viewport of [
         submit.click();
       }
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(
+      () =>
+        (document.querySelector('.hud-route')?.textContent ?? '').includes('TPE -> NRT') &&
+        (document.querySelector('.preload-status')?.textContent ?? '').includes('CI100 已由離線班表解析為 TPE -> NRT'),
+      { timeout: 15_000 }
+    );
     afterPreload = await page.evaluate(() => ({
       route: document.querySelector('.hud-route')?.textContent ?? '',
       status: document.querySelector('.preload-status')?.textContent ?? '',
@@ -373,7 +383,7 @@ const failed = results.filter(
     result.afterPreload.speedOptionCount !== 4 ||
     !result.afterScrub.pilotHudVisible ||
     !result.afterScrub.cockpitVisible ||
-    !result.afterScrub.pilotHudText.includes('IAS EST') ||
+    (!result.afterScrub.pilotHudText.includes('IAS EST') && !result.afterScrub.pilotHudText.includes('SPD kt')) ||
     !result.afterScrub.pilotHudText.includes('ALT') ||
     !result.afterScrub.pilotHudText.includes('HDG') ||
     !result.afterScrub.pilotHudText.includes('VS') ||
@@ -582,7 +592,10 @@ async function verifyMobileFd234Regression(page) {
         submit.click();
       }
     });
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(
+      () => (document.querySelector('.hud-title')?.textContent ?? '').includes('FD234'),
+      { timeout: 15_000 }
+    );
     assert((await page.locator('.hud-title').innerText()).includes('FD234'), 'FD234 was not applied');
     await clickViewMode(page, 'flightPreview');
     await page.evaluate(() => {

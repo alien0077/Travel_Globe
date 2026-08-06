@@ -5,6 +5,7 @@ import argparse
 import heapq
 import json
 import math
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,9 @@ from typing import Any
 
 PROJECT = Path(__file__).resolve().parents[1]
 ROOT = PROJECT.parent
+sys.path.insert(0, str(PROJECT / "src"))
+
+from aviationdb.ifr_routing import select_ifr_route_shape, write_route_debug_outputs  # noqa: E402
 DEFAULT_AIRPORT_INDEX = ROOT / "shared" / "offline-packs" / "core-global" / "airports-index.json"
 DEFAULT_CONTEXT_INDEX = ROOT / "shared" / "offline-packs" / "core-global" / "aviation-context-index.json"
 DEFAULT_AIRGRAPH = ROOT / "shared" / "offline-packs" / "aviation" / "regions" / "global.airgraph.json"
@@ -41,41 +45,30 @@ def main() -> int:
     origin = airports[origin_iata]
     destination = airports[destination_iata]
     pair_source = lookup_static_pair(contexts, origin_iata, destination_iata)
-    airgraph_pack = json.loads(args.airgraph.read_text(encoding="utf-8"))
-    airgraph_candidate = build_airgraph_candidate(airgraph_pack, origin, destination)
-    great_circle_waypoint_candidate = build_great_circle_waypoint_candidate(airgraph_pack, origin, destination)
-    great_circle_candidate = build_great_circle_candidate(origin, destination)
     adsb_support = load_adsb_support(args.corridor_diagnostic, args.route) if args.corridor_diagnostic else no_adsb_support()
-
-    candidates = [candidate for candidate in [airgraph_candidate, great_circle_waypoint_candidate, great_circle_candidate] if candidate]
-    for candidate in candidates:
-        score_candidate(candidate, origin, destination, pair_source, adsb_support)
-    candidates.sort(key=lambda item: item["score"], reverse=True)
-    selected = candidates[0]
-    result = {
-        "schemaVersion": 1,
-        "generatedAt": datetime.now(UTC).isoformat(),
-        "route": f"{origin_iata}-{destination_iata}",
-        "pairSource": pair_source,
-        "adsbSupport": adsb_support,
-        "selected": {
-            "method": selected["method"],
-            "score": selected["score"],
-            "reason": selected["selectionReason"],
-            "provenance": selected["provenance"],
-            "points": selected["points"],
-            "metrics": selected["metrics"],
-        },
-        "candidates": candidates,
-    }
+    airgraph_pack = json.loads(args.airgraph.read_text(encoding="utf-8"))
+    route_id = f"{origin_iata}-{destination_iata}"
+    result = select_ifr_route_shape(
+        airgraph_pack,
+        origin,
+        destination,
+        route_id=route_id,
+        pair_source=pair_source,
+        adsb_support=adsb_support,
+        k=10,
+    )
+    result["pairSource"] = pair_source
+    result["adsbSupport"] = adsb_support
     write_outputs(result, args.output_dir, args.shared_dir, args.public_dir)
+    write_route_debug_outputs(result, args.output_dir)
+    selected = result.get("selected")
     print(
         json.dumps(
             {
                 "route": result["route"],
-                "selected": result["selected"]["method"],
-                "score": result["selected"]["score"],
-                "reason": result["selected"]["reason"],
+                "selected": None if result.get("routeUnavailable") else selected["method"],
+                "score": None if result.get("routeUnavailable") else selected["score"],
+                "reason": result.get("unavailableReason") if result.get("routeUnavailable") else selected["reason"],
                 "output": str(args.output_dir / f"{result['route']}.shape-selection.json"),
             },
             ensure_ascii=False,
@@ -93,11 +86,12 @@ def parse_route(route: str) -> tuple[str, str]:
 
 
 def airport_lookup(path: Path) -> dict[str, dict[str, Any]]:
-    return {
-        airport["iataCode"]: airport
-        for airport in json.loads(path.read_text(encoding="utf-8")).get("airports", [])
-        if airport.get("iataCode")
-    }
+    result: dict[str, dict[str, Any]] = {}
+    for airport in json.loads(path.read_text(encoding="utf-8")).get("airports", []):
+        for key in [airport.get("iataCode"), airport.get("icaoCode"), airport.get("ident")]:
+            if key:
+                result[str(key).upper()] = airport
+    return result
 
 
 def context_lookup(path: Path) -> dict[str, dict[str, Any]]:

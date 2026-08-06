@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T07:41:40.061597+00:00",
+  "route": "STX-CRU",
+  "routeUnavailable": false,
+  "selected": {
+    "method": "observed_adsb_mapped",
+    "score": 925.77,
+    "reason": "Observed ADS-B route promoted from needs_review by post-IFR triage policy.",
+    "provenance": {
+      "source": "adsblol-observed-ifr-triage",
+      "warning": "Accepted with review flag: observed ADS-B shape was near the directed IFR corridor but did not fully meet validated thresholds.",
+      "validationClassification": "observed_adsb_needs_review",
+      "validationReason": "observed_shape_near_ifr_corridor_but_outside_validated_threshold",
+      "sampleCount": 3,
+      "variantCount": 3,
+      "date": "2026-07-16"
+    },
+    "metrics": {
+      "distanceKm": 532.8,
+      "detourRatio": 0.781,
+      "meanObservedToIfrKm": 147.7,
+      "maxObservedToIfrKm": 220.3,
+      "meanIfrToObservedKm": 168.1
+    },
+    "points": [
+      {
+        "ident": "STX",
+        "lat": 17.701413,
+        "lon": -64.802608,
+        "pointType": "AIRPORT"
+      },
+      {
+        "ident": "OBS001",
+        "lat": 16.74922,
+        "lon": -64.38248,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS002",
+        "lat": 15.36126,
+        "lon": -64.19478,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS003",
+        "lat": 15.28532,
+        "lon": -64.17288,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "OBS004",
+        "lat": 12.63372,
+        "lon": -62.12648,
+        "pointType": "OBSERVED_ADSB"
+      },
+      {
+        "ident": "CRU",
+        "lat": 12.4761,
+        "lon": -61.472801,
+        "pointType": "AIRPORT"
+      }
+    ]
+  }
+}

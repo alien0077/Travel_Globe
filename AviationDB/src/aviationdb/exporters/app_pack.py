@@ -172,13 +172,27 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
         filter_args,
     )
     airway_index = {row["uid"]: index for index, row in enumerate(airways_rows)}
-    airways = [[row["designator"], row["route_type"], row["source_id"]] for row in airways_rows]
+    airways = [
+        [
+            row["designator"],
+            row["route_type"],
+            row["source_id"],
+            row["direction"] or "unknown",
+            row["lower_limit_ft"],
+            row["upper_limit_ft"],
+            row["airac_cycle"],
+        ]
+        for row in airways_rows
+    ]
 
     segments = []
     for row in repository.rows(
         """
-        SELECT airway_uid, from_point_uid, to_point_uid, distance_nm, direction
-        FROM airway_segment
+        SELECT seg.airway_uid, seg.from_point_uid, seg.to_point_uid, seg.distance_nm, seg.direction,
+               seg.minimum_altitude_ft, seg.maximum_altitude_ft, seg.source_id, seg.airac_cycle,
+               src.provider, src.redistribution_status
+        FROM airway_segment seg
+        JOIN source_metadata src ON src.source_id = seg.source_id
         ORDER BY airway_uid, sequence
         """
     ):
@@ -193,7 +207,12 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
                     point_index[row["to_point_uid"]],
                     airway_index[row["airway_uid"]],
                     round(float(row["distance_nm"] or 0), 2),
-                    row["direction"] or "",
+                    row["direction"] or "unknown",
+                    row["minimum_altitude_ft"],
+                    row["maximum_altitude_ft"],
+                    row["source_id"],
+                    row["airac_cycle"],
+                    _segment_confidence(row),
                 ]
             )
 
@@ -245,15 +264,49 @@ def _region_payload(repository: AviationRepository, region: str, *, include_priv
         )
     ]
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "region": region,
         "generatedAt": _generated_at(),
+        "edgeModel": {
+            "directed": True,
+            "segmentColumns": [
+                "fromPointIndex",
+                "toPointIndex",
+                "airwayIndex",
+                "distanceNm",
+                "direction",
+                "minimumAltitudeFt",
+                "maximumAltitudeFt",
+                "sourceId",
+                "airacCycle",
+                "confidence",
+            ],
+            "airwayColumns": [
+                "designator",
+                "routeType",
+                "sourceId",
+                "direction",
+                "lowerLimitFt",
+                "upperLimitFt",
+                "airacCycle",
+            ],
+        },
         "sources": sources,
         "airports": airports,
         "points": points,
         "airways": airways,
         "segments": segments,
     }
+
+
+def _segment_confidence(row: Any) -> float:
+    source_id = str(row["source_id"] or "")
+    redistribution = str(row["redistribution_status"] or "")
+    if source_id == "flightgear" and redistribution == REDISTRIBUTION_ALLOWED:
+        return 0.78
+    if redistribution == REDISTRIBUTION_ALLOWED:
+        return 0.72
+    return 0.45
 
 
 def _generated_at() -> str:

@@ -27,7 +27,15 @@ def test_fixture_build_validate_route_and_export(tmp_path: Path) -> None:
 
     manifest = export_app_pack(repo, "asia-east", tmp_path / "pack")
     assert manifest["regions"][0]["points"] >= 4
-    assert (tmp_path / "pack" / "regions" / "asia-east.airgraph.json.gz").exists()
+    pack_path = tmp_path / "pack" / "regions" / "asia-east.airgraph.json.gz"
+    assert pack_path.exists()
+    import gzip
+    import json
+
+    payload = json.loads(gzip.decompress(pack_path.read_bytes()).decode("utf-8"))
+    assert payload["schemaVersion"] == 2
+    assert payload["edgeModel"]["directed"] is True
+    assert len(payload["segments"][0]) == 10
 
     public_na_manifest = export_app_pack(repo, "north-america", tmp_path / "pack-na-public")
     assert public_na_manifest["licenseMode"] == "public"

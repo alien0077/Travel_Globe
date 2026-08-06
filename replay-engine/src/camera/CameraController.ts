@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { GeographicPoint } from '../data/types';
 import { geographicToVector3 } from '../geo/geodesy';
-import { pilotViewPerspective } from './flightPerspective';
+import { altitudePerspectiveFactor, pilotViewPerspective } from './flightPerspective';
 
 export type FlightSystemCameraMode = 'flightPreview' | 'totalRoute' | 'midFlight' | 'overhead' | 'commandCenter' | 'pilotView';
 export type LegacyCameraMode = 'global' | 'follow' | 'orbit' | 'cockpit' | 'leftWindow' | 'rightWindow' | 'tail' | 'topDown';
@@ -107,6 +107,32 @@ export class CameraController {
       return;
     }
 
+    if (isInteriorCameraMode(this.mode)) {
+      const altitudeFactor = altitudePerspectiveFactor(point);
+      const interiorScale = THREE.MathUtils.lerp(0.018, 0.052, altitudeFactor);
+      const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
+      const lateral = this.mode === 'leftWindow' ? -1 : this.mode === 'rightWindow' ? 1 : 0;
+      const forwardOffset = this.mode === 'cockpit' ? 0.01 : -0.012;
+      const lookAhead = this.mode === 'cockpit'
+        ? THREE.MathUtils.lerp(0.58, 1.72, altitudeFactor)
+        : THREE.MathUtils.lerp(0.28, 0.82, altitudeFactor);
+      this.setFieldOfView(this.mode === 'cockpit' ? 55 : 68);
+      this.desired
+        .copy(this.target)
+        .add(forward.clone().multiplyScalar(forwardOffset))
+        .add(right.multiplyScalar(lateral * interiorScale))
+        .add(normal.clone().multiplyScalar(interiorScale * 0.72));
+      this.camera.position.lerp(this.desired, lerpAmount ?? 0.16);
+      this.camera.up.copy(normal);
+      this.camera.lookAt(
+        this.camera.position
+          .clone()
+          .add(forward.clone().multiplyScalar(lookAhead))
+          .add(normal.clone().multiplyScalar(this.mode === 'cockpit' ? -0.08 : -0.02))
+      );
+      return;
+    }
+
     if (this.mode === 'global') {
       const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
       const yaw = this.orbitYaw;
@@ -181,6 +207,10 @@ export class CameraController {
     this.camera.fov = fieldOfViewDegrees;
     this.camera.updateProjectionMatrix();
   }
+}
+
+function isInteriorCameraMode(mode: CameraMode): boolean {
+  return mode === 'cockpit' || mode === 'leftWindow' || mode === 'rightWindow';
 }
 
 const cameraProfiles: Record<
