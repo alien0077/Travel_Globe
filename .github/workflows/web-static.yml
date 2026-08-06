@@ -52,3 +52,6 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # GitHub Pages can leave a valid deployment in deployment_queued for several minutes.
+          timeout: 1800000
