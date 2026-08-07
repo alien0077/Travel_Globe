@@ -83,7 +83,8 @@ function normalizeRouteShapeMethod(method: string | undefined): AirgraphRouteRes
   if (
     method === 'directed_airway_graph' ||
     method === 'observed_adsb_mapped' ||
-    method === 'approximate_direct_fallback'
+    method === 'approximate_direct_fallback' ||
+    method === 'reverse_route_fallback'
   ) {
     return method;
   }

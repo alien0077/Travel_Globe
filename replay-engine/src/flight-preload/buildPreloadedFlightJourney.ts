@@ -305,10 +305,15 @@ function buildPreloadWarning(
   airgraphRoute?: AirgraphRouteResult
 ): string {
   const routeLabel = `${origin.iataCode} -> ${destination.iataCode}`;
-  const routeNote = airgraphRoute?.source === 'aviationdb-route-shapes'
-    ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個已驗證航路點；每段都來自離線 airway graph。`
+  const routeWarningNote = airgraphRoute?.warnings.length
+    ? ` 注意：${airgraphRoute.warnings.join('；')}`
+    : '';
+  const routeNote = airgraphRoute?.method === 'reverse_route_fallback'
+    ? ` 已使用既有正向 route 的幾何反向產生 ${airgraphRoute.waypoints.length} 個視覺航路點；反向 airway 未驗證。${routeWarningNote}`
+    : airgraphRoute?.source === 'aviationdb-route-shapes'
+    ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個已驗證航路點；每段都來自離線 airway graph。${routeWarningNote}`
     : airgraphRoute
-    ? ` 已使用 AviationDB ${airgraphRoute.region} airway graph 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線航路圖近似，尚非正式 filed route。`
+    ? ` 已使用 AviationDB ${airgraphRoute.region} airway graph 產生 ${airgraphRoute.waypoints.length} 個航路點；這是離線航路圖近似，尚非正式 filed route。${routeWarningNote}`
     : ' 目前使用 Great Circle 離線預估航線；實際 filed route 與航跡會等飛行中 GPS 或未來 API 校正。';
   const aircraftNote = openFlightsAircraftType && openFlightsRouteCount
     ? ` OpenFlights routes.dat 有 ${openFlightsRouteCount} 筆 ${routeLabel} 歷史航線，僅用其 equipment code 補機型 ${openFlightsAircraftType}；實際航跡以 iOS GPS 為準。`

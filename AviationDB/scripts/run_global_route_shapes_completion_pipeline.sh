@@ -116,6 +116,7 @@ if [[ "${1:-}" == "__worker" ]]; then
   run_step "3-diagnose-unavailable-final" "$PYTHON_BIN" AviationDB/scripts/diagnose_route_unavailable.py
   run_step "3-export-runtime-route-shapes" "$PYTHON_BIN" AviationDB/scripts/export_route_shapes_runtime_pack.py
   run_step "3-complete-missing-reverse-runtime-route-shapes" "$PYTHON_BIN" AviationDB/scripts/repair_missing_reverse_route_shapes.py \
+    --add-reverse-fallback \
     --report "$JOB_DIR/missing-reverse-route-report.json"
 
   run_step "1-audit-after" summarize_pack "release-after" "AviationDB/data/releases/private/route-shapes/global.route-shapes.json.gz"

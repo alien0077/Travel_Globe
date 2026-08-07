@@ -15,7 +15,7 @@ DEFAULT_INPUT = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.rou
 DEFAULT_SHARED = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_PUBLIC = ROOT / "replay-engine" / "public" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_SELECTION_DIR = ROOT / "shared" / "offline-packs" / "route-shapes"
-RUNTIME_METHODS = {"directed_airway_graph", "observed_adsb_mapped", "approximate_direct_fallback"}
+RUNTIME_METHODS = {"directed_airway_graph", "observed_adsb_mapped", "approximate_direct_fallback", "reverse_route_fallback"}
 
 
 def main() -> int:

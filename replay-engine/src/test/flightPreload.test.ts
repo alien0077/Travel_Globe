@@ -154,6 +154,26 @@ describe('flight preload', () => {
     }
   });
 
+  it('annotates a reverse geometry fallback when directed validation is unavailable', async () => {
+    injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
+    try {
+      const result = await buildPreloadedFlightJourneyWithRouteShapes({
+        flightNumber: 'FD234',
+        originIata: 'BGW',
+        destinationIata: 'AUH',
+        departureDate: '2026-07-22',
+        departureTime: '07:05'
+      });
+      const segment = getPrimaryFlightSegment(result.journey);
+
+      expect(segment.metadata.routeMethod).toBe('reverse_route_fallback');
+      expect(result.warnings[0]).toContain('反向 airway 未驗證');
+      expect(result.warnings[0]).toContain('Not IFR-validated');
+    } finally {
+      injectRouteShapePackForTest(undefined);
+    }
+  });
+
   it('builds a valid planned journey from flight form input', () => {
     const result = buildPreloadedFlightJourney({
       flightNumber: 'XX901',

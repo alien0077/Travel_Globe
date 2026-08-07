@@ -13,6 +13,7 @@ export interface AirgraphRouteResult {
     | 'great_circle_waypoint_corridor'
     | 'great_circle_pair_fallback'
     | 'approximate_direct_fallback'
+    | 'reverse_route_fallback'
     | 'observed_adsb_mapped';
   region: string;
   source: string;

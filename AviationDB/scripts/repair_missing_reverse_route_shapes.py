@@ -40,6 +40,7 @@ def main() -> int:
     parser.add_argument("--status", type=Path, default=DEFAULT_STATUS)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--add-reverse-fallback", action="store_true", help="Use the existing forward geometry reversed when no validated reverse path exists.")
     args = parser.parse_args()
 
     airports = airport_lookup(args.airport_index)
@@ -57,8 +58,10 @@ def main() -> int:
         "generatedAt": datetime.now(UTC).isoformat(),
         "input": str(args.runtime_input),
         "dryRun": args.dry_run,
+        "addReverseFallback": args.add_reverse_fallback,
         "attempted": len(missing),
         "added": [],
+        "reverseFallbackAdded": [],
         "unresolved": [],
     }
 
@@ -80,6 +83,18 @@ def main() -> int:
             k=1,
         )
         if result.get("routeUnavailable") or not result.get("selected"):
+            forward_id = reverse_id.split("-", 1)[1] + "-" + reverse_id.split("-", 1)[0]
+            forward = routes.get(forward_id)
+            if args.add_reverse_fallback and isinstance(forward, dict) and forward.get("p"):
+                fallback = reverse_route_fallback(reverse_id, forward_id, forward)
+                if not args.dry_run:
+                    routes[reverse_id] = fallback
+                report["reverseFallbackAdded"].append({
+                    "route": reverse_id,
+                    "sourceRoute": forward_id,
+                    "points": len(fallback["p"]),
+                })
+                continue
             report["unresolved"].append({
                 "route": reverse_id,
                 "reason": result.get("unavailableReason") or "route_unavailable",
@@ -104,18 +119,21 @@ def main() -> int:
             write_status(args.status, "running", attempted=len(missing), processed=index, added=len(report["added"]), unresolved=len(report["unresolved"]))
 
     report["addedCount"] = len(report["added"])
+    report["reverseFallbackAddedCount"] = len(report["reverseFallbackAdded"])
     report["unresolvedCount"] = len(report["unresolved"])
     report["outputRouteCount"] = len(routes)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    write_status(args.status, "complete", attempted=len(missing), processed=len(missing), added=len(report["added"]), unresolved=len(report["unresolved"]), report=str(args.report))
+    write_status(args.status, "complete", attempted=len(missing), processed=len(missing), added=len(report["added"]), reverseFallbackAdded=len(report["reverseFallbackAdded"]), unresolved=len(report["unresolved"]), report=str(args.report))
 
     if not args.dry_run:
         runtime["routes"] = routes
         summary = runtime.setdefault("meta", {}).setdefault("summary", {})
         previous_added = int(summary.get("reverseCompletionAdded") or 0)
+        previous_fallback = int(summary.get("reverseFallbackAdded") or 0)
         summary["reverseCompletionAttempted"] = len(missing)
         summary["reverseCompletionAdded"] = previous_added + len(report["added"])
+        summary["reverseFallbackAdded"] = previous_fallback + len(report["reverseFallbackAdded"])
         summary["reverseCompletionUnresolved"] = len(report["unresolved"])
         for output in {args.shared_output, args.public_output}:
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +143,7 @@ def main() -> int:
     print(json.dumps({
         "attempted": len(missing),
         "added": len(report["added"]),
+        "reverseFallbackAdded": len(report["reverseFallbackAdded"]),
         "unresolved": len(report["unresolved"]),
         "report": str(args.report),
         "dryRun": args.dry_run,
@@ -170,6 +189,19 @@ def compact_route(selected: dict[str, Any]) -> dict[str, Any]:
             [point.get("ident"), point.get("lat"), point.get("lon"), point.get("pointType")]
             for point in selected.get("points", [])
         ],
+    }
+
+
+def reverse_route_fallback(route_id: str, source_route_id: str, source_route: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "m": "reverse_route_fallback",
+        "s": source_route.get("s"),
+        "d": source_route.get("d"),
+        "w": [
+            f"Reverse geometry fallback from {source_route_id}; the reverse directed airway path was unavailable.",
+            "Not IFR-validated; visual approximation only.",
+        ],
+        "p": list(reversed(source_route.get("p") or [])),
     }
 
 
