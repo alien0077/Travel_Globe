@@ -134,13 +134,13 @@ function readJourneyIndex(): string[] {
 }
 
 async function refreshPlannedRouteFromLatestPack(journey: Journey): Promise<Journey> {
-  if (journey.status !== 'planned') {
+  const segment = journey.segments.find((candidate) => candidate.type === 'flight');
+  if (!segment || !shouldRefreshSyntheticFlight(journey, segment)) {
     return journey;
   }
 
-  const segment = journey.segments.find((candidate) => candidate.type === 'flight');
   const request = segment ? preloadRequestFromJourney(journey, segment) : undefined;
-  if (!segment || !request) {
+  if (!request) {
     return journey;
   }
 
@@ -186,6 +186,23 @@ async function refreshPlannedRouteFromLatestPack(journey: Journey): Promise<Jour
   };
 }
 
+function shouldRefreshSyntheticFlight(journey: Journey, segment: JourneySegment): boolean {
+  if (journey.status === 'planned') {
+    return true;
+  }
+  if (journey.status !== 'completed' && journey.status !== 'archived') {
+    return false;
+  }
+
+  // A simulated preload may become completed after playback. It is still safe
+  // to refresh because its route points are synthetic, not recorded GPS data.
+  if (segment.metadata.recordingSource || journey.metadata.recordingStatus) {
+    return false;
+  }
+  return isPreloadSource(segment.metadata.preloadSource)
+    && segment.rawRoute.points.every((point) => point.source === 'planned' || point.source === 'interpolated' || point.source === 'estimated');
+}
+
 function preloadRequestFromJourney(journey: Journey, segment: JourneySegment): PreloadFlightRequest | undefined {
   const flightNumber = stringValue(segment.metadata.flightNumber) ?? stringValue(journey.metadata.flightNumber);
   const startMs = Date.parse(segment.startTime);
@@ -210,9 +227,11 @@ function preloadRequestFromJourney(journey: Journey, segment: JourneySegment): P
 }
 
 function preloadSource(value: unknown): PreloadFlightResult['source'] | undefined {
-  return value === 'offline-airport-index' || value === 'offline-schedule-index' || value === 'aviationstack' || value === 'aviationstack-cache'
-    ? value
-    : undefined;
+  return isPreloadSource(value) ? value : undefined;
+}
+
+function isPreloadSource(value: unknown): value is PreloadFlightResult['source'] {
+  return value === 'offline-airport-index' || value === 'offline-schedule-index' || value === 'aviationstack' || value === 'aviationstack-cache';
 }
 
 function routeMatches(segment: JourneySegment, route: Awaited<ReturnType<typeof findRouteShape>>): boolean {

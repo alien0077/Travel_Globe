@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aviationdb.ifr_routing import select_ifr_route_shape
+from aviationdb.ifr_routing import dedupe_candidates
 
 
 def _airport(iata: str, icao: str, lat: float, lon: float) -> dict:
@@ -119,3 +120,25 @@ def test_distance_limited_recovery_rejects_excessive_detours() -> None:
     )
 
     assert result["routeUnavailable"] is True
+
+
+def test_candidate_deduplication_preserves_distinct_connectors() -> None:
+    shared_path = [10, 11, 12, 13]
+    candidates = [
+        {
+            "nodePath": shared_path,
+            "provenance": {
+                "originConnector": {"ident": "HCN"},
+                "destinationConnector": {"ident": "TYE"},
+            },
+        },
+        {
+            "nodePath": [9, *shared_path],
+            "provenance": {
+                "originConnector": {"ident": "TNN"},
+                "destinationConnector": {"ident": "TYE"},
+            },
+        },
+    ]
+
+    assert len(dedupe_candidates(candidates)) == 2

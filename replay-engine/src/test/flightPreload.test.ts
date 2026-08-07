@@ -81,6 +81,7 @@ describe('flight preload', () => {
     expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
     expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
     expect(segment.metadata.airgraphWaypoints).toEqual([
+      'PARPA',
       'HCN',
       'BONEY',
       'MEVIN',
@@ -98,7 +99,7 @@ describe('flight preload', () => {
       'ORGAN',
       'PANDA'
     ]);
-    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-hcn');
+    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-parpa');
     expect(result.warnings[0]).toContain('AviationDB route-shapes');
     injectRouteShapePackForTest(undefined);
   });

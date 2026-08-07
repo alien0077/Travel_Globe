@@ -83,7 +83,7 @@ def select_ifr_route_shape(
     pair_source: dict[str, Any] | None = None,
     adsb_support: dict[str, Any] | None = None,
     k: int = 10,
-    cost_config: dict[str, float] | None = None,
+    cost_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = {**DEFAULT_COST_CONFIG, **(cost_config or {})}
     graph = DirectedAirgraph(pack, config)
@@ -108,7 +108,7 @@ def select_ifr_route_shape_from_graph(
     pair_source: dict[str, Any] | None = None,
     adsb_support: dict[str, Any] | None = None,
     k: int = 10,
-    config: dict[str, float] | None = None,
+    config: dict[str, Any] | None = None,
     departure: list[Connector] | None = None,
     arrival: list[Connector] | None = None,
 ) -> dict[str, Any]:
@@ -157,8 +157,7 @@ def select_ifr_route_shape_from_graph(
                     )
                     candidate["provenance"]["recovery"] = "distance_limited_raw_directed_path"
                     candidates.append(candidate)
-    candidates = dedupe_candidates(candidates)[:k]
-    candidates.sort(key=lambda item: item["score"])
+    candidates = sorted(dedupe_candidates(candidates), key=lambda item: item["score"])[:k]
 
     if not candidates:
         return {
@@ -176,6 +175,24 @@ def select_ifr_route_shape_from_graph(
         }
 
     selected = candidates[0]
+    preferred_departure = config.get("preferredDepartureConnector")
+    if isinstance(preferred_departure, str):
+        preferred = next(
+            (
+                candidate
+                for candidate in candidates
+                if candidate.get("provenance", {}).get("originConnector", {}).get("ident") == preferred_departure
+            ),
+            None,
+        )
+        if preferred is not None:
+            selected = {
+                **preferred,
+                "selectionReason": (
+                    f"Selected validated directed airway route using the requested "
+                    f"{preferred_departure} departure connector."
+                ),
+            }
     return {
         "schemaVersion": 2,
         "generatedAt": datetime.now(UTC).isoformat(),
@@ -260,12 +277,32 @@ class DirectedAirgraph:
         target_nodes = {connector.node_idx: connector for connector in arrival}
         results: list[tuple[list[int], float, tuple[Connector, Connector]]] = []
         penalties: dict[tuple[int, int], float] = {}
+
+        # Seed one search from each departure connector. A global A* search can
+        # otherwise keep returning the cheapest HCN branch and hide a distinct
+        # west-side departure connector whose later airway edges overlap it.
+        for connector in departure:
+            local_penalties: dict[tuple[int, int], float] = {}
+            for local_iteration in range(3):
+                result = self._astar(origin, destination, [connector], target_nodes, local_penalties)
+                if result is None:
+                    break
+                results.append(result)
+                path = result[0]
+                penalty = 35.0 + local_iteration * 5.0
+                for left, right in zip(path, path[1:], strict=False):
+                    local_penalties[(left, right)] = local_penalties.get((left, right), 0.0) + penalty
+
         for iteration in range(max(k * 4, k)):
             result = self._astar(origin, destination, departure, target_nodes, penalties)
             if result is None:
                 break
             path, cost, connectors = result
-            if not any(edge_overlap(path, old_path) > 0.9 for old_path, _, _ in results):
+            if not any(
+                edge_overlap(path, old_path) > 0.9
+                and connector_pair_signature(connectors) == connector_pair_signature(old_connectors)
+                for old_path, _, old_connectors in results
+            ):
                 results.append(result)
                 if len(results) >= k:
                     break
@@ -422,6 +459,10 @@ class DirectedAirgraph:
         return cost
 
 
+def connector_pair_signature(connectors: tuple[Connector, Connector]) -> tuple[int, int]:
+    return connectors[0].node_idx, connectors[1].node_idx
+
+
 def build_candidate(
     graph: DirectedAirgraph,
     origin: dict[str, Any],
@@ -558,10 +599,24 @@ def dedupe_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     unique: list[dict[str, Any]] = []
     for candidate in candidates:
         path = candidate.get("nodePath") or []
-        if any(edge_overlap(path, other.get("nodePath") or []) > 0.9 for other in unique):
+        if any(
+            edge_overlap(path, other.get("nodePath") or []) > 0.9
+            and connector_signature(candidate) == connector_signature(other)
+            for other in unique
+        ):
             continue
         unique.append(candidate)
     return unique
+
+
+def connector_signature(candidate: dict[str, Any]) -> tuple[str | None, str | None]:
+    provenance = candidate.get("provenance") if isinstance(candidate.get("provenance"), dict) else {}
+    origin = provenance.get("originConnector") if isinstance(provenance.get("originConnector"), dict) else {}
+    destination = provenance.get("destinationConnector") if isinstance(provenance.get("destinationConnector"), dict) else {}
+    return (
+        str(origin.get("ident")) if origin.get("ident") is not None else None,
+        str(destination.get("ident")) if destination.get("ident") is not None else None,
+    )
 
 
 def best_edge(graph: DirectedAirgraph, left: int, right: int) -> DirectedEdge | None:

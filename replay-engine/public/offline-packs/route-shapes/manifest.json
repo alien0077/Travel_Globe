@@ -27,7 +27,7 @@
   "bytes": {
     "json": 38452212,
     "gzip": 4264988,
-    "runtimeJson": 17210428
+    "runtimeJson": 17210477
   },
   "runtimePack": "global.route-shapes.runtime.json"
 }
