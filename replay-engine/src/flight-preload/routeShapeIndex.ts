@@ -72,7 +72,9 @@ async function fetchRouteShapePack(): Promise<RuntimeRouteShapePack | undefined>
     return undefined;
   }
   const base = document.baseURI || window.location.href;
-  const response = await fetch(new URL('./offline-packs/route-shapes/global.route-shapes.runtime.json', base).toString());
+  const url = new URL('./offline-packs/route-shapes/global.route-shapes.runtime.json', base);
+  url.searchParams.set('v', 'route-shapes-4f0fc60');
+  const response = await fetch(url.toString(), { cache: 'no-cache' });
   if (!response.ok) {
     return undefined;
   }

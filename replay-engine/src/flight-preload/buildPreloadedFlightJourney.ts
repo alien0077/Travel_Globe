@@ -74,7 +74,9 @@ export function buildPreloadedFlightJourney(
         ? 'offline-schedule-index'
         : 'default';
   const airgraphRoute = preferredRoute;
-  const hasAirwayRoute = airgraphRoute?.method === 'directed_airway_graph' || airgraphRoute?.method === 'airway_graph';
+  const hasAirwayRoute = airgraphRoute?.method === 'directed_airway_graph'
+    || airgraphRoute?.method === 'airway_graph'
+    || airgraphRoute?.method === 'reverse_route_fallback';
   const hasWaypointCorridor = false;
   const hasPairFallbackShape = false;
   const hasPlannedRoute = Boolean(airgraphRoute && (hasAirwayRoute || hasWaypointCorridor || hasPairFallbackShape));

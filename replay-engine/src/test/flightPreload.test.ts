@@ -167,6 +167,8 @@ describe('flight preload', () => {
       const segment = getPrimaryFlightSegment(result.journey);
 
       expect(segment.metadata.routeMethod).toBe('reverse_route_fallback');
+      expect(segment.derivedReplayRoute.points).toHaveLength(27);
+      expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-pusto');
       expect(result.warnings[0]).toContain('反向 airway 未驗證');
       expect(result.warnings[0]).toContain('Not IFR-validated');
     } finally {
