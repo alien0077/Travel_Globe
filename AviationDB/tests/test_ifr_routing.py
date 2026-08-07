@@ -142,3 +142,23 @@ def test_candidate_deduplication_preserves_distinct_connectors() -> None:
     ]
 
     assert len(dedupe_candidates(candidates)) == 2
+
+
+def test_preferred_arrival_connector_is_used_when_validated() -> None:
+    result = select_ifr_route_shape(
+        {
+            **_pack("both"),
+            "points": [
+                ["DEP1", 0.2, 0.0, "SIGNIFICANT_POINT", "fixture"],
+                ["MID1", 1.0, 0.0, "SIGNIFICANT_POINT", "fixture"],
+                ["ARR1", 1.8, 0.0, "SIGNIFICANT_POINT", "fixture"],
+            ],
+        },
+        _airport("AAA", "AAAA", 0.0, 0.0),
+        _airport("BBB", "BBBB", 2.0, 0.0),
+        route_id="AAAA-BBBB",
+        cost_config={"preferredArrivalConnector": "ARR1"},
+    )
+
+    assert result["selected"]["provenance"]["destinationConnector"]["ident"] == "ARR1"
+    assert "ARR1 arrival connector" in result["selected"]["reason"]

@@ -22,12 +22,17 @@
       "excludedSources": [
         "airport_connectivity_fallback"
       ]
-    }
+    },
+    "runtimeSkippedNonDirected": 0,
+    "runtimeSelectionOverrides": 74,
+    "reverseCompletionAttempted": 135,
+    "reverseCompletionAdded": 1296,
+    "reverseCompletionUnresolved": 135
   },
   "bytes": {
     "json": 38452212,
     "gzip": 4264988,
-    "runtimeJson": 17210477
+    "runtimeJson": 18462263
   },
   "runtimePack": "global.route-shapes.runtime.json"
 }

@@ -32,6 +32,7 @@ def main() -> int:
     parser.add_argument("--airgraph", type=Path, default=DEFAULT_AIRGRAPH)
     parser.add_argument("--corridor-diagnostic", type=Path)
     parser.add_argument("--preferred-departure-connector", help="Prefer a validated departure connector for visual/operational review.")
+    parser.add_argument("--preferred-arrival-connector", help="Prefer a validated arrival connector for visual/operational review.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--shared-dir", type=Path, default=DEFAULT_SHARED_DIR)
     parser.add_argument("--public-dir", type=Path, default=DEFAULT_PUBLIC_DIR)
@@ -49,7 +50,14 @@ def main() -> int:
     adsb_support = load_adsb_support(args.corridor_diagnostic, args.route) if args.corridor_diagnostic else no_adsb_support()
     airgraph_pack = json.loads(args.airgraph.read_text(encoding="utf-8"))
     route_id = f"{origin_iata}-{destination_iata}"
-    cost_config = {"preferredDepartureConnector": args.preferred_departure_connector} if args.preferred_departure_connector else None
+    cost_config = {
+        key: value
+        for key, value in {
+            "preferredDepartureConnector": args.preferred_departure_connector,
+            "preferredArrivalConnector": args.preferred_arrival_connector,
+        }.items()
+        if value
+    } or None
     result = select_ifr_route_shape(
         airgraph_pack,
         origin,

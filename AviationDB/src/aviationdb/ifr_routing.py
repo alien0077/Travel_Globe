@@ -116,6 +116,12 @@ def select_ifr_route_shape_from_graph(
     reference = build_great_circle_reference(origin, destination)
     departure = departure if departure is not None else graph.connectors(origin, mode="departure")
     arrival = arrival if arrival is not None else graph.connectors(destination, mode="arrival")
+    preferred_departure = config.get("preferredDepartureConnector")
+    preferred_arrival = config.get("preferredArrivalConnector")
+    if isinstance(preferred_departure, str):
+        departure = connectors_matching_ident(graph, departure, preferred_departure) or departure
+    if isinstance(preferred_arrival, str):
+        arrival = connectors_matching_ident(graph, arrival, preferred_arrival) or arrival
     candidates: list[dict[str, Any]] = []
     if departure and arrival:
         for path, edge_cost, connector_pair in graph.k_shortest(origin, destination, departure, arrival, k=k):
@@ -175,7 +181,6 @@ def select_ifr_route_shape_from_graph(
         }
 
     selected = candidates[0]
-    preferred_departure = config.get("preferredDepartureConnector")
     if isinstance(preferred_departure, str):
         preferred = next(
             (
@@ -191,6 +196,23 @@ def select_ifr_route_shape_from_graph(
                 "selectionReason": (
                     f"Selected validated directed airway route using the requested "
                     f"{preferred_departure} departure connector."
+                ),
+            }
+    if isinstance(preferred_arrival, str):
+        preferred = next(
+            (
+                candidate
+                for candidate in candidates
+                if candidate.get("provenance", {}).get("destinationConnector", {}).get("ident") == preferred_arrival
+            ),
+            None,
+        )
+        if preferred is not None:
+            selected = {
+                **preferred,
+                "selectionReason": (
+                    f"Selected validated directed airway route using the requested "
+                    f"{preferred_arrival} arrival connector."
                 ),
             }
     return {
@@ -277,6 +299,10 @@ class DirectedAirgraph:
         target_nodes = {connector.node_idx: connector for connector in arrival}
         results: list[tuple[list[int], float, tuple[Connector, Connector]]] = []
         penalties: dict[tuple[int, int], float] = {}
+
+        if k <= 1:
+            result = self._astar(origin, destination, departure, target_nodes, penalties)
+            return [result] if result is not None else []
 
         # Seed one search from each departure connector. A global A* search can
         # otherwise keep returning the cheapest HCN branch and hide a distinct
@@ -461,6 +487,10 @@ class DirectedAirgraph:
 
 def connector_pair_signature(connectors: tuple[Connector, Connector]) -> tuple[int, int]:
     return connectors[0].node_idx, connectors[1].node_idx
+
+
+def connectors_matching_ident(graph: DirectedAirgraph, connectors: list[Connector], ident: str) -> list[Connector]:
+    return [connector for connector in connectors if graph.points[connector.node_idx].ident == ident]
 
 
 def build_candidate(

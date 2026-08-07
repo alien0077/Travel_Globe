@@ -132,6 +132,28 @@ describe('flight preload', () => {
     injectRouteShapePackForTest(undefined);
   });
 
+  it('uses the validated PARPA arrival connector for NRT to KHH', async () => {
+    injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
+    try {
+      const result = await buildPreloadedFlightJourneyWithRouteShapes({
+        flightNumber: 'FD235',
+        originIata: 'NRT',
+        destinationIata: 'KHH',
+        departureDate: '2026-07-22',
+        departureTime: '07:05'
+      });
+      const segment = getPrimaryFlightSegment(result.journey);
+      const waypoints = segment.metadata.airgraphWaypoints as string[] | undefined;
+
+      expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
+      expect(waypoints?.[0]).toBe('PANDA');
+      expect(waypoints?.at(-1)).toBe('PARPA');
+      expect(segment.derivedReplayRoute.points.at(-2)?.id).toBe('airgraph-18-parpa');
+    } finally {
+      injectRouteShapePackForTest(undefined);
+    }
+  });
+
   it('builds a valid planned journey from flight form input', () => {
     const result = buildPreloadedFlightJourney({
       flightNumber: 'XX901',
