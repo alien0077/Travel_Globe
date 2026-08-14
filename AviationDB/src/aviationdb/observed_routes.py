@@ -12,7 +12,7 @@ import zlib
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, BinaryIO
 from urllib.request import urlopen
@@ -143,7 +143,7 @@ class ObservedVariant:
         if sample.source_file:
             self.source_files.add(sample.source_file)
         if sample.start_timestamp:
-            self.start_dates.append(datetime.fromtimestamp(sample.start_timestamp, UTC).date().isoformat())
+            self.start_dates.append(datetime.fromtimestamp(sample.start_timestamp, timezone.utc).date().isoformat())
 
 
 @dataclass
@@ -506,7 +506,7 @@ def groups_to_payload(
         )
     return {
         "schemaVersion": 1,
-        "generatedAt": datetime.now(UTC).isoformat(),
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
         "source": {
             "provider": "ADSB.lol globe_history",
             "license": "ODbL-1.0",

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import globalPlacesIndex from '../../../shared/offline-packs/core-global/global-places.json';
-import spatialIndex from '../../../shared/offline-packs/core-global/geo-spatial-index.json';
+import globalPlacesIndexRaw from '../../../shared/offline-packs/core-global/global-places.json?raw';
+import spatialIndexRaw from '../../../shared/offline-packs/core-global/geo-spatial-index.json?raw';
 import { sampleJourney } from '../data/sampleJourney';
 import { getPrimaryFlightSegment } from '../data/types';
 import { installLandmarkIndex } from '../geo/landmarks';
@@ -13,6 +13,11 @@ import {
 } from '../flight/flightAnalytics';
 import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
+
+const globalPlacesIndex = JSON.parse(globalPlacesIndexRaw) as {
+  features: Parameters<typeof installLandmarkIndex>[0];
+};
+const spatialIndex = JSON.parse(spatialIndexRaw) as Parameters<typeof installLandmarkIndex>[1];
 
 describe('flight overlay analytics', () => {
   const segment = getPrimaryFlightSegment(sampleJourney);

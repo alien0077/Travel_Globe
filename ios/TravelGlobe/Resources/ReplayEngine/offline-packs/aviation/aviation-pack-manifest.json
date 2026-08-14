@@ -1,7 +1,7 @@
 {
   "id": "aviation-airgraph",
   "version": "0.2.0",
-  "generatedAt": "2026-07-30T06:44:05.567552+00:00",
+  "generatedAt": "1970-01-01T00:00:00+00:00",
   "generatedFrom": "sha256:2288765312139073f4bc5c695c2784fb6243b41ba1494e8570f1f0f5dbc921a3",
   "sourceMode": "flightgear-gpl-2.0",
   "licenseMode": "gpl-2.0-or-later",
@@ -67,15 +67,15 @@
     "reports": [
       {
         "path": "shared/offline-packs/aviation/coverage_report.json",
-        "bytes": 741,
-        "sha256": "92e1e6785d5dacc0b7c2eecbdffd4fda2e39ea598ec81cbc486fb06a49598c86",
+        "bytes": 734,
+        "sha256": "c1a3d60e417aaef89789913a8cf609586e4342c795e08466ca1efe1551a8527e",
         "contentType": "application/json",
         "public": true
       },
       {
         "path": "shared/offline-packs/aviation/validation_report.json",
-        "bytes": 284,
-        "sha256": "288768f44c2b13184fb038e40088fb7ccc50f7b0ba7bf25b8d5903b6fc1a143d",
+        "bytes": 277,
+        "sha256": "0c6dbd264ec551cdcfb311379cbd1dd551ca3ba1ccf93f4bef3f76dfb84f2b63",
         "contentType": "application/json",
         "public": true
       }

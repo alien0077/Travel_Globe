@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getPrimaryFlightSegment } from '../data/types';
 import { assertJourney } from '../data/validateJourney';
-import routeShapeRuntime from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json';
+import routeShapeRuntimeRaw from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json?raw';
 import {
   buildPreloadedFlightJourney,
   buildPreloadedFlightJourneyWithRouteShapes
@@ -9,6 +9,8 @@ import {
 import { findAirportContextByIata, getAirportIndexSummary } from '../flight-preload/airportIndex';
 import { injectRouteShapePackForTest } from '../flight-preload/routeShapeIndex';
 import { getRouteTimeBounds, sampleReplayAt } from '../replay/buildReplayFrames';
+
+const routeShapeRuntime = JSON.parse(routeShapeRuntimeRaw) as unknown;
 
 describe('flight preload', () => {
   it('resolves a known flight number through the offline schedule index', () => {
@@ -102,6 +104,41 @@ describe('flight preload', () => {
     expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-parpa');
     expect(result.warnings[0]).toContain('AviationDB route-shapes');
     injectRouteShapePackForTest(undefined);
+  });
+
+  it('replays an observed ADS-B route shape instead of falling back to great circle', async () => {
+    injectRouteShapePackForTest({
+      routes: {
+        'TPE-NRT': {
+          m: 'observed_adsb_mapped',
+          d: 2_100_000,
+          p: [
+            ['TPE', 25.0777, 121.2328, 'AIRPORT'],
+            ['OBS001', 25.8, 123.0, 'OBSERVED_ADSB'],
+            ['OBS002', 30.0, 132.0, 'OBSERVED_ADSB'],
+            ['NRT', 35.7686, 140.3887, 'AIRPORT']
+          ],
+          w: ['Observed ADS-B route']
+        }
+      }
+    });
+    try {
+      const result = await buildPreloadedFlightJourneyWithRouteShapes({
+        flightNumber: 'OBS1',
+        originIata: 'TPE',
+        destinationIata: 'NRT',
+        departureDate: '2026-07-22',
+        departureTime: '07:05'
+      });
+      const segment = getPrimaryFlightSegment(result.journey);
+
+      expect(segment.metadata.routeMethod).toBe('observed_adsb_mapped');
+      expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-obs001');
+      expect(segment.derivedReplayRoute.points.some((point) => point.longitude > 130)).toBe(true);
+      expect(result.warnings[0]).toContain('ADS-B 觀測航跡');
+    } finally {
+      injectRouteShapePackForTest(undefined);
+    }
   });
 
   it('uses a directed route-shapes pack for TPE to HKG instead of runtime airgraph guessing', async () => {

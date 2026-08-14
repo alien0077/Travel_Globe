@@ -25,7 +25,11 @@ DEFAULT_RUNTIME_PACK = ROOT / "shared" / "offline-packs" / "route-shapes" / "glo
 DEFAULT_SHARED_DIR = ROOT / "shared" / "offline-packs" / "route-shapes"
 DEFAULT_PUBLIC_DIR = ROOT / "replay-engine" / "public" / "offline-packs" / "route-shapes"
 
-PROTECTED_METHODS = {"directed_airway_graph"}
+# An accepted observed shape is deliberately allowed to replace a static IFR
+# graph shape.  The latter proves that the local airway graph is connected;
+# it does not prove that it is the route flown by the aircraft.  Only an
+# already-observed route is protected from a later, lower-confidence overlay.
+PROTECTED_METHODS = {"observed_adsb_mapped", "recovered_endpoint"}
 
 
 def main() -> int:
@@ -56,7 +60,7 @@ def main() -> int:
             continue
         existing = runtime_routes.get(pair)
         existing_method = existing.get("m") if isinstance(existing, dict) else None
-        if existing_method in PROTECTED_METHODS:
+        if is_protected_existing_method(existing_method):
             report["skipped"].append(
                 {
                     "airportPair": pair,
@@ -72,6 +76,7 @@ def main() -> int:
             {
                 "airportPair": pair,
                 "method": "observed_adsb_mapped",
+                "replacedExistingMethod": existing_method,
                 "shared": str(args.shared_dir / selection_path.name),
                 "public": str(args.public_dir / selection_path.name),
             }
@@ -90,6 +95,10 @@ def main() -> int:
         )
     )
     return 0
+
+
+def is_protected_existing_method(method: str | None) -> bool:
+    return method in PROTECTED_METHODS
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

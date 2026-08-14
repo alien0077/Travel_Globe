@@ -1,5 +1,5 @@
-import airportsIndex from '../../../shared/offline-packs/core-global/airports-index.json';
-import aviationContextIndex from '../../../shared/offline-packs/core-global/aviation-context-index.json';
+import airportsIndexRaw from '../../../shared/offline-packs/core-global/airports-index.json?raw';
+import aviationContextIndexRaw from '../../../shared/offline-packs/core-global/aviation-context-index.json?raw';
 import type { PlaceReference } from '../data/types';
 
 export interface AirportRecord extends PlaceReference {
@@ -64,6 +64,12 @@ interface AirportIndexRecord {
   runwayCount: number;
   longestRunwayFeet?: number;
 }
+
+const airportsIndex = JSON.parse(airportsIndexRaw) as { airports: AirportIndexRecord[] };
+const aviationContextIndex = JSON.parse(aviationContextIndexRaw) as {
+  contexts: AirportContextRecord[];
+  contents: { navaids: number };
+};
 
 const airports = (airportsIndex.airports as AirportIndexRecord[]).map(toAirportRecord);
 const airportsByCode = new Map<string, AirportRecord>();

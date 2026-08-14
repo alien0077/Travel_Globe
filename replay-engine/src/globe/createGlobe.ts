@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
+import boundariesIndexRaw from '../../../shared/offline-packs/core-global/geo-boundaries.json?raw';
 import { resolveBundledAsset } from '../assets/resolveBundledAsset';
 import type { GeographicFeature } from '../geo/landmarks';
 
@@ -215,6 +215,8 @@ interface BoundaryLine {
   kind: 'coastline' | 'country-border';
   coordinates: Array<[number, number]>;
 }
+
+const boundariesIndex = JSON.parse(boundariesIndexRaw) as { lines: BoundaryLine[] };
 
 function createNaturalEarthBoundaries(radius: number): THREE.Group {
   const group = new THREE.Group();

@@ -3,8 +3,10 @@ import { BrowserRuntimeAdapter } from '../bridge/RuntimeAdapter';
 import { sampleJourney } from '../data/sampleJourney';
 import type { Journey } from '../data/types';
 import { buildPreloadedFlightJourney } from '../flight-preload/buildPreloadedFlightJourney';
-import routeShapeRuntime from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json';
+import routeShapeRuntimeRaw from '../../../shared/offline-packs/route-shapes/global.route-shapes.runtime.json?raw';
 import { injectRouteShapePackForTest } from '../flight-preload/routeShapeIndex';
+
+const routeShapeRuntime = JSON.parse(routeShapeRuntimeRaw) as unknown;
 
 describe('browser runtime adapter journey history', () => {
   beforeEach(() => {

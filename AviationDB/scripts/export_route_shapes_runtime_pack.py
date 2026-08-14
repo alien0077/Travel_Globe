@@ -15,7 +15,13 @@ DEFAULT_INPUT = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.rou
 DEFAULT_SHARED = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_PUBLIC = ROOT / "replay-engine" / "public" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_SELECTION_DIR = ROOT / "shared" / "offline-packs" / "route-shapes"
-RUNTIME_METHODS = {"directed_airway_graph", "observed_adsb_mapped", "approximate_direct_fallback", "reverse_route_fallback"}
+RUNTIME_METHODS = {
+    "directed_airway_graph",
+    "observed_adsb_mapped",
+    "recovered_endpoint",
+    "approximate_direct_fallback",
+    "reverse_route_fallback",
+}
 
 
 def main() -> int:
@@ -117,6 +123,10 @@ def route_warnings(route: dict[str, Any]) -> list[str]:
         warnings.append(str(provenance["warning"]))
     if route.get("method") == "approximate_direct_fallback":
         warnings.append("Approximate direct route; not a verified IFR airway.")
+    if route.get("method") == "directed_airway_graph":
+        warnings.append("IFR airway estimate from the local airgraph; not an observed ADS-B flight track.")
+    if route.get("method") == "recovered_endpoint":
+        warnings.append("Observed ADS-B track with recovered endpoint; review flag retained.")
     return warnings
 
 

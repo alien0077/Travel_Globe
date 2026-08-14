@@ -5,6 +5,16 @@
 - 使用者偏好端到端完成：實作、驗證、commit/push/deploy 狀態都要交代清楚。
 - 禁止批量刪除如 `rm -rf *`；真的需要破壞性操作時必須先取得明確允許。
 
+## Background Pipeline Rules
+- 長時間 raw／解析／建圖工作必須使用可觀測的 detached worker，並保留 `status.json`、`done.json`、固定 log 與 PID/lock。
+- `launchctl submit` 的 worker 完成後必須在寫入 `done.json` 後移除自身 label；wrapper 啟動前與 `__worker` 入口都必須先檢查完成標記，禁止 keepalive 重新掃描已完成日期。
+- worker 非零失敗或被中止時必須原子寫入 `failed.json` 並移除自身 label；wrapper 與 `__worker` 看到失敗標記只能回報阻擋，不得由 keepalive 自動重跑或從頭掃描。
+- 發現 `done.json` 已是 `complete` 時只能回報已完成，不得自動重跑；若確實需要重跑，必須使用新的版本化 job/output root 與新 label。
+- 每次背景工作啟動後只做一次 startup sanity check；後續由使用者要求時查 status，不以前景輪詢浪費算力。
+- raw 修復或重新下載後，所有下游步驟都必須使用同一份修復後 raw 重新產出版本化結果，禁止只重跑最後一層。
+- 若只修復或重新下載單一日期，raw observation 只能重解析該日期；其餘未受影響日期必須核對 0.25 度輸出後重用既有 daily-derived，再從 merge 重新產出全部下游版本化結果，禁止無條件重掃全部 raw 日期。
+- 若只修復或重新下載單一日期，raw observation 只能重解析該日期；其餘未受影響日期應核對 checksum 後重用既有 daily-derived，再從 merge 重新產出全部下游版本化結果，禁止無條件重掃全部 raw 日期。
+
 ## Memory And CodeGraph
 - 本專案使用本機 `agent-recall` 作為跨 session 記憶入口。進入專案時先呼叫 `session_start(project="Travel_Globe", mode="lite")`，需要細節再用 `recall()`。
 - 若本 session 產生部署、架構、測試、帳號限制、重大 bug/fix 等可復用知識，結束前用 `session_end(project="Travel_Globe", ...)` 保存摘要。

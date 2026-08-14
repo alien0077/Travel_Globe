@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import boundariesIndex from '../../../shared/offline-packs/core-global/geo-boundaries.json';
-import globalPlacesIndex from '../../../shared/offline-packs/core-global/global-places.json';
+import boundariesIndexRaw from '../../../shared/offline-packs/core-global/geo-boundaries.json?raw';
+import globalPlacesIndexRaw from '../../../shared/offline-packs/core-global/global-places.json?raw';
 import geoManifest from '../../../shared/offline-packs/core-global/manifest.json';
-import spatialIndex from '../../../shared/offline-packs/core-global/geo-spatial-index.json';
+import spatialIndexRaw from '../../../shared/offline-packs/core-global/geo-spatial-index.json?raw';
 import ourAirportsManifest from '../../../shared/offline-packs/core-global/ourairports-manifest.json';
+
+const boundariesIndex = JSON.parse(boundariesIndexRaw) as {
+  contents: { coastlines: number; countryBorders: number; points: number };
+};
+const globalPlacesIndex = JSON.parse(globalPlacesIndexRaw) as {
+  contents: { features: number };
+};
+const spatialIndex = JSON.parse(spatialIndexRaw) as { contents: { cells: number } };
 
 describe('offline data indexes', () => {
   it('prepares Natural Earth boundary lines for globe rendering', () => {

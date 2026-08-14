@@ -76,7 +76,9 @@ export function buildPreloadedFlightJourney(
   const airgraphRoute = preferredRoute;
   const hasAirwayRoute = airgraphRoute?.method === 'directed_airway_graph'
     || airgraphRoute?.method === 'airway_graph'
-    || airgraphRoute?.method === 'reverse_route_fallback';
+    || airgraphRoute?.method === 'reverse_route_fallback'
+    || airgraphRoute?.method === 'observed_adsb_mapped'
+    || airgraphRoute?.method === 'recovered_endpoint';
   const hasWaypointCorridor = false;
   const hasPairFallbackShape = false;
   const hasPlannedRoute = Boolean(airgraphRoute && (hasAirwayRoute || hasWaypointCorridor || hasPairFallbackShape));
@@ -312,6 +314,8 @@ function buildPreloadWarning(
     : '';
   const routeNote = airgraphRoute?.method === 'reverse_route_fallback'
     ? ` 已使用既有正向 route 的幾何反向產生 ${airgraphRoute.waypoints.length} 個視覺航路點；反向 airway 未驗證。${routeWarningNote}`
+    : airgraphRoute?.method === 'observed_adsb_mapped' || airgraphRoute?.method === 'recovered_endpoint'
+    ? ` 已使用 AviationDB ADS-B 觀測航跡產生 ${airgraphRoute.waypoints.length} 個航路點；這不是 IFR graph 估算線。${routeWarningNote}`
     : airgraphRoute?.source === 'aviationdb-route-shapes'
     ? ` 已使用 AviationDB route-shapes 產生 ${airgraphRoute.waypoints.length} 個已驗證航路點；每段都來自離線 airway graph。${routeWarningNote}`
     : airgraphRoute

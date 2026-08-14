@@ -14,7 +14,8 @@ export interface AirgraphRouteResult {
     | 'great_circle_pair_fallback'
     | 'approximate_direct_fallback'
     | 'reverse_route_fallback'
-    | 'observed_adsb_mapped';
+    | 'observed_adsb_mapped'
+    | 'recovered_endpoint';
   region: string;
   source: string;
   distanceMeters: number;

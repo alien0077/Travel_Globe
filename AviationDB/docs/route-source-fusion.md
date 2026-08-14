@@ -44,6 +44,22 @@ Outputs:
 - `AviationDB/data/releases/private/observed-routes/adsblol/route-source-fusion.global.json`
 - `AviationDB/data/releases/private/observed-routes/adsblol/suspicious-airports.global.json`
 
+## Runtime Precedence
+
+The source order must be preserved when route shapes are merged into the
+Replay Engine pack:
+
+```text
+observed_adsb / recovered_endpoint
+  > directed_airway_graph
+  > reverse_route_fallback / approximate_direct_fallback
+```
+
+The IFR graph validates that a static airway path is connected and usable as
+an offline estimate. It does not prove that the aircraft flew that path. An
+accepted observed ADS-B shape may therefore replace a static IFR shape; a
+static IFR shape must never block a higher-confidence observed overlay.
+
 ## KHH Finding
 
 The 21-day observed pack has no `KHH` endpoint routes, but the static route graph shows active KHH pairs such as `KHH-NRT` and `KHH-HKG`.

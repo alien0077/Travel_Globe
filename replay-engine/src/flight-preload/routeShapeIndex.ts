@@ -73,7 +73,7 @@ async function fetchRouteShapePack(): Promise<RuntimeRouteShapePack | undefined>
   }
   const base = document.baseURI || window.location.href;
   const url = new URL('./offline-packs/route-shapes/global.route-shapes.runtime.json', base);
-  url.searchParams.set('v', 'route-shapes-4f0fc60');
+  url.searchParams.set('v', 'route-shapes-source-precedence-v2');
   const response = await fetch(url.toString(), { cache: 'no-cache' });
   if (!response.ok) {
     return undefined;
@@ -86,7 +86,8 @@ function normalizeRouteShapeMethod(method: string | undefined): AirgraphRouteRes
     method === 'directed_airway_graph' ||
     method === 'observed_adsb_mapped' ||
     method === 'approximate_direct_fallback' ||
-    method === 'reverse_route_fallback'
+    method === 'reverse_route_fallback' ||
+    method === 'recovered_endpoint'
   ) {
     return method;
   }
