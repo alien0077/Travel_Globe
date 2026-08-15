@@ -853,7 +853,10 @@ export class TravelGlobeApp {
     this.clock.update(deltaSeconds);
     const sample = sampleReplayAt(this.segment, this.clock.currentSeconds);
     const actualRoute = getActualRouteThrough(this.segment, this.clock.currentSeconds);
-    this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode, actualRoute);
+    const simulatedAttitude = buildPilotAttitude(this.segment, sample, undefined, 'route');
+    this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode, actualRoute, {
+      rollDegrees: simulatedAttitude.rollDegrees
+    });
 
     this.scrubber.value = String(Math.round(this.clock.progressPercent * 1000));
     this.syncProgressDisplay();

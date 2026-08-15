@@ -155,6 +155,8 @@ export class TravelGlobeScene {
     this.container.dataset.nearGroundFocus = nearGroundStrength.toFixed(3);
     this.container.dataset.airportMarkerPlacement = 'surface-plane';
     this.container.dataset.cityLightPlacement = this.cityLights.userData.surfaceLocked === true ? 'surface-plane' : 'floating';
+    const rollDegrees = THREE.MathUtils.clamp(aircraftAttitude.rollDegrees ?? 0, -18, 18);
+    this.container.parentElement?.style.setProperty('--cabin-bank-angle', `${rollDegrees.toFixed(2)}deg`);
     placeAircraftMarker(this.aircraft, point, bearingDegrees, aircraftAttitude);
     const aircraftScale = cameraMode === 'flightPreview'
       ? 1.42
@@ -187,7 +189,8 @@ export class TravelGlobeScene {
       snap: snapCamera,
       focusPoint: sceneFocusPoint,
       focusStrength: cameraMode === 'global' || cameraMode === 'totalRoute' ? 1 : airportFocus.strength,
-      nearGroundStrength
+      nearGroundStrength,
+      aircraftRollDegrees: rollDegrees
     });
   }
 

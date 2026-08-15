@@ -14,6 +14,7 @@ export interface CameraUpdateOptions {
   focusPoint?: GeographicPoint;
   focusStrength?: number;
   nearGroundStrength?: number;
+  aircraftRollDegrees?: number;
 }
 
 export class CameraController {
@@ -139,14 +140,15 @@ export class CameraController {
           .add(normal.clone().multiplyScalar(sideDistance * 0.16))
           .add(forward.clone().multiplyScalar(0.008));
         this.camera.position.lerp(this.desired, lerpAmount ?? 0.18);
-        this.camera.up.copy(normal);
-        this.camera.lookAt(
-          this.camera.position
-            .clone()
-            .add(right.multiplyScalar(lateral * 0.62))
-            .add(forward.multiplyScalar(0.06))
-            .add(normal.clone().multiplyScalar(0.025))
-        );
+        const lookTarget = this.camera.position
+          .clone()
+          .add(right.multiplyScalar(lateral * 0.62))
+          .add(forward.multiplyScalar(0.06))
+          .add(normal.clone().multiplyScalar(0.025));
+        const viewDirection = lookTarget.clone().sub(this.camera.position).normalize();
+        const bankRadians = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(options.aircraftRollDegrees ?? 0, -18, 18));
+        this.camera.up.copy(normal.clone().applyAxisAngle(viewDirection, bankRadians));
+        this.camera.lookAt(lookTarget);
         return;
       }
       const forwardOffset = this.mode === 'cockpit' ? 0.01 : -0.012;

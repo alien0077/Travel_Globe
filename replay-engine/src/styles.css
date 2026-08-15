@@ -627,6 +627,8 @@ input {
 /* 左右客艙窗：中央保留 3D 景色，外圍以客艙窗框與座位側壁包住畫面。 */
 .is-window-view .cockpit-window {
   display: block;
+  transform: rotate(var(--cabin-bank-angle, 0deg));
+  transform-origin: 50% 50%;
 }
 
 .is-window-view .cockpit-window::before {
