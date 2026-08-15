@@ -361,8 +361,11 @@ export class TravelGlobeScene {
     const height = this.container.clientHeight;
     this.camera.updateMatrixWorld();
     const candidates: LabelCandidate[] = [];
+    const isInteriorView = isFirstPersonCameraMode(this.currentCameraMode);
     const maxLabelDistance = this.currentPoint
-      ? labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode)
+      ? isInteriorView
+        ? Math.min(820000, Math.max(180000, labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode) + 240000))
+        : labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode)
       : 180000;
 
     for (const label of this.landmarkLabels) {
@@ -375,7 +378,7 @@ export class TravelGlobeScene {
         projected.x > 1.12 ||
         projected.y < -1.12 ||
         projected.y > 1.12 ||
-        !isGroundPointVisibleFromCamera(this.camera.position, label.position)
+        (!isInteriorView && !isGroundPointVisibleFromCamera(this.camera.position, label.position))
       ) {
         continue;
       }
@@ -771,7 +774,7 @@ function labelCountLimit(cameraMode: CameraMode): number {
     case 'cockpit':
     case 'leftWindow':
     case 'rightWindow':
-      return 7;
+      return 12;
     case 'flightPreview':
     case 'midFlight':
     case 'follow':
