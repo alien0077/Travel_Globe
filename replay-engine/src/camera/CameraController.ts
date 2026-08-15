@@ -58,8 +58,8 @@ export class CameraController {
     if (this.mode === 'totalRoute') {
       const yawedForward = forward.clone().applyAxisAngle(normal, this.orbitYaw);
       const right = new THREE.Vector3().crossVectors(yawedForward, normal).normalize();
-      const distance = THREE.MathUtils.clamp(3.45 * this.zoom, 2.65, 6.2);
-      const routeElevation = THREE.MathUtils.clamp(2.35 + this.orbitPitch * 1.08, 0.85, 3.9);
+      const distance = THREE.MathUtils.clamp(1.95 * this.zoom, 1.35, 4.2);
+      const routeElevation = THREE.MathUtils.clamp(1.2 + this.orbitPitch * 0.72, 0.62, 2.45);
       this.desired
         .copy(this.target)
         .add(yawedForward.clone().multiplyScalar(-distance))
@@ -134,7 +134,7 @@ export class CameraController {
     }
 
     if (this.mode === 'global') {
-      const distance = THREE.MathUtils.clamp(5.2 * this.zoom, 1.65, 8.8);
+      const distance = THREE.MathUtils.clamp(2.8 * this.zoom, 1.65, 5.8);
       const yaw = this.orbitYaw;
       const pitch = 0.45 + this.orbitPitch;
       const orbitDirection = new THREE.Vector3(
@@ -142,7 +142,16 @@ export class CameraController {
         Math.sin(pitch),
         Math.cos(yaw) * Math.cos(pitch)
       ).normalize();
-      const base = orbitDirection.multiplyScalar(distance);
+      const focusVector = options.focusPoint && focusStrength > 0
+        ? geographicToVector3(options.focusPoint, 1, 900000)
+        : undefined;
+      const focusDirection = focusVector
+        ? new THREE.Vector3(focusVector.x, focusVector.y, focusVector.z).normalize()
+        : undefined;
+      const baseDirection = focusDirection
+        ? focusDirection.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw * 0.45)
+        : orbitDirection;
+      const base = baseDirection.normalize().multiplyScalar(distance);
       this.camera.position.lerp(base, lerpAmount ?? 0.08);
       this.camera.up.set(0, 1, 0);
       this.camera.lookAt(0, 0, 0);
@@ -224,7 +233,7 @@ const cameraProfiles: Record<
     lookUp: number;
   }
 > = {
-  flightPreview: { forward: -0.95, right: 0, up: 0.52, distance: 1.36, lookAhead: 0.38, lookUp: 0.1 },
+  flightPreview: { forward: -0.9, right: -0.72, up: 0.46, distance: 0.82, lookAhead: 0.24, lookUp: 0.06 },
   midFlight: { forward: -0.95, right: -0.5, up: 0.52, distance: 1.42, lookAhead: 0.42, lookUp: 0.1 },
   commandCenter: { forward: -1.12, right: 0.82, up: 0.82, distance: 1.58, lookAhead: 0.62, lookUp: 0.08 },
   follow: { forward: -0.9, right: 0, up: 0.48, distance: 1.15, lookAhead: 0.35, lookUp: 0.1 },

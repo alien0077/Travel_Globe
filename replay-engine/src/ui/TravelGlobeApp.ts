@@ -108,11 +108,16 @@ export class TravelGlobeApp {
 
   private readonly viewport = document.createElement('section');
   private readonly cockpitWindow = document.createElement('section');
+  private readonly gpsButton = document.createElement('button');
   private readonly pilotHudToggle = document.createElement('button');
   private readonly playButton = document.createElement('button');
   private readonly modeSelect = document.createElement('select');
   private readonly speedSelect = document.createElement('select');
   private readonly scrubber = document.createElement('input');
+  private readonly progressLabel = document.createElement('span');
+  private readonly speedCard = document.createElement('section');
+  private readonly speedRange = document.createElement('input');
+  private readonly speedLabel = document.createElement('strong');
   private readonly hudTitle = document.createElement('div');
   private readonly hudRoute = document.createElement('div');
   private readonly hudStats = document.createElement('div');
@@ -135,6 +140,9 @@ export class TravelGlobeApp {
   private readonly referenceBottomNav = document.createElement('nav');
   private readonly referenceMenu = document.createElement('section');
   private readonly referenceMenuButton = document.createElement('button');
+  private readonly modalLayer = document.createElement('section');
+  private readonly modalCard = document.createElement('section');
+  private readonly modalTitle = document.createElement('h2');
   private readonly productPanel = document.createElement('section');
   private readonly preloadPanel = document.createElement('section');
   private readonly aviationstackApiKeyInput = document.createElement('input');
@@ -148,6 +156,9 @@ export class TravelGlobeApp {
   private readonly preloadStatus = document.createElement('div');
   private readonly fileInput = document.createElement('input');
   private readonly mediaInput = document.createElement('input');
+  private activeModal: 'flight-info' | 'api-key' | 'flight-data' | undefined;
+  private playLongPressTimer?: number;
+  private suppressNextPlayClick = false;
 
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
@@ -177,6 +188,10 @@ export class TravelGlobeApp {
     this.pilotHudSmoothedRollDegrees = 0;
     const bounds = getRouteTimeBounds(this.segment);
     this.clock = new ReplayClock(bounds.durationSeconds);
+    if (this.flightMode === 'simulation') {
+      this.clock.setSpeed(50);
+      this.clock.isPlaying = false;
+    }
     this.lastFrameMs = undefined;
     await this.adapter.saveJourney(journey);
     this.savedJourneys = await this.adapter.listSavedJourneys();
@@ -193,6 +208,201 @@ export class TravelGlobeApp {
   }
 
   private renderShell(journey: Journey, segment: JourneySegment): void {
+    void this.renderLegacyShell;
+    this.renderNewFlightShell(journey, segment);
+  }
+
+  private renderNewFlightShell(journey: Journey, segment: JourneySegment): void {
+    this.shellEventController?.abort();
+    this.shellEventController = new AbortController();
+    const signal = this.shellEventController.signal;
+    this.activeModal = undefined;
+    this.root.className = 'app-shell inflight-shell';
+    this.root.classList.toggle('is-compact', window.matchMedia('(max-width: 720px)').matches);
+    this.viewport.className = 'globe-viewport inflight-viewport';
+    this.referenceTopbar.className = 'inflight-topbar';
+    this.referenceClock.className = 'inflight-eta';
+    this.referenceSeat.className = 'inflight-seat';
+    this.referenceRoute.className = 'inflight-route';
+    this.referenceViewTitle.className = 'inflight-view-title';
+    this.referenceSidePanel.className = 'inflight-flight-info';
+    this.referenceSidePanel.hidden = true;
+    this.referenceBottomNav.className = 'inflight-bottom-nav';
+    this.referenceMenu.hidden = true;
+    this.referenceMenuButton.hidden = true;
+    this.cockpitWindow.className = 'cockpit-window';
+    this.cockpitWindow.replaceChildren(
+      Object.assign(document.createElement('div'), { className: 'cockpit-sky' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-terrain' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-clouds' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-horizon-line' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-ceiling' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-left-post' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-right-post' }),
+      Object.assign(document.createElement('div'), { className: 'cockpit-glare-shield' })
+    );
+
+    const summary = document.createElement('div');
+    summary.className = 'inflight-summary';
+    summary.append(this.referenceClock, this.referenceSeat, this.referenceRoute);
+    const topActions = document.createElement('nav');
+    topActions.className = 'inflight-top-actions';
+    const addTopButton = (icon: string, label: string, action: () => void, existingButton?: HTMLButtonElement): HTMLButtonElement => {
+      const button = existingButton ?? document.createElement('button');
+      button.type = 'button';
+      button.className = 'inflight-top-button';
+      button.replaceChildren();
+      button.title = label;
+      button.setAttribute('aria-label', label);
+      button.append(referenceMenuIcon(icon), Object.assign(document.createElement('span'), { textContent: label }));
+      button.addEventListener('click', action, { signal });
+      topActions.append(button);
+      return button;
+    };
+    addTopButton('GPS', 'GPS', () => {
+      this.setFlightMode(this.flightMode === 'live' ? 'simulation' : 'live', true);
+    }, this.gpsButton);
+    addTopButton('▶', '播放', () => {
+      if (this.suppressNextPlayClick) {
+        this.suppressNextPlayClick = false;
+        return;
+      }
+      if (this.flightMode === 'live') return;
+      this.clock?.togglePlayback();
+      this.syncPlayButton();
+    }, this.playButton);
+    addTopButton('✈', '航班資訊', () => this.openModal('flight-info'));
+    addTopButton('⌁', 'AviationStack API', () => this.openModal('api-key'));
+    addTopButton('▣', '輸入航班', () => this.openModal('flight-data'));
+    addTopButton('▥', '駕駛艙視角', () => this.activateCameraMode('pilotView'));
+    addTopButton('◐', '左方視角', () => this.activateCameraMode('leftWindow'));
+    addTopButton('◑', '右方視角', () => this.activateCameraMode('rightWindow'));
+    addTopButton('✈', '飛機視角', () => this.activateCameraMode('follow'));
+    addTopButton('⌁', '飛行路線', () => this.activateCameraMode('totalRoute'));
+    this.referenceTopbar.replaceChildren(summary, topActions);
+
+    this.scrubber.className = 'inflight-progress-range';
+    this.scrubber.type = 'range';
+    this.scrubber.min = '0';
+    this.scrubber.max = '1000';
+    this.scrubber.value = '0';
+    this.scrubber.addEventListener('input', () => {
+      if (this.flightMode === 'live') return;
+      this.scene?.prepareForTimelineJump();
+      this.clock?.seekPercent(Number(this.scrubber.value) / 1000);
+      this.syncProgressDisplay();
+    }, { signal });
+    this.progressLabel.className = 'inflight-progress-label';
+    this.progressLabel.textContent = '0%';
+    const progressBar = document.createElement('section');
+    progressBar.className = 'inflight-progress-bar';
+    progressBar.append(this.progressLabel, this.scrubber);
+
+    this.speedCard.className = 'inflight-speed-card';
+    this.speedCard.hidden = true;
+    this.speedRange.type = 'range';
+    this.speedRange.min = '1';
+    this.speedRange.max = '100';
+    this.speedRange.step = '1';
+    this.speedRange.value = '50';
+    this.speedRange.addEventListener('input', () => {
+      const value = nearestSimulationSpeed(Number(this.speedRange.value));
+      this.speedRange.value = String(value);
+      this.speedLabel.textContent = `${value}×`;
+      this.speedSelect.value = String(value);
+      this.clock?.setSpeed(value);
+    }, { signal });
+    this.speedLabel.textContent = '50×';
+    this.speedCard.replaceChildren(
+      Object.assign(document.createElement('span'), { textContent: '模擬速度' }),
+      this.speedLabel,
+      this.speedRange
+    );
+    const startPlayLongPress = (): void => {
+      if (this.flightMode === 'live') return;
+      window.clearTimeout(this.playLongPressTimer);
+      this.playLongPressTimer = window.setTimeout(() => {
+        this.suppressNextPlayClick = true;
+        this.speedCard.hidden = false;
+      }, 550);
+    };
+    const cancelPlayLongPress = (): void => {
+      window.clearTimeout(this.playLongPressTimer);
+      this.playLongPressTimer = undefined;
+    };
+    this.playButton.addEventListener('pointerdown', startPlayLongPress, { signal });
+    this.playButton.addEventListener('pointerup', cancelPlayLongPress, { signal });
+    this.playButton.addEventListener('pointercancel', cancelPlayLongPress, { signal });
+    this.playButton.addEventListener('pointerleave', cancelPlayLongPress, { signal });
+
+    this.referenceViewTitle.textContent = referenceViewLabel(this.cameraMode);
+    const bottomButton = (icon: string, label: string, mode: CameraMode): HTMLButtonElement => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'inflight-bottom-button';
+      button.dataset.mode = mode;
+      button.append(referenceMenuIcon(icon), Object.assign(document.createElement('span'), { textContent: label }));
+      button.addEventListener('click', () => this.activateCameraMode(mode), { signal });
+      return button;
+    };
+    this.referenceBottomNav.replaceChildren(
+      bottomButton('◉', '瀏覽世界', 'global'),
+      bottomButton('✈', '飛機 360°', 'flightPreview')
+    );
+
+    this.viewRail.hidden = true;
+    this.pilotHudToggle.hidden = true;
+    this.pilotHud.className = 'pilot-hud';
+    this.pilotHud.hidden = false;
+    this.hudTitle.className = 'inflight-hidden-data';
+    this.hudRoute.className = 'inflight-hidden-data';
+    this.hudStats.className = 'inflight-hidden-data';
+    this.hudPoint.className = 'inflight-hidden-data';
+    this.geoNotice.className = 'inflight-status';
+    this.geoNotice.textContent = '';
+    this.belowMe.className = 'inflight-hidden-data';
+    this.capability.className = 'inflight-hidden-data';
+
+    this.modalLayer.className = 'inflight-modal-layer';
+    this.modalLayer.hidden = true;
+    this.modalCard.className = 'inflight-modal-card';
+    this.modalTitle.className = 'inflight-modal-title';
+    this.modalCard.replaceChildren(this.modalTitle);
+    this.modalLayer.replaceChildren(this.modalCard);
+    this.modalLayer.addEventListener('click', (event) => {
+      if (event.target === this.modalLayer) this.closeModal();
+    }, { signal });
+
+    this.fileInput.hidden = true;
+    this.mediaInput.hidden = true;
+    this.renderPreloadPanel(segment, signal);
+    this.syncPlayButton();
+    this.syncViewRail();
+    this.root.replaceChildren(
+      this.viewport,
+      this.referenceTopbar,
+      progressBar,
+      this.speedCard,
+      this.referenceViewTitle,
+      this.referenceSidePanel,
+      this.referenceBottomNav,
+      this.cockpitWindow,
+      this.pilotHud,
+      this.geoNotice,
+      this.modalLayer,
+      this.fileInput,
+      this.mediaInput
+    );
+    this.renderReferenceFlightCards(buildFlightHudMetrics(
+      journey,
+      segment,
+      sampleReplayAt(segment, 0),
+      0
+    ), sampleReplayAt(segment, 0));
+    void referenceInfoCard;
+  }
+
+  private renderLegacyShell(journey: Journey, segment: JourneySegment): void {
     this.shellEventController?.abort();
     this.shellEventController = new AbortController();
     const renderSignal = this.shellEventController.signal;
@@ -426,7 +636,7 @@ export class TravelGlobeApp {
 
     this.speedSelect.className = 'control-select flight-speed-select';
     this.speedSelect.replaceChildren();
-    for (const speed of [1, 5, 20, 100]) {
+    for (const speed of [1, 5, 20, 50, 100]) {
       const option = document.createElement('option');
       option.value = String(speed);
       option.textContent = `${speed}x`;
@@ -620,6 +830,7 @@ export class TravelGlobeApp {
       this.scrubber.value = String(
         Math.round(Math.min(1, liveSample.distanceFlownMeters / Math.max(1, this.flightOverlay?.totalDistanceMeters ?? 1)) * 1000)
       );
+      this.syncProgressDisplay();
       this.syncPlayButton();
       this.updateHud(
         liveSample,
@@ -636,6 +847,7 @@ export class TravelGlobeApp {
     this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode, actualRoute);
 
     this.scrubber.value = String(Math.round(this.clock.progressPercent * 1000));
+    this.syncProgressDisplay();
     this.syncPlayButton();
     this.updateHud(sample, this.clock.currentSeconds);
   }
@@ -698,11 +910,27 @@ export class TravelGlobeApp {
   private syncPlayButton(): void {
     this.modeSelect.value = this.flightMode;
     this.speedSelect.disabled = this.flightMode === 'live';
+    this.gpsButton.classList.toggle('is-active', this.flightMode === 'live');
+    this.gpsButton.setAttribute('aria-pressed', String(this.flightMode === 'live'));
+    this.gpsButton.textContent = this.flightMode === 'live' ? 'GPS ON' : 'GPS';
     if (this.flightMode === 'live') {
-      this.playButton.textContent = 'LIVE';
+      this.playButton.disabled = true;
+      this.playButton.textContent = '▶';
+      this.scrubber.disabled = true;
+      this.speedCard.hidden = true;
+      this.syncProgressDisplay();
       return;
     }
-    this.playButton.textContent = this.clock?.isPlaying ? '暫停' : '播放';
+    this.playButton.disabled = false;
+    this.scrubber.disabled = false;
+    this.playButton.textContent = this.clock?.isPlaying ? '❚❚' : '▶';
+    this.syncProgressDisplay();
+  }
+
+  private syncProgressDisplay(): void {
+    const progress = Math.min(100, Math.max(0, Number(this.scrubber.value) / 10));
+    this.progressLabel.textContent = `${Math.round(progress)}%`;
+    this.progressLabel.setAttribute('aria-label', `飛行進度 ${Math.round(progress)}%`);
   }
 
   private activateCameraMode(mode: CameraMode): void {
@@ -799,13 +1027,91 @@ export class TravelGlobeApp {
   }
 
   private renderReferenceFlightCards(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
-    this.referenceSidePanel.replaceChildren(
-      referenceInfoCard('探索・附近', this.geoNotice.textContent || '等待航線附近資料', '⌖'),
-      referenceInfoCard('地面速度', metrics.groundSpeedKmh, '✈'),
-      referenceInfoCard('探索・目的地', `${this.segment?.destination.name ?? '目的地'} ${metrics.remainingDistanceLabel}`, '⌖'),
-      referenceInfoCard('剩餘距離', metrics.remainingDistanceLabel, '✈'),
-      referenceInfoCard('下方地點', summarizeBelowMe(sample.point, sample.bearingDegrees, this.routeLandmarks).belowLabel, '⌄')
+    this.geoNotice.textContent = `${metrics.remainingDistanceLabel} · ${metrics.speedKmh}`;
+    if (this.activeModal !== 'flight-info') {
+      return;
+    }
+    this.renderFlightInfoModal(metrics, sample);
+  }
+
+  private openModal(kind: 'flight-info' | 'api-key' | 'flight-data'): void {
+    this.activeModal = kind;
+    this.modalLayer.hidden = false;
+    this.modalCard.dataset.kind = kind;
+    if (kind === 'flight-info') {
+      const sample = this.segment && this.clock
+        ? sampleReplayAt(this.segment, this.clock.currentSeconds)
+        : this.segment ? sampleReplayAt(this.segment, 0) : undefined;
+      if (sample && this.journey && this.segment) {
+        this.renderFlightInfoModal(buildFlightHudMetrics(this.journey, this.segment, sample, this.clock?.currentSeconds ?? 0), sample);
+      }
+      return;
+    }
+    this.modalTitle.textContent = kind === 'api-key' ? 'AviationStack API' : '輸入航班資料';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'inflight-modal-close';
+    close.textContent = '×';
+    close.setAttribute('aria-label', '關閉設定卡片');
+    close.addEventListener('click', () => this.closeModal());
+    this.modalCard.replaceChildren(this.modalTitle, close);
+    this.modalCard.append(this.preloadPanel);
+    this.preloadPanel.dataset.mode = kind;
+    this.modalCard.querySelector('.preload-form')?.classList.toggle('api-only', kind === 'api-key');
+    const apiField = this.preloadPanel.querySelector('.preload-api-key-field');
+    apiField?.classList.toggle('is-hidden-for-flight', kind === 'flight-data');
+    const form = this.preloadPanel.querySelector('form');
+    form?.querySelector('.preload-submit')?.classList.toggle('is-hidden-for-api', kind === 'api-key');
+    this.aviationstackApiKeyInput.focus();
+  }
+
+  private closeModal(): void {
+    this.activeModal = undefined;
+    this.modalLayer.hidden = true;
+    this.referenceSidePanel.hidden = true;
+  }
+
+  private renderFlightInfoModal(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
+    if (!this.segment) return;
+    const value = (label: string, text: string): HTMLElement => {
+      const item = document.createElement('div');
+      item.className = 'inflight-info-value';
+      item.append(Object.assign(document.createElement('span'), { textContent: label }), Object.assign(document.createElement('strong'), { textContent: text }));
+      return item;
+    };
+    this.modalTitle.textContent = '航班資訊';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'inflight-modal-close';
+    close.textContent = '×';
+    close.setAttribute('aria-label', '關閉航班資訊');
+    close.addEventListener('click', () => this.closeModal());
+    const route = document.createElement('div');
+    route.className = 'inflight-airport-route';
+    route.append(
+      value(this.segment.origin.iataCode ?? this.segment.origin.name, this.segment.origin.name),
+      Object.assign(document.createElement('span'), { textContent: '→' }),
+      value(this.segment.destination.iataCode ?? this.segment.destination.name, this.segment.destination.name)
     );
+    const grid = document.createElement('div');
+    grid.className = 'inflight-info-grid';
+    grid.append(
+      value('高度', metrics.altitudeFeet),
+      value('航行方向', metrics.headingDegrees),
+      value('經緯度', `${sample.point.latitude.toFixed(4)}° N ${sample.point.longitude.toFixed(4)}° E`),
+      value('飛行速度', metrics.speedKmh),
+      value(`剩餘距離 ${this.segment.destination.iataCode ?? this.segment.destination.name}`, metrics.remainingDistanceLabel),
+      value('外氣溫度', '—')
+    );
+    const mapButton = document.createElement('button');
+    mapButton.type = 'button';
+    mapButton.className = 'inflight-gold-button';
+    mapButton.textContent = '觀看地圖';
+    mapButton.addEventListener('click', () => {
+      this.closeModal();
+      this.activateCameraMode('global');
+    });
+    this.modalCard.replaceChildren(this.modalTitle, close, route, grid, value('抵達目的地時間', metrics.etaLabel), mapButton);
   }
 
   private setFlightMode(mode: FlightMode, notifyNative: boolean): void {
@@ -818,17 +1124,20 @@ export class TravelGlobeApp {
     this.pilotHudSmoothedRollDegrees = 0;
 
     if (mode === 'live') {
-      this.liveGps = new LiveGpsTracker();
       this.clock && (this.clock.isPlaying = false);
+      this.scrubber.disabled = true;
+      this.speedCard.hidden = true;
       this.capability.textContent = 'Live GPS：等待 iPhone GPS 定位';
     } else {
-      this.liveGps = new LiveGpsTracker();
       if (this.clock) {
         this.clock.currentSeconds = 0;
-        this.clock.setSpeed(1);
-        this.clock.isPlaying = true;
+        this.clock.setSpeed(50);
+        this.clock.isPlaying = false;
       }
-      this.speedSelect.value = '1';
+      this.speedSelect.value = '50';
+      this.speedRange.value = '50';
+      this.speedLabel.textContent = '50×';
+      this.scrubber.disabled = false;
       this.capability.textContent = '模擬航線：使用目前航線資料';
     }
 
@@ -847,6 +1156,7 @@ export class TravelGlobeApp {
     this.cockpitWindow.setAttribute('aria-hidden', String(!isPilotView));
     this.pilotHud.setAttribute('aria-hidden', String(!isPilotView || !this.isPilotHudEnabled));
     this.pilotHudToggle.hidden = !isPilotView;
+    this.pilotHud.hidden = !isPilotView || !this.isPilotHudEnabled;
     this.pilotHudToggle.textContent = this.isPilotHudEnabled ? 'HUD' : 'HUD off';
     this.pilotHudToggle.setAttribute('aria-pressed', String(this.isPilotHudEnabled));
     for (const button of this.viewRail.querySelectorAll<HTMLButtonElement>('.view-mode-button')) {
@@ -2942,4 +3252,11 @@ function toInputTime(timestamp: string): string {
 
 function padDatePart(value: number): string {
   return String(value).padStart(2, '0');
+}
+
+function nearestSimulationSpeed(value: number): number {
+  const speeds = [1, 5, 20, 50, 100];
+  return speeds.reduce((nearest, speed) =>
+    Math.abs(speed - value) < Math.abs(nearest - value) ? speed : nearest
+  );
 }

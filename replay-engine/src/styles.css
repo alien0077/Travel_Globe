@@ -2461,3 +2461,87 @@ select.preload-input {
     font-size: 9.8px;
   }
 }
+
+/* In-flight shell: fixed iPhone landscape viewport. */
+html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
+  width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden;
+  overscroll-behavior: none; touch-action: none;
+}
+.inflight-shell { position: fixed; inset: 0; color: #f7fbff; background: #06141d; isolation: isolate; }
+.inflight-viewport { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.inflight-shell canvas { touch-action: none; }
+.inflight-shell .inflight-topbar, .inflight-shell .inflight-bottom-nav,
+.inflight-shell .inflight-modal-layer, .inflight-shell .inflight-flight-info,
+.inflight-shell .inflight-view-title, .inflight-shell .inflight-status { z-index: 20; }
+.inflight-topbar {
+  position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; min-height: 54px;
+  padding: 7px 12px; display: grid; grid-template-columns: minmax(190px, .75fr) minmax(0, 2.25fr);
+  gap: 12px; align-items: center; background: linear-gradient(180deg, rgba(4,9,15,.9), rgba(4,9,15,.54));
+  border-bottom: 1px solid rgba(255,255,255,.16); pointer-events: none;
+}
+.inflight-summary, .inflight-top-actions, .inflight-bottom-nav { pointer-events: auto; }
+.inflight-summary { min-width: 0; display: flex; align-items: baseline; gap: 9px; white-space: nowrap; }
+.inflight-eta { color: #fff; font-size: clamp(9px, 1.1vw, 14px); }
+.inflight-seat { color: #fff; font-size: clamp(23px, 3vw, 38px); line-height: 1; }
+.inflight-route { color: #d8edf0; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: clamp(9px, 1.1vw, 14px); }
+.inflight-top-actions { min-width: 0; display: flex; justify-content: flex-end; gap: 4px; overflow: hidden; }
+.inflight-top-button, .inflight-bottom-button { border: 0; color: #f7fbff; background: rgba(6,17,25,.5); font: inherit; cursor: pointer; white-space: nowrap; min-width: 0; touch-action: manipulation; }
+.inflight-top-button { display: inline-flex; align-items: center; gap: 4px; min-height: 38px; padding: 0 7px; border-left: 1px solid rgba(255,255,255,.14); font-size: clamp(9px, 1vw, 13px); }
+.inflight-top-button span:first-child { font-size: clamp(17px, 1.8vw, 24px); }
+.inflight-top-button:hover, .inflight-top-button:focus-visible, .inflight-bottom-button:hover, .inflight-bottom-button:focus-visible { background: rgba(255,255,255,.18); outline: none; }
+.inflight-top-button.is-active { color: #07151b; background: #8de5d0; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 0 14px rgba(90,224,198,.45); }
+.inflight-top-button:disabled { cursor: not-allowed; opacity: .42; }
+.inflight-progress-bar { position: absolute; z-index: 22; top: calc(env(safe-area-inset-top, 0px) + 55px); left: 18px; right: 18px; display: flex; align-items: center; gap: 9px; min-height: 27px; padding: 3px 8px; border-radius: 5px; background: rgba(5,13,20,.65); pointer-events: auto; }
+.inflight-progress-label { flex: 0 0 35px; color: #ffe28d; font-size: 12px; font-weight: 900; text-align: right; }
+.inflight-progress-range { flex: 1 1 auto; width: 100%; height: 18px; margin: 0; accent-color: #f1c85a; cursor: grab; touch-action: pan-x; }
+.inflight-progress-range:active { cursor: grabbing; }
+.inflight-progress-range:disabled { cursor: not-allowed; opacity: .5; }
+.inflight-speed-card { position: absolute; z-index: 24; top: calc(env(safe-area-inset-top, 0px) + 91px); left: 50%; display: grid; grid-template-columns: auto auto; align-items: center; gap: 7px 12px; min-width: 190px; padding: 9px 12px; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.25); border-radius: 7px; color: #fff; background: rgba(5,16,24,.92); box-shadow: 0 8px 24px rgba(0,0,0,.38); font-size: 12px; pointer-events: auto; }
+.inflight-speed-card[hidden] { display: none; }
+.inflight-speed-card strong { color: #ffe28d; font-size: 15px; }
+.inflight-speed-card input { grid-column: 1 / -1; width: 100%; accent-color: #f1c85a; touch-action: pan-x; }
+.inflight-view-title { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 65px); left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 4px; color: #fff; background: rgba(5,13,20,.72); font-size: clamp(13px,1.6vw,21px); font-weight: 800; pointer-events: none; }
+.inflight-bottom-nav { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); display: inline-flex; gap: 3px; padding: 4px; border-radius: 7px; background: rgba(4,10,15,.68); backdrop-filter: blur(8px); }
+.inflight-bottom-button { min-height: 38px; padding: 0 12px; border-radius: 5px; font-size: clamp(10px,1.1vw,14px); }
+.inflight-bottom-button span:first-child { margin-right: 4px; }
+.inflight-bottom-button[data-mode="global"], .inflight-bottom-button[data-mode="flightPreview"] { background: rgba(255,255,255,.12); }
+.inflight-status { position: absolute; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 6px 9px; border-radius: 5px; color: #f4ffff; background: rgba(2,10,16,.62); font-size: 11px; pointer-events: none; }
+.inflight-hidden-data { display: none !important; }
+.inflight-modal-layer { position: absolute; inset: 0; display: grid; place-items: center; padding: 72px 14px 58px; background: rgba(0,0,0,.36); pointer-events: auto; }
+.inflight-modal-layer[hidden] { display: none; }
+.inflight-modal-card { position: relative; width: min(820px,94vw); max-height: min(78vh,420px); overflow: auto; overscroll-behavior: contain; padding: 22px 24px 20px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; color: #f8ffff; background: rgba(5,16,24,.94); box-shadow: 0 18px 60px rgba(0,0,0,.45); touch-action: pan-y; }
+.inflight-modal-title { margin: 0 0 16px; text-align: center; font-size: clamp(17px,2vw,27px); }
+.inflight-modal-close { position: absolute; top: 10px; right: 15px; border: 0; color: #fff; background: transparent; font-size: 27px; cursor: pointer; }
+.inflight-airport-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; margin-bottom: 17px; }
+.inflight-airport-route > span { font-size: 26px; color: #ffd36e; }
+.inflight-info-value { display: grid; gap: 3px; min-width: 0; }
+.inflight-info-value span { color: #a9c7ca; font-size: 11px; }
+.inflight-info-value strong { color: #fff; font-size: clamp(13px,1.35vw,18px); overflow-wrap: anywhere; }
+.inflight-info-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 13px 18px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.16); border-bottom: 1px solid rgba(255,255,255,.16); }
+.inflight-gold-button { display: block; width: min(260px,100%); min-height: 40px; margin: 17px auto 0; border: 0; border-radius: 4px; color: #33250b; background: linear-gradient(110deg,#e6bd57,#ffe28d); font-weight: 900; cursor: pointer; }
+.inflight-modal-card .preload-panel { display: block; }
+.inflight-modal-card .preload-form { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.inflight-modal-card .preload-api-key-field, .inflight-modal-card .preload-submit { grid-column: 1 / -1; }
+.inflight-modal-card .api-only > .preload-field:not(.preload-api-key-field), .inflight-modal-card .api-only > .preload-submit, .inflight-modal-card .is-hidden-for-flight, .inflight-modal-card .is-hidden-for-api { display: none !important; }
+.inflight-modal-card .preload-status { margin-top: 10px; }
+@media (max-width: 900px) {
+  .inflight-topbar { grid-template-columns: minmax(148px,.62fr) minmax(0,2.38fr); gap: 5px; padding-inline: 7px; }
+  .inflight-top-actions { justify-content: flex-start; }
+  .inflight-top-button { padding-inline: 4px; }
+  .inflight-top-button span:last-child { display: none; }
+  .inflight-top-button span:first-child { font-size: 21px; }
+  .inflight-modal-card { width: min(700px,calc(100vw - 18px)); padding: 18px 15px; }
+}
+@media (max-width: 720px) {
+  .inflight-topbar { min-height: 46px; }
+  .inflight-seat { font-size: 24px; }
+  .inflight-progress-bar { top: calc(env(safe-area-inset-top, 0px) + 47px); left: 8px; right: 8px; }
+  .inflight-view-title { top: calc(env(safe-area-inset-top, 0px) + 54px); font-size: 13px; padding: 6px 12px; }
+  .inflight-speed-card { top: calc(env(safe-area-inset-top, 0px) + 83px); }
+  .inflight-bottom-nav { right: 8px; bottom: 8px; }
+  .inflight-bottom-button { min-height: 34px; padding-inline: 8px; }
+  .inflight-modal-layer { padding: 56px 8px 49px; }
+  .inflight-modal-card { max-height: calc(100vh - 105px); }
+  .inflight-modal-card .preload-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .inflight-info-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

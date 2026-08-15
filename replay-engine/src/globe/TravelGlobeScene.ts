@@ -156,7 +156,12 @@ export class TravelGlobeScene {
     this.container.dataset.airportMarkerPlacement = 'surface-plane';
     this.container.dataset.cityLightPlacement = this.cityLights.userData.surfaceLocked === true ? 'surface-plane' : 'floating';
     placeAircraftMarker(this.aircraft, point, bearingDegrees, aircraftAttitude);
-    this.aircraft.scale.setScalar(lerp(1, 0.095, nearGroundStrength));
+    const aircraftScale = cameraMode === 'flightPreview'
+      ? 0.72
+      : cameraMode === 'follow'
+        ? 0.34
+        : lerp(1, 0.095, nearGroundStrength);
+    this.aircraft.scale.setScalar(aircraftScale);
     this.aircraft.visible = cameraMode !== 'pilotView';
     this.updateAirportMarkers(point, nearGroundStrength, cameraMode);
     const visibleRoutePoints = visibleRouteWindowForCameraMode(
@@ -170,10 +175,16 @@ export class TravelGlobeScene {
     this.updateDayNight(point);
     this.setCockpitSceneVisibility(cameraMode);
     this.cameraController.setMode(cameraMode);
+    const routeFocusPoint = this.segment.derivedReplayRoute.points[
+      Math.floor(this.segment.derivedReplayRoute.points.length / 2)
+    ];
+    const sceneFocusPoint = cameraMode === 'global' || cameraMode === 'totalRoute'
+      ? routeFocusPoint
+      : airportFocus.point;
     this.cameraController.update(point, bearingDegrees, {
       snap: snapCamera,
-      focusPoint: airportFocus.point,
-      focusStrength: airportFocus.strength,
+      focusPoint: sceneFocusPoint,
+      focusStrength: cameraMode === 'global' || cameraMode === 'totalRoute' ? 1 : airportFocus.strength,
       nearGroundStrength
     });
   }
