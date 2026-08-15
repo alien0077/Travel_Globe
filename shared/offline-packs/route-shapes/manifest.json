@@ -24,16 +24,18 @@
       ]
     },
     "runtimeSkippedNonDirected": 0,
-    "runtimeSelectionOverrides": 75,
+    "runtimeSelectionOverrides": 71,
     "reverseCompletionAttempted": 1431,
     "reverseCompletionAdded": 1296,
     "reverseCompletionUnresolved": 0,
-    "reverseFallbackAdded": 135
+    "reverseFallbackAdded": 135,
+    "runtimeCompletionRoutes": 1431,
+    "runtimeCorridorRoutes": 8860
   },
   "bytes": {
     "json": 38452212,
     "gzip": 4264988,
-    "runtimeJson": 19920195
+    "runtimeJson": 52887230
   },
   "runtimePack": "global.route-shapes.runtime.json"
 }

@@ -7,6 +7,7 @@ export interface AirgraphRoutePoint extends GeographicPoint {
 
 export interface AirgraphRouteResult {
   method:
+    | 'corridor_025_graph'
     | 'directed_airway_graph'
     | 'airway_graph'
     | 'great_circle_fallback'

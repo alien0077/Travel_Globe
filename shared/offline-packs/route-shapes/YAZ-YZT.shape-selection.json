@@ -17,8 +17,8 @@
       "date": "2026-07-22"
     },
     "metrics": {
-      "distanceKm": 46.7,
-      "detourRatio": 0.221,
+      "distanceKm": 321.926,
+      "detourRatio": 1.523,
       "meanObservedToIfrKm": 77.1,
       "maxObservedToIfrKm": 90.7,
       "meanIfrToObservedKm": 134.2

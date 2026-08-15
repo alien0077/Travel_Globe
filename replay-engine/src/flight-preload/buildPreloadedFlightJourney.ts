@@ -74,7 +74,8 @@ export function buildPreloadedFlightJourney(
         ? 'offline-schedule-index'
         : 'default';
   const airgraphRoute = preferredRoute;
-  const hasAirwayRoute = airgraphRoute?.method === 'directed_airway_graph'
+  const hasAirwayRoute = airgraphRoute?.method === 'corridor_025_graph'
+    || airgraphRoute?.method === 'directed_airway_graph'
     || airgraphRoute?.method === 'airway_graph'
     || airgraphRoute?.method === 'reverse_route_fallback'
     || airgraphRoute?.method === 'observed_adsb_mapped'
@@ -312,7 +313,9 @@ function buildPreloadWarning(
   const routeWarningNote = airgraphRoute?.warnings.length
     ? ` 注意：${airgraphRoute.warnings.join('；')}`
     : '';
-  const routeNote = airgraphRoute?.method === 'reverse_route_fallback'
+  const routeNote = airgraphRoute?.method === 'corridor_025_graph'
+    ? ` 已使用 0.25 度全球共用空中走廊產生 ${airgraphRoute.waypoints.length} 個路徑點；其中 relay 與機場接入段依標記可能為推論幾何。${routeWarningNote}`
+    : airgraphRoute?.method === 'reverse_route_fallback'
     ? ` 已使用既有正向 route 的幾何反向產生 ${airgraphRoute.waypoints.length} 個視覺航路點；反向 airway 未驗證。${routeWarningNote}`
     : airgraphRoute?.method === 'observed_adsb_mapped' || airgraphRoute?.method === 'recovered_endpoint'
     ? ` 已使用 AviationDB ADS-B 觀測航跡產生 ${airgraphRoute.waypoints.length} 個航路點；這不是 IFR graph 估算線。${routeWarningNote}`

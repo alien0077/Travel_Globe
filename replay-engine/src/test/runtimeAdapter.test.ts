@@ -51,9 +51,10 @@ describe('browser runtime adapter journey history', () => {
       const refreshed = await adapter.loadJourney();
       const segment = refreshed.segments[0];
 
-      expect(segment?.metadata.routeMethod).toBe('directed_airway_graph');
+      expect(segment?.metadata.routeMethod).toBe('corridor_025_graph');
       expect(segment?.metadata.routeSource).toBe('aviationdb-route-shapes');
-      expect(segment?.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-parpa');
+      expect(segment?.derivedReplayRoute.points.some((point) => point.id.includes('c025'))).toBe(true);
+      expect(segment?.derivedReplayRoute.points.map((point) => point.id)).not.toContain('airgraph-2-parpa');
       expect(segment?.derivedReplayRoute.points.some((point) => point.id.includes('wagon'))).toBe(false);
     } finally {
       injectRouteShapePackForTest(undefined);
@@ -88,7 +89,9 @@ describe('browser runtime adapter journey history', () => {
       await adapter.saveJourney(completedSimulated);
       const refreshed = await adapter.loadJourney();
       expect(refreshed.segments[0]?.metadata.routeRefresh).toBe('latest-offline-route-shape-pack');
-      expect(refreshed.segments[0]?.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-parpa');
+      expect(refreshed.segments[0]?.metadata.routeMethod).toBe('corridor_025_graph');
+      expect(refreshed.segments[0]?.derivedReplayRoute.points.some((point) => point.id.includes('c025'))).toBe(true);
+      expect(refreshed.segments[0]?.derivedReplayRoute.points.map((point) => point.id)).not.toContain('airgraph-2-parpa');
 
       const recorded = {
         ...completedSimulated,

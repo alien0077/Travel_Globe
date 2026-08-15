@@ -83,6 +83,7 @@ async function fetchRouteShapePack(): Promise<RuntimeRouteShapePack | undefined>
 
 function normalizeRouteShapeMethod(method: string | undefined): AirgraphRouteResult['method'] | undefined {
   if (
+    method === 'corridor_025_graph' ||
     method === 'directed_airway_graph' ||
     method === 'observed_adsb_mapped' ||
     method === 'approximate_direct_fallback' ||

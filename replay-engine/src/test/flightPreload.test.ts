@@ -79,30 +79,14 @@ describe('flight preload', () => {
       departureTime: '07:05'
     });
     const segment = getPrimaryFlightSegment(result.journey);
+    const waypoints = segment.metadata.airgraphWaypoints as string[] | undefined;
 
-    expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
+    expect(segment.metadata.routeMethod).toBe('corridor_025_graph');
     expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
-    expect(segment.metadata.airgraphWaypoints).toEqual([
-      'PARPA',
-      'HCN',
-      'BONEY',
-      'MEVIN',
-      'ELMAS',
-      'BISIG',
-      'SAKON',
-      'TIC',
-      'TAMAK',
-      'SHIBK',
-      'NIKAI',
-      'JERID',
-      'MISAK',
-      'MJE',
-      'BAFFY',
-      'ORGAN',
-      'PANDA'
-    ]);
-    expect(segment.derivedReplayRoute.points.map((point) => point.id)).toContain('airgraph-2-parpa');
-    expect(result.warnings[0]).toContain('AviationDB route-shapes');
+    expect(waypoints?.length).toBeGreaterThan(0);
+    expect(waypoints?.some((point) => point.startsWith('C025_'))).toBe(true);
+    expect(waypoints).not.toContain('PARPA');
+    expect(result.warnings[0]).toContain('0.25');
     injectRouteShapePackForTest(undefined);
   });
 
@@ -141,7 +125,7 @@ describe('flight preload', () => {
     }
   });
 
-  it('uses a directed route-shapes pack for TPE to HKG instead of runtime airgraph guessing', async () => {
+  it('uses the 0.25-degree corridor route-shapes pack for TPE to HKG', async () => {
     injectRouteShapePackForTest(routeShapeRuntime as unknown as Parameters<typeof injectRouteShapePackForTest>[0]);
     const result = await buildPreloadedFlightJourneyWithRouteShapes({
       flightNumber: 'CX451',
@@ -151,21 +135,13 @@ describe('flight preload', () => {
       departureTime: '20:00'
     });
     const segment = getPrimaryFlightSegment(result.journey);
+    const waypoints = segment.metadata.airgraphWaypoints as string[] | undefined;
 
-    expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
+    expect(segment.metadata.routeMethod).toBe('corridor_025_graph');
     expect(segment.metadata.routeSource).toBe('aviationdb-route-shapes');
-    expect(segment.metadata.airgraphWaypoints).toEqual([
-      'HLG',
-      'SWORD',
-      'MKG',
-      'KADLO',
-      'ELATO',
-      'MAGOG',
-      'CH',
-      'TAMOT',
-      'NLG'
-    ]);
-    expect(segment.derivedReplayRoute.points.every((point) => point.longitude < 121.5)).toBe(true);
+    expect(waypoints?.length).toBeGreaterThan(0);
+    expect(waypoints?.every((point) => point.startsWith('C025_'))).toBe(true);
+    expect(result.warnings[0]).toContain('0.25');
     injectRouteShapePackForTest(undefined);
   });
 
@@ -182,10 +158,9 @@ describe('flight preload', () => {
       const segment = getPrimaryFlightSegment(result.journey);
       const waypoints = segment.metadata.airgraphWaypoints as string[] | undefined;
 
-      expect(segment.metadata.routeMethod).toBe('directed_airway_graph');
-      expect(waypoints?.[0]).toBe('PANDA');
-      expect(waypoints?.at(-1)).toBe('PARPA');
-      expect(segment.derivedReplayRoute.points.at(-2)?.id).toBe('airgraph-18-parpa');
+      expect(segment.metadata.routeMethod).toBe('corridor_025_graph');
+      expect(waypoints?.length).toBeGreaterThan(0);
+      expect(waypoints?.every((point) => point.startsWith('C025_'))).toBe(true);
     } finally {
       injectRouteShapePackForTest(undefined);
     }

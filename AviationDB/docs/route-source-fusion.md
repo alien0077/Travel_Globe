@@ -29,7 +29,14 @@ This pack separates route existence from route geometry provenance.
 
 6. `airportroutes_targeted`
    - Airport-pair lookup candidate only.
-   - Route data should be treated as external/manual-review input until redistribution terms are clarified.
+- Route data should be treated as external/manual-review input until redistribution terms are clarified.
+
+7. `corridor_025_graph`
+   - Route shape generated from the 0.25-degree global shared-corridor graph.
+   - Observed corridor edges, inferred relay links, and inferred airport
+     connectors remain distinguishable in the route warning.
+   - This is the preferred non-call-sign route shape for runtime display;
+     it is not proof of one aircraft's complete filed route.
 
 ## Outputs
 
@@ -51,9 +58,14 @@ Replay Engine pack:
 
 ```text
 observed_adsb / recovered_endpoint
+  > corridor_025_graph
   > directed_airway_graph
   > reverse_route_fallback / approximate_direct_fallback
 ```
+
+The runtime exporter must load the 0.25-degree corridor overlay before route
+selection files. A `directed_airway_graph` selection may remain only when no
+corridor path exists; it must never replace an available corridor shape.
 
 The IFR graph validates that a static airway path is connected and usable as
 an offline estimate. It does not prove that the aircraft flew that path. An

@@ -15,7 +15,10 @@ DEFAULT_INPUT = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.rou
 DEFAULT_SHARED = ROOT / "shared" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_PUBLIC = ROOT / "replay-engine" / "public" / "offline-packs" / "route-shapes" / "global.route-shapes.runtime.json"
 DEFAULT_SELECTION_DIR = ROOT / "shared" / "offline-packs" / "route-shapes"
+DEFAULT_COMPLETION_PACK = DEFAULT_SELECTION_DIR / "global.route-shapes.runtime-completions.json"
+DEFAULT_CORRIDOR_PACK = DEFAULT_SELECTION_DIR / "global.route-shapes.runtime-corridor-025.json"
 RUNTIME_METHODS = {
+    "corridor_025_graph",
     "directed_airway_graph",
     "observed_adsb_mapped",
     "recovered_endpoint",
@@ -28,6 +31,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Export compact runtime JSON for Replay Engine route-shapes lookup.")
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--selection-dir", type=Path, default=DEFAULT_SELECTION_DIR)
+    parser.add_argument("--completion-pack", type=Path, default=DEFAULT_COMPLETION_PACK)
+    parser.add_argument("--corridor-pack", type=Path, default=DEFAULT_CORRIDOR_PACK)
     parser.add_argument("--shared-output", type=Path, default=DEFAULT_SHARED)
     parser.add_argument("--public-output", type=Path, default=DEFAULT_PUBLIC)
     args = parser.parse_args()
@@ -39,6 +44,8 @@ def main() -> int:
         if not add_runtime_route(routes, route.get("id"), route):
             skipped += 1
 
+    completion_added = merge_completion_pack(routes, args.completion_pack)
+    corridor_added = merge_corridor_pack(routes, args.corridor_pack)
     selection_added = merge_shape_selections(routes, args.selection_dir)
 
     payload = {
@@ -49,6 +56,8 @@ def main() -> int:
             "summary": {
                 **(pack.get("summary") or {}),
                 "runtimeSkippedNonDirected": skipped,
+                "runtimeCompletionRoutes": completion_added,
+                "runtimeCorridorRoutes": corridor_added,
                 "runtimeSelectionOverrides": selection_added,
             },
         },
@@ -57,11 +66,13 @@ def main() -> int:
     for output in [args.shared_output, args.public_output]:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-        update_manifest(output)
+        update_manifest(output, payload["meta"]["summary"])
     print(
         json.dumps(
             {
                 "routes": len(routes),
+                "completionRoutes": completion_added,
+                "corridorRoutes": corridor_added,
                 "selectionOverrides": selection_added,
                 "sharedOutput": str(args.shared_output),
                 "sharedBytes": args.shared_output.stat().st_size,
@@ -87,7 +98,50 @@ def merge_shape_selections(routes: dict[str, Any], selection_dir: Path) -> int:
         selected = selection.get("selected")
         if not isinstance(selected, dict):
             continue
+        if (
+            selected.get("method") == "directed_airway_graph"
+            and isinstance(routes.get(str(route_id)), dict)
+            and routes[str(route_id)].get("m") == "corridor_025_graph"
+        ):
+            continue
         if add_runtime_route(routes, route_id, selected):
+            added += 1
+    return added
+
+
+def merge_completion_pack(routes: dict[str, Any], completion_path: Path) -> int:
+    """Merge routes produced by reverse completion as a reproducible source.
+
+    Reverse completion historically mutated the compact runtime JSON directly,
+    leaving 1,431 routes that could not be reconstructed by this exporter.
+    The completion pack makes that intermediate step explicit and reviewable.
+    Selection overlays are applied afterwards so an observed selection remains
+    the final source when both files contain the same route.
+    """
+    if not completion_path.exists():
+        return 0
+    payload = json.loads(completion_path.read_text(encoding="utf-8"))
+    completion_routes = payload.get("routes") if isinstance(payload, dict) else None
+    if not isinstance(completion_routes, dict):
+        return 0
+    added = 0
+    for route_id, route in sorted(completion_routes.items()):
+        if add_compact_runtime_route(routes, route_id, route):
+            added += 1
+    return added
+
+
+def merge_corridor_pack(routes: dict[str, Any], corridor_path: Path) -> int:
+    """Apply 0.25-degree corridor shapes before observed selections."""
+    if not corridor_path.exists():
+        return 0
+    payload = json.loads(corridor_path.read_text(encoding="utf-8"))
+    corridor_routes = payload.get("routes") if isinstance(payload, dict) else None
+    if not isinstance(corridor_routes, dict):
+        return 0
+    added = 0
+    for route_id, route in sorted(corridor_routes.items()):
+        if add_compact_runtime_route(routes, route_id, route):
             added += 1
     return added
 
@@ -112,6 +166,28 @@ def add_runtime_route(routes: dict[str, Any], route_id: Any, route: dict[str, An
             [point.get("ident"), point.get("lat"), point.get("lon"), point.get("pointType")]
             for point in points
         ],
+    }
+    return True
+
+
+def add_compact_runtime_route(routes: dict[str, Any], route_id: Any, route: dict[str, Any]) -> bool:
+    """Add a compact route emitted by the reverse-completion step."""
+    if not route_id or not isinstance(route, dict) or route.get("m") not in RUNTIME_METHODS:
+        return False
+    points = route.get("p")
+    if not isinstance(points, list) or len(points) < 2:
+        return False
+    compact_points = []
+    for point in points:
+        if not isinstance(point, list) or len(point) < 4:
+            return False
+        compact_points.append([point[0], point[1], point[2], point[3]])
+    routes[str(route_id)] = {
+        "m": route.get("m"),
+        "s": safe_number(route.get("s"), precision=2),
+        "d": round(safe_number(route.get("d"))),
+        "w": [str(value) for value in route.get("w", []) if value],
+        "p": compact_points,
     }
     return True
 
@@ -145,13 +221,15 @@ def safe_number(value: Any, precision: int | None = None) -> float:
     return round(number, precision) if precision is not None else number
 
 
-def update_manifest(runtime_path: Path) -> None:
+def update_manifest(runtime_path: Path, runtime_summary: dict[str, Any] | None = None) -> None:
     manifest_path = runtime_path.with_name("manifest.json")
     if not manifest_path.exists():
         return
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["runtimePack"] = runtime_path.name
     manifest.setdefault("bytes", {})["runtimeJson"] = runtime_path.stat().st_size
+    if runtime_summary:
+        manifest.setdefault("summary", {}).update(runtime_summary)
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 

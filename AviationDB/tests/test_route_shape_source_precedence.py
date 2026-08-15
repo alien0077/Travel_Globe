@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -61,3 +62,36 @@ def test_runtime_pack_keeps_observed_and_ifr_provenance_distinct():
     )
     assert routes["TPE-NRT"]["m"] == "recovered_endpoint"
     assert "recovered endpoint" in routes["TPE-NRT"]["w"][-1]
+
+
+def test_directed_selection_cannot_replace_025_corridor_shape(tmp_path):
+    routes = {
+        "KHH-NRT": {
+            "m": "corridor_025_graph",
+            "s": 0,
+            "d": 1000,
+            "w": ["corridor"],
+            "p": [["KHH", 22.5, 120.3, "AIRPORT"], ["NRT", 35.7, 140.3, "AIRPORT"]],
+        }
+    }
+    selection_dir = tmp_path / "selections"
+    selection_dir.mkdir()
+    (selection_dir / "KHH-NRT.shape-selection.json").write_text(
+        json.dumps(
+            {
+                "route": "KHH-NRT",
+                "selected": {
+                    "method": "directed_airway_graph",
+                    "score": 10,
+                    "points": [
+                        {"ident": "KHH", "lat": 22.5, "lon": 120.3, "pointType": "AIRPORT"},
+                        {"ident": "PARPA", "lat": 22.0, "lon": 120.0, "pointType": "SIGNIFICANT_POINT"},
+                        {"ident": "NRT", "lat": 35.7, "lon": 140.3, "pointType": "AIRPORT"},
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert runtime_export.merge_shape_selections(routes, selection_dir) == 0
+    assert routes["KHH-NRT"]["m"] == "corridor_025_graph"
