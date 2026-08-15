@@ -352,10 +352,6 @@ export class TravelGlobeScene {
   }
 
   private updateLabelOverlay(): void {
-    if (isFirstPersonCameraMode(this.currentCameraMode)) {
-      this.hideAllLabels();
-      return;
-    }
     if (performance.now() < this.suppressLabelsUntilMs) {
       this.hideAllLabels();
       return;
@@ -740,6 +736,8 @@ function labelDistanceLimitMeters(point: LocationPoint, cameraMode: CameraMode):
       return Math.min(680000, Math.max(180000, horizonMeters + 160000));
     case 'pilotView':
     case 'cockpit':
+    case 'leftWindow':
+    case 'rightWindow':
       return Math.min(360000, Math.max(18000, firstPersonRouteLookAheadMeters(point) * 0.86));
     case 'global':
     case 'orbit':
@@ -771,6 +769,8 @@ function labelCountLimit(cameraMode: CameraMode): number {
   switch (cameraMode) {
     case 'pilotView':
     case 'cockpit':
+    case 'leftWindow':
+    case 'rightWindow':
       return 7;
     case 'flightPreview':
     case 'midFlight':
