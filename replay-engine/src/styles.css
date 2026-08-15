@@ -624,6 +624,42 @@ input {
   display: block;
 }
 
+/* 左右客艙窗：中央保留 3D 景色，外圍以客艙窗框與座位側壁包住畫面。 */
+.is-window-view .cockpit-window {
+  display: block;
+}
+
+.is-window-view .cockpit-window::before {
+  position: absolute;
+  z-index: 4;
+  inset: 3% 4% 8%;
+  border: 22px solid rgb(18 21 24 / 92%);
+  border-bottom-width: 34px;
+  border-radius: 47% 47% 18% 18% / 43% 43% 18% 18%;
+  box-shadow: inset 0 0 0 2px rgb(214 221 224 / 22%), inset 0 0 28px rgb(0 0 0 / 52%), 0 0 0 2px rgb(4 7 10 / 84%);
+  content: "";
+}
+
+.is-window-view .cockpit-window::after {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 16%;
+  background: linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
+  box-shadow: 0 -2px 0 rgb(239 244 244 / 18%);
+  content: "";
+}
+
+.is-left-window .cockpit-window::after {
+  background: linear-gradient(90deg, rgb(8 10 12 / 62%), transparent 20%), linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
+}
+
+.is-right-window .cockpit-window::after {
+  background: linear-gradient(270deg, rgb(8 10 12 / 62%), transparent 20%), linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
+}
+
 .cockpit-sky {
   position: absolute;
   inset: 0;
@@ -2496,9 +2532,11 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-progress-range { flex: 1 1 auto; width: 100%; height: 18px; margin: 0; accent-color: #f1c85a; cursor: grab; touch-action: pan-x; }
 .inflight-progress-range:active { cursor: grabbing; }
 .inflight-progress-range:disabled { cursor: not-allowed; opacity: .5; }
-.inflight-speed-card { position: absolute; z-index: 24; top: calc(env(safe-area-inset-top, 0px) + 91px); left: 50%; display: grid; grid-template-columns: auto auto; align-items: center; gap: 7px 12px; min-width: 190px; padding: 9px 12px; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.25); border-radius: 7px; color: #fff; background: rgba(5,16,24,.92); box-shadow: 0 8px 24px rgba(0,0,0,.38); font-size: 12px; pointer-events: auto; }
+.inflight-speed-card { position: absolute; z-index: 24; top: calc(env(safe-area-inset-top, 0px) + 91px); left: 50%; display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 7px 12px; min-width: 190px; padding: 9px 12px; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.25); border-radius: 7px; color: #fff; background: rgba(5,16,24,.92); box-shadow: 0 8px 24px rgba(0,0,0,.38); font-size: 12px; pointer-events: auto; }
 .inflight-speed-card[hidden] { display: none; }
 .inflight-speed-card strong { color: #ffe28d; font-size: 15px; }
+.inflight-speed-card-close { grid-column: 3; grid-row: 1; justify-self: end; width: 22px; height: 22px; padding: 0; border: 0; color: #fff; background: transparent; font-size: 21px; line-height: 1; cursor: pointer; }
+.inflight-speed-card-close:hover, .inflight-speed-card-close:focus-visible { color: #ffe28d; outline: none; }
 .inflight-speed-card input { grid-column: 1 / -1; width: 100%; accent-color: #f1c85a; touch-action: pan-x; }
 .inflight-view-title { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 65px); left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 4px; color: #fff; background: rgba(5,13,20,.72); font-size: clamp(13px,1.6vw,21px); font-weight: 800; pointer-events: none; }
 .inflight-bottom-nav { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); display: inline-flex; gap: 3px; padding: 4px; border-radius: 7px; background: rgba(4,10,15,.68); backdrop-filter: blur(8px); }

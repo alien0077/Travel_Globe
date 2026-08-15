@@ -313,9 +313,18 @@ export class TravelGlobeApp {
       this.clock?.setSpeed(value);
     }, { signal });
     this.speedLabel.textContent = '50×';
+    const closeSpeedCard = document.createElement('button');
+    closeSpeedCard.type = 'button';
+    closeSpeedCard.className = 'inflight-speed-card-close';
+    closeSpeedCard.textContent = '×';
+    closeSpeedCard.setAttribute('aria-label', '關閉模擬速度卡片');
+    closeSpeedCard.addEventListener('click', () => {
+      this.speedCard.hidden = true;
+    }, { signal });
     this.speedCard.replaceChildren(
       Object.assign(document.createElement('span'), { textContent: '模擬速度' }),
       this.speedLabel,
+      closeSpeedCard,
       this.speedRange
     );
     const startPlayLongPress = (): void => {
@@ -398,7 +407,7 @@ export class TravelGlobeApp {
       segment,
       sampleReplayAt(segment, 0),
       0
-    ), sampleReplayAt(segment, 0));
+    ));
     void referenceInfoCard;
   }
 
@@ -886,7 +895,7 @@ export class TravelGlobeApp {
       `偏離 ${formatDistance(deviationMeters)}`
     ].filter(Boolean).join(' | ');
     this.renderPilotHud(metrics, sample, liveTurnRateDegreesPerSecond);
-    this.renderReferenceFlightCards(metrics, sample);
+    this.renderReferenceFlightCards(metrics);
 
     this.renderBelowMe(sample);
     if (liveStatus === 'lost') {
@@ -1026,12 +1035,10 @@ export class TravelGlobeApp {
     return menuBody;
   }
 
-  private renderReferenceFlightCards(metrics: ReturnType<typeof buildFlightHudMetrics>, sample: ReplaySample): void {
+  private renderReferenceFlightCards(metrics: ReturnType<typeof buildFlightHudMetrics>): void {
     this.geoNotice.textContent = `${metrics.remainingDistanceLabel} · ${metrics.speedKmh}`;
-    if (this.activeModal !== 'flight-info') {
-      return;
-    }
-    this.renderFlightInfoModal(metrics, sample);
+    // 航班資訊卡只在開啟時建立一次；每幀重建會替換按鈕節點，造成 X/觀看地圖無法穩定點擊。
+    void this.activeModal;
   }
 
   private openModal(kind: 'flight-info' | 'api-key' | 'flight-data'): void {
@@ -1053,7 +1060,11 @@ export class TravelGlobeApp {
     close.className = 'inflight-modal-close';
     close.textContent = '×';
     close.setAttribute('aria-label', '關閉設定卡片');
-    close.addEventListener('click', () => this.closeModal());
+    close.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeModal();
+    });
     this.modalCard.replaceChildren(this.modalTitle, close);
     this.modalCard.append(this.preloadPanel);
     this.preloadPanel.dataset.mode = kind;
@@ -1085,7 +1096,11 @@ export class TravelGlobeApp {
     close.className = 'inflight-modal-close';
     close.textContent = '×';
     close.setAttribute('aria-label', '關閉航班資訊');
-    close.addEventListener('click', () => this.closeModal());
+    close.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeModal();
+    });
     const route = document.createElement('div');
     route.className = 'inflight-airport-route';
     route.append(
@@ -1107,7 +1122,9 @@ export class TravelGlobeApp {
     mapButton.type = 'button';
     mapButton.className = 'inflight-gold-button';
     mapButton.textContent = '觀看地圖';
-    mapButton.addEventListener('click', () => {
+    mapButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       this.closeModal();
       this.activateCameraMode('global');
     });
@@ -1149,11 +1166,15 @@ export class TravelGlobeApp {
 
   private syncViewRail(): void {
     const isPilotView = this.cameraMode === 'pilotView';
+    const isWindowView = this.cameraMode === 'leftWindow' || this.cameraMode === 'rightWindow';
     this.root.classList.toggle('is-pilot-view', isPilotView);
+    this.root.classList.toggle('is-window-view', isWindowView);
+    this.root.classList.toggle('is-left-window', this.cameraMode === 'leftWindow');
+    this.root.classList.toggle('is-right-window', this.cameraMode === 'rightWindow');
     this.root.classList.toggle('is-pilot-hud-off', isPilotView && !this.isPilotHudEnabled);
     this.viewRail.classList.toggle('is-expanded', isPilotView && this.isPilotViewRailExpanded);
     this.viewRail.setAttribute('aria-expanded', String(!isPilotView || this.isPilotViewRailExpanded));
-    this.cockpitWindow.setAttribute('aria-hidden', String(!isPilotView));
+    this.cockpitWindow.setAttribute('aria-hidden', String(!isPilotView && !isWindowView));
     this.pilotHud.setAttribute('aria-hidden', String(!isPilotView || !this.isPilotHudEnabled));
     this.pilotHudToggle.hidden = !isPilotView;
     this.pilotHud.hidden = !isPilotView || !this.isPilotHudEnabled;

@@ -107,11 +107,48 @@ export class CameraController {
       return;
     }
 
+    if (this.mode === 'flightPreview') {
+      // 飛機 360°是「看飛機本體」的最大化視角，不是地球追蹤視角。
+      const yawedForward = forward.clone().applyAxisAngle(normal, this.orbitYaw * 0.22);
+      const yawedRight = new THREE.Vector3().crossVectors(yawedForward, normal).normalize();
+      const distance = THREE.MathUtils.clamp(0.34 * this.zoom, 0.26, 0.46);
+      this.setFieldOfView(42);
+      this.desired
+        .copy(this.target)
+        .add(yawedForward.multiplyScalar(-distance))
+        .add(yawedRight.multiplyScalar(-distance * 0.08))
+        .add(normal.clone().multiplyScalar(distance * 0.16));
+      this.camera.position.lerp(this.desired, lerpAmount ?? 0.16);
+      this.camera.up.copy(normal);
+      this.camera.lookAt(this.target.clone().add(forward.multiplyScalar(0.015)));
+      return;
+    }
+
     if (isInteriorCameraMode(this.mode)) {
       const altitudeFactor = altitudePerspectiveFactor(point);
       const interiorScale = THREE.MathUtils.lerp(0.018, 0.052, altitudeFactor);
       const right = new THREE.Vector3().crossVectors(forward, normal).normalize();
       const lateral = this.mode === 'leftWindow' ? -1 : this.mode === 'rightWindow' ? 1 : 0;
+      if (this.mode === 'leftWindow' || this.mode === 'rightWindow') {
+        // 客艙左右排：相機位於機身側面，視線直接朝窗外，不再朝飛機前方。
+        const sideDistance = THREE.MathUtils.lerp(interiorScale * 0.72, interiorScale * 1.08, altitudeFactor);
+        this.setFieldOfView(74);
+        this.desired
+          .copy(this.target)
+          .add(right.clone().multiplyScalar(lateral * sideDistance))
+          .add(normal.clone().multiplyScalar(sideDistance * 0.16))
+          .add(forward.clone().multiplyScalar(0.008));
+        this.camera.position.lerp(this.desired, lerpAmount ?? 0.18);
+        this.camera.up.copy(normal);
+        this.camera.lookAt(
+          this.camera.position
+            .clone()
+            .add(right.multiplyScalar(lateral * 0.62))
+            .add(forward.multiplyScalar(0.06))
+            .add(normal.clone().multiplyScalar(0.025))
+        );
+        return;
+      }
       const forwardOffset = this.mode === 'cockpit' ? 0.01 : -0.012;
       const lookAhead = this.mode === 'cockpit'
         ? THREE.MathUtils.lerp(0.58, 1.72, altitudeFactor)

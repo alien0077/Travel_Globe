@@ -157,12 +157,12 @@ export class TravelGlobeScene {
     this.container.dataset.cityLightPlacement = this.cityLights.userData.surfaceLocked === true ? 'surface-plane' : 'floating';
     placeAircraftMarker(this.aircraft, point, bearingDegrees, aircraftAttitude);
     const aircraftScale = cameraMode === 'flightPreview'
-      ? 0.72
+      ? 1.42
       : cameraMode === 'follow'
         ? 0.34
         : lerp(1, 0.095, nearGroundStrength);
     this.aircraft.scale.setScalar(aircraftScale);
-    this.aircraft.visible = cameraMode !== 'pilotView';
+    this.aircraft.visible = cameraMode !== 'pilotView' && !isInteriorCameraMode(cameraMode);
     this.updateAirportMarkers(point, nearGroundStrength, cameraMode);
     const visibleRoutePoints = visibleRouteWindowForCameraMode(
       this.segment.derivedReplayRoute.points,
@@ -180,7 +180,9 @@ export class TravelGlobeScene {
     ];
     const sceneFocusPoint = cameraMode === 'global' || cameraMode === 'totalRoute'
       ? routeFocusPoint
-      : airportFocus.point;
+      : cameraMode === 'flightPreview' || cameraMode === 'follow' || isInteriorCameraMode(cameraMode)
+        ? point
+        : airportFocus.point;
     this.cameraController.update(point, bearingDegrees, {
       snap: snapCamera,
       focusPoint: sceneFocusPoint,
@@ -350,6 +352,10 @@ export class TravelGlobeScene {
   }
 
   private updateLabelOverlay(): void {
+    if (isFirstPersonCameraMode(this.currentCameraMode)) {
+      this.hideAllLabels();
+      return;
+    }
     if (performance.now() < this.suppressLabelsUntilMs) {
       this.hideAllLabels();
       return;
@@ -448,8 +454,8 @@ export class TravelGlobeScene {
   }
 
   private setCockpitSceneVisibility(cameraMode: CameraMode): void {
-    const isPilotView = cameraMode === 'pilotView';
-    this.renderer.domElement.classList.toggle('is-cockpit-render', isPilotView);
+    const isInterior = isFirstPersonCameraMode(cameraMode);
+    this.renderer.domElement.classList.toggle('is-cockpit-render', isInterior);
     this.earth.visible = true;
     this.clouds.visible = true;
     this.nightLights.visible = true;
@@ -834,7 +840,11 @@ function interpolateLocationPoint(a: LocationPoint, b: LocationPoint, fraction: 
 }
 
 function isFirstPersonCameraMode(cameraMode: CameraMode): boolean {
-  return cameraMode === 'pilotView' || cameraMode === 'cockpit';
+  return cameraMode === 'pilotView' || cameraMode === 'cockpit' || cameraMode === 'leftWindow' || cameraMode === 'rightWindow';
+}
+
+function isInteriorCameraMode(cameraMode: CameraMode): boolean {
+  return cameraMode === 'cockpit' || cameraMode === 'leftWindow' || cameraMode === 'rightWindow';
 }
 
 function shouldSnapCamera(
