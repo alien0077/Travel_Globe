@@ -39,7 +39,7 @@ describe('aviationstack flight candidates', () => {
     const provider = new AviationstackFlightPreloadProvider();
     const candidates = await provider.lookupFlightCandidates({
       flightNumber: 'XY987',
-      departureDate: '2026-07-22',
+      departureDate: '2026-08-20',
       departureTime: ''
     });
 

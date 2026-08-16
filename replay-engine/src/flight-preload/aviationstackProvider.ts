@@ -72,16 +72,16 @@ export class AviationstackFlightPreloadProvider {
         if (records.length > 0) {
           records.forEach(writeCachedFlight);
           const matchingRecords = records.filter((record) => matchesFlightDate(record, request.departureDate));
-          if (matchingRecords.length > 0 || !request.departureDate) {
-            return deduplicateFlightRecords(matchingRecords);
-          }
+          return deduplicateFlightRecords(matchingRecords.length > 0 ? matchingRecords : records);
         }
       } catch {
         // Network, quota, CORS, or provider errors all use the local cache path.
       }
     }
 
-    return readCachedFlights(flightNumber).filter((record) => matchesFlightDate(record, request.departureDate));
+    const cachedRecords = readCachedFlights(flightNumber);
+    const matchingCachedRecords = cachedRecords.filter((record) => matchesFlightDate(record, request.departureDate));
+    return matchingCachedRecords.length > 0 ? matchingCachedRecords : cachedRecords;
   }
 
   async preloadFlight(request: PreloadFlightRequest, selectedRecord?: CachedFlightRecord): Promise<PreloadFlightResult> {
