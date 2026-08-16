@@ -48,7 +48,7 @@ describe('aviationstack flight candidates', () => {
       'KHH-NRT'
     ]);
     expect(requestedURLs[0]).toContain('flight_iata=XY987');
-    expect(requestedURLs[0]).toContain('flight_date=2026-07-22');
+    expect(requestedURLs[0]).not.toContain('flight_date=');
     expect(provider.getCachedFlights('XY987')).toHaveLength(2);
   });
 });

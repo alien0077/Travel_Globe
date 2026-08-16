@@ -68,10 +68,13 @@ export class AviationstackFlightPreloadProvider {
 
     if (apiKey) {
       try {
-        const records = await fetchAviationstackFlights(apiKey, flightNumber, request.departureDate);
+        const records = await fetchAviationstackFlights(apiKey, flightNumber);
         if (records.length > 0) {
           records.forEach(writeCachedFlight);
-          return deduplicateFlightRecords(records);
+          const matchingRecords = records.filter((record) => matchesFlightDate(record, request.departureDate));
+          if (matchingRecords.length > 0 || !request.departureDate) {
+            return deduplicateFlightRecords(matchingRecords);
+          }
         }
       } catch {
         // Network, quota, CORS, or provider errors all use the local cache path.
@@ -136,13 +139,10 @@ async function buildFromCachedOrOffline(request: PreloadFlightRequest, flightNum
   return await buildPreloadedFlightJourneyWithRouteShapes(request);
 }
 
-async function fetchAviationstackFlights(apiKey: string, flightNumber: string, flightDate: string): Promise<CachedFlightRecord[]> {
+async function fetchAviationstackFlights(apiKey: string, flightNumber: string): Promise<CachedFlightRecord[]> {
   const url = new URL(ENDPOINT);
   url.searchParams.set('access_key', apiKey);
   url.searchParams.set('flight_iata', flightNumber);
-  if (flightDate) {
-    url.searchParams.set('flight_date', flightDate);
-  }
   url.searchParams.set('limit', '10');
 
   const response = await fetch(url.href);
