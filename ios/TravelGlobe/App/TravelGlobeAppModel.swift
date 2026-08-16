@@ -55,6 +55,11 @@ final class TravelGlobeAppModel: ObservableObject {
                 self?.publishLiveLocation(point)
             }
         }
+        self.locationRecorder.onLiveAuthorizationChange = { [weak self] status in
+            Task { @MainActor in
+                self?.publishLiveAuthorization(status)
+            }
+        }
         self.bridge.onMessage = { [weak self] message in
             self?.handleWebMessage(message)
         }
@@ -328,6 +333,25 @@ final class TravelGlobeAppModel: ObservableObject {
             payload: payload
         )
         outboundBridgeMessages.append(latestLiveLocationMessage!)
+    }
+
+    private func publishLiveAuthorization(_ status: CLAuthorizationStatus) {
+        let statusText: String
+        switch status {
+        case .authorizedAlways:
+            statusText = "authorizedAlways"
+        case .authorizedWhenInUse:
+            statusText = "authorizedWhenInUse"
+        case .denied:
+            statusText = "denied"
+        case .restricted:
+            statusText = "restricted"
+        case .notDetermined:
+            statusText = "notDetermined"
+        @unknown default:
+            statusText = "unknown"
+        }
+        enqueueBridgeMessage(type: "location.authorization", payload: ["status": statusText])
     }
 
     private func handleWebMessage(_ message: NativeBridgeMessage) {

@@ -14,11 +14,13 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
     private var activeSegmentId: String?
     private var profile: RecordingProfile = .balanced
     private var isLiveOnly = false
+    private var wantsLiveUpdates = false
     private var lastAcceptedPoint: LocationPointRecord?
     private var lastSavedPoint: LocationPointRecord?
     private var oneShotLocationRequest: OneShotLocationRequest?
 
     var onLocationUpdate: ((LocationPointRecord) -> Void)?
+    var onLiveAuthorizationChange: ((CLAuthorizationStatus) -> Void)?
 
     init(repository: JourneyRepository) {
         self.repository = repository
@@ -43,12 +45,12 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         activeJourneyId = UUID()
         activeSegmentId = nil
         isLiveOnly = true
+        wantsLiveUpdates = true
         lastAcceptedPoint = nil
         lastSavedPoint = nil
         configure(profile: .flight)
         manager.requestWhenInUseAuthorization()
-        manager.requestAlwaysAuthorization()
-        manager.startUpdatingLocation()
+        handleAuthorizationChange(manager.authorizationStatus)
     }
 
     func stop() async {
@@ -59,6 +61,7 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         activeJourneyId = nil
         activeSegmentId = nil
         isLiveOnly = false
+        wantsLiveUpdates = false
         lastAcceptedPoint = nil
         lastSavedPoint = nil
     }
@@ -114,10 +117,29 @@ final class LocationRecorder: NSObject, CLLocationManagerDelegate {
         }
     }
 
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        handleAuthorizationChange(manager.authorizationStatus)
+    }
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         if let request = oneShotLocationRequest {
             oneShotLocationRequest = nil
             request.continuation.resume(throwing: error)
+        }
+    }
+
+    private func handleAuthorizationChange(_ status: CLAuthorizationStatus) {
+        onLiveAuthorizationChange?(status)
+        guard wantsLiveUpdates else { return }
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.startUpdatingLocation()
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .denied, .restricted:
+            manager.stopUpdatingLocation()
+        @unknown default:
+            manager.stopUpdatingLocation()
         }
     }
 

@@ -2375,6 +2375,16 @@ export class TravelGlobeApp {
       this.setFlightMode(mode.mode, false);
       return;
     }
+    const authorization = parseNativePayload<{ status?: string }>(nativeMessage, 'location.authorization');
+    if (authorization) {
+      const status = authorization.status ?? 'unknown';
+      this.capability.textContent = status === 'authorizedAlways' || status === 'authorizedWhenInUse'
+        ? 'Live GPS：已取得定位權限，等待第一個 iPhone GPS 座標'
+        : status === 'denied' || status === 'restricted'
+          ? 'Live GPS：定位權限被拒絕，請到設定允許 Travel Globe 定位'
+          : `Live GPS：定位權限狀態 ${status}`;
+      return;
+    }
     const completed = parseNativePayload<NativeRecordingPayload>(nativeMessage, 'recording.completed');
     if (completed) {
       const completedJourney = completed.webJourneyId === this.journey.id
