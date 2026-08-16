@@ -164,6 +164,8 @@ export class TravelGlobeApp {
   private activeModal: 'flight-info' | 'api-key' | 'flight-data' | undefined;
   private playLongPressTimer?: number;
   private suppressNextPlayClick = false;
+  private selectedFlightCandidate?: CachedFlightRecord;
+  private flightCandidateLookupGeneration = 0;
 
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
@@ -1224,6 +1226,8 @@ export class TravelGlobeApp {
   }
 
   private renderPreloadPanel(segment: JourneySegment, renderSignal: AbortSignal): void {
+    this.selectedFlightCandidate = undefined;
+    this.flightCandidateLookupGeneration += 1;
     const form = document.createElement('form');
     form.className = 'preload-form';
 
@@ -1255,6 +1259,8 @@ export class TravelGlobeApp {
     this.preloadStatus.textContent = '可輸入 aviationstack API key 自動查航班；查到後會存在本機，API 失敗時用歷史航班 fallback。';
 
     const markPending = (): void => {
+      this.selectedFlightCandidate = undefined;
+      this.flightCandidateLookupGeneration += 1;
       this.preloadStatus.textContent = '已修改設定，請按「套用航線」更新地球、時間與航跡。';
     };
     const applyKnownFlight = (): void => {
@@ -1326,9 +1332,12 @@ export class TravelGlobeApp {
     this.flightNumberInput.addEventListener('input', () => {
       if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
         applyKnownFlight();
+        void this.promptFlightCandidateSelection();
       }
     }, { signal: renderSignal });
-    this.flightNumberInput.addEventListener('change', applyKnownFlight, { signal: renderSignal });
+    this.flightNumberInput.addEventListener('change', () => {
+      applyKnownFlight();
+    }, { signal: renderSignal });
 
     const apiKeyField = field('aviationstack API key（保存在本機）', this.aviationstackApiKeyInput, {
         placeholder: '保存在本機',
@@ -1369,30 +1378,29 @@ export class TravelGlobeApp {
   }
 
   private async preloadFlightFromForm(): Promise<void> {
-    const request: PreloadFlightRequest = {
-      flightNumber: this.flightNumberInput.value,
-      originIata: this.originInput.value,
-      destinationIata: this.destinationInput.value,
-      departureDate: this.departureDateInput.value,
-      departureTime: this.departureTimeInput.value,
-      durationMinutes: Number(this.durationInput.value) || undefined,
-      aircraftType: this.aircraftTypeSelect.value || undefined
-    };
+    const request = this.currentPreloadRequest();
     writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
 
     try {
       this.preloadStatus.textContent = '正在查詢航班資料...';
-      const candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
-      const selectedRecord = candidates.length > 1
+      const selectedRecord = this.selectedFlightCandidate && candidateMatchesRequest(this.selectedFlightCandidate, request)
+        ? this.selectedFlightCandidate
+        : undefined;
+      const candidates = selectedRecord ? [selectedRecord] : await this.flightPreloadProvider.lookupFlightCandidates(request);
+      const chosenRecord = selectedRecord ?? (candidates.length > 1
         ? await this.chooseFlightCandidate(candidates)
-        : candidates[0];
-      if (candidates.length > 1 && !selectedRecord) {
+        : candidates[0]);
+      if (chosenRecord && !selectedRecord) {
+        this.selectedFlightCandidate = chosenRecord;
+        this.applyFlightCandidateToForm(chosenRecord);
+      }
+      if (candidates.length > 1 && !chosenRecord) {
         this.preloadStatus.textContent = '已取消航段選擇。';
         return;
       }
 
       this.preloadStatus.textContent = '正在建立預載航線...';
-      const result = await this.flightPreloadProvider.preloadFlight(request, selectedRecord);
+      const result = await this.flightPreloadProvider.preloadFlight(this.currentPreloadRequest(), chosenRecord);
       await this.loadJourney(result.journey);
       const sentToNative = postNativeMessage('flightPlan.apply', flightPlanPayloadFromJourney(result.journey));
       const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
@@ -1404,6 +1412,50 @@ export class TravelGlobeApp {
     } catch (error) {
       this.preloadStatus.textContent = error instanceof Error ? error.message : '航班預載失敗';
     }
+  }
+
+  private currentPreloadRequest(): PreloadFlightRequest {
+    return {
+      flightNumber: this.flightNumberInput.value,
+      originIata: this.originInput.value,
+      destinationIata: this.destinationInput.value,
+      departureDate: this.departureDateInput.value,
+      departureTime: this.departureTimeInput.value,
+      durationMinutes: Number(this.durationInput.value) || undefined,
+      aircraftType: this.aircraftTypeSelect.value || undefined
+    };
+  }
+
+  private async promptFlightCandidateSelection(): Promise<void> {
+    const request = this.currentPreloadRequest();
+    const generation = ++this.flightCandidateLookupGeneration;
+    const candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
+    if (generation !== this.flightCandidateLookupGeneration || candidates.length <= 1) {
+      return;
+    }
+
+    const selected = await this.chooseFlightCandidate(candidates);
+    if (generation !== this.flightCandidateLookupGeneration || !selected) {
+      return;
+    }
+    this.selectedFlightCandidate = selected;
+    this.applyFlightCandidateToForm(selected);
+    this.preloadStatus.textContent = `${selected.flightNumber} 已選擇 ${selected.originIata} → ${selected.destinationIata}；請按「套用航線」建立航跡。`;
+  }
+
+  private applyFlightCandidateToForm(record: CachedFlightRecord): void {
+    this.originInput.value = record.originIata;
+    this.destinationInput.value = record.destinationIata;
+    if (record.flightDate) {
+      this.departureDateInput.value = record.flightDate;
+    }
+    if (record.departureTime) {
+      this.departureTimeInput.value = record.departureTime;
+    }
+    if (record.durationMinutes) {
+      this.durationInput.value = String(record.durationMinutes);
+    }
+    this.aircraftTypeSelect.value = normalizeAircraftSelectValue(record.aircraftType ?? '');
   }
 
   private chooseFlightCandidate(candidates: CachedFlightRecord[]): Promise<CachedFlightRecord | undefined> {
@@ -3097,6 +3149,12 @@ function formatScheduledTime(value?: string, separator = ' '): string {
     return `${separator}${value}`;
   }
   return `${separator}${timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function candidateMatchesRequest(record: CachedFlightRecord, request: PreloadFlightRequest): boolean {
+  const requestedFlightNumber = request.flightNumber.trim().toUpperCase().replace(/\s+/g, '');
+  return record.flightNumber === requestedFlightNumber
+    && (!record.flightDate || !request.departureDate || record.flightDate === request.departureDate);
 }
 
 function airportField(
