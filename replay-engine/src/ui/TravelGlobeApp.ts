@@ -25,7 +25,12 @@ import {
   summarizeBelowMe,
   type FlightOverlay
 } from '../flight/flightAnalytics';
-import { AviationstackFlightPreloadProvider, readAviationstackApiKey, writeAviationstackApiKey } from '../flight-preload/aviationstackProvider';
+import {
+  AviationstackFlightPreloadProvider,
+  readAviationstackApiKey,
+  writeAviationstackApiKey,
+  type CachedFlightRecord
+} from '../flight-preload/aviationstackProvider';
 import type { PreloadFlightRequest } from '../flight-preload/buildPreloadedFlightJourney';
 import {
   findAirportByIata,
@@ -1254,7 +1259,12 @@ export class TravelGlobeApp {
     };
     const applyKnownFlight = (): void => {
       const schedule = findScheduleByFlightNumber(this.flightNumberInput.value);
-      const cached = this.flightPreloadProvider.getCachedFlight(this.flightNumberInput.value);
+      const cachedFlights = this.flightPreloadProvider.getCachedFlights(this.flightNumberInput.value);
+      if (cachedFlights.length > 1) {
+        this.preloadStatus.textContent = `${this.flightNumberInput.value.trim().toUpperCase()} 已有 ${cachedFlights.length} 個航段快取，按「套用航線」後選擇要建立的航段。`;
+        return;
+      }
+      const cached = cachedFlights[0];
       if (!schedule && !cached) {
         markPending();
         return;
@@ -1366,8 +1376,18 @@ export class TravelGlobeApp {
     writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
 
     try {
+      this.preloadStatus.textContent = '正在查詢航班資料...';
+      const candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
+      const selectedRecord = candidates.length > 1
+        ? await this.chooseFlightCandidate(candidates)
+        : candidates[0];
+      if (candidates.length > 1 && !selectedRecord) {
+        this.preloadStatus.textContent = '已取消航段選擇。';
+        return;
+      }
+
       this.preloadStatus.textContent = '正在建立預載航線...';
-      const result = await this.flightPreloadProvider.preloadFlight(request);
+      const result = await this.flightPreloadProvider.preloadFlight(request, selectedRecord);
       await this.loadJourney(result.journey);
       const sentToNative = postNativeMessage('flightPlan.apply', flightPlanPayloadFromJourney(result.journey));
       const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
@@ -1379,6 +1399,53 @@ export class TravelGlobeApp {
     } catch (error) {
       this.preloadStatus.textContent = error instanceof Error ? error.message : '航班預載失敗';
     }
+  }
+
+  private chooseFlightCandidate(candidates: CachedFlightRecord[]): Promise<CachedFlightRecord | undefined> {
+    const panel = document.createElement('div');
+    panel.className = 'preload-flight-choices';
+
+    const title = document.createElement('strong');
+    title.textContent = `查到 ${candidates.length} 個相同航班號的航段，請選擇`;
+    panel.append(title);
+
+    const list = document.createElement('div');
+    list.className = 'preload-flight-choice-list';
+    panel.append(list);
+    this.preloadPanel.insertBefore(panel, this.preloadStatus);
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const finish = (record: CachedFlightRecord | undefined): void => {
+        if (resolved) return;
+        resolved = true;
+        panel.remove();
+        resolve(record);
+      };
+
+      candidates.forEach((record, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'preload-flight-choice';
+        button.addEventListener('click', () => finish(record));
+
+        const route = document.createElement('strong');
+        route.textContent = `${record.flightNumber}｜${airportLabel(record.originIata)} → ${airportLabel(record.destinationIata)}`;
+        const timing = document.createElement('span');
+        timing.textContent = `${record.flightDate ?? '日期未提供'}${formatScheduledTime(record.departureScheduled)}${formatScheduledTime(record.arrivalScheduled, ' → ')}`;
+        const leg = document.createElement('small');
+        leg.textContent = `第 ${index + 1} 段${record.aircraftType ? ` · ${record.aircraftType}` : ''}`;
+        button.append(route, timing, leg);
+        list.append(button);
+      });
+
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'preload-flight-choice-cancel';
+      cancel.textContent = '取消';
+      cancel.addEventListener('click', () => finish(undefined));
+      panel.append(cancel);
+    });
   }
 
   private renderTimeline(): void {
@@ -3009,6 +3076,22 @@ function normalizeAircraftSelectValue(value: string): string {
   }
   const match = aircraftTypeOptions.find((option) => option.value && normalized.includes(option.value));
   return match?.value ?? '';
+}
+
+function airportLabel(iata: string): string {
+  const airport = findAirportByIata(iata);
+  return airport ? `${iata} ${airport.municipality}` : iata;
+}
+
+function formatScheduledTime(value?: string, separator = ' '): string {
+  if (!value) {
+    return '';
+  }
+  const timestamp = new Date(value);
+  if (!Number.isFinite(timestamp.getTime())) {
+    return `${separator}${value}`;
+  }
+  return `${separator}${timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function airportField(

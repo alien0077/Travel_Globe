@@ -256,7 +256,7 @@
             <div class="steps">
               <div class="card">
                 <h3>1. 打開回放</h3>
-                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在右側「… / 更多」打開「航班預載 / API key」只輸入航班號。若有 aviationstack API key，可填入第一列「aviationstack API key（保存在本機）」；查詢成功後會快取航班，之後 API 失敗時會先用歷史航班回補。</p>
+                <p>進入首頁後會自動載入範例航班 <code>CI100</code>，也可以在右側「… / 更多」打開「航班預載 / API key」只輸入航班號。若有 aviationstack API key，可填入第一列「aviationstack API key（保存在本機）」；查詢成功後會快取航班，之後 API 失敗時會先用歷史航班回補。若同一航班號查到多段航程，會先讓你選擇正確的起訖航段。</p>
               </div>
               <div class="card">
                 <h3>2. 播放或暫停</h3>
@@ -290,7 +290,7 @@
               </tr>
               <tr>
                 <th>航班預載 / API key</th>
-                <td>手機版按右側「… / 更多」會直接展開此區。可輸入 aviationstack API key、航班號、起降機場、日期、時間、航程分鐘與機型。流程會先嘗試 aviationstack，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
+                <td>手機版按右側「… / 更多」會直接展開此區。可輸入 aviationstack API key、航班號、起降機場、日期、時間、航程分鐘與機型。流程會先嘗試 aviationstack；若同一航班號在指定日期有多個起訖航段，會列出航段讓使用者選擇，再使用本機航班快取，最後 fallback 到離線 seed 或手動 IATA。</td>
               </tr>
               <tr>
                 <th>Travel Atlas</th>
@@ -364,7 +364,7 @@
               </tr>
               <tr>
                 <th>航班號</th>
-                <td>輸入如 <code>CI100</code>、<code>FD234</code>。若離線 seed 或本機快取有資料，會自動帶入起飛、抵達、時間、航程分鐘與機型。</td>
+                <td>輸入如 <code>CI100</code>、<code>FD234</code>。若離線 seed 或本機快取有資料，會自動帶入起飛、抵達、時間、航程分鐘與機型；同號多航段會顯示選擇清單。</td>
               </tr>
               <tr>
                 <th>起飛 / 抵達</th>
@@ -460,7 +460,7 @@
           <section id="offline">
             <h2>離線使用</h2>
             <p>Flight 頁面的核心模擬不依賴外部網路；Blue Marble、Earth lights/cloud/specular 地球貼圖、Natural Earth 海岸線/國界/城市/地理區域、GeoNames 全球城市、OurAirports 機場/頻率/導航台索引、FlightGear 全球航路圖、授權飛機模型庫和範例資料都包在本地 build 裡。飛行前可先打開網頁或 iOS app 確認載入，飛行中即使沒有網路仍可使用模擬或 Live GPS。</p>
-            <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key 查詢航班；成功後會寫入本機航班快取。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 planned route、事件、ETA 和旅遊紀錄。航線會優先使用 FlightGear GPL v2 全球 airway graph 連接起降機場附近航路點；找不到可連接路徑時才退回 Great Circle estimate。OpenFlights <code>routes.dat</code> 只在 aviationstack 或使用者沒有提供機型時，用相同起降機場的 equipment code 補機型。</p>
+            <p>「航班預載」會優先使用使用者本機保存的 aviationstack API key，並以航班號加指定日期查詢；若回傳同號多航段，使用者選定的航段會以起點、終點、日期與起飛時間分開快取，不會互相覆蓋。若 API 失敗、網路不可用或沒有 key，會依序使用本機歷史航班、離線班表 seed 與手動 IATA 欄位建立 planned route、事件、ETA 和旅遊紀錄。已套用的最後一個航班旅程會保存於本機，重新開啟 Web 或 iOS Flight 頁面時會優先還原。航線會優先使用 FlightGear GPL v2 全球 airway graph 連接起降機場附近航路點；找不到可連接路徑時才退回 Great Circle estimate。OpenFlights <code>routes.dat</code> 只在 aviationstack 或使用者沒有提供機型時，用相同起降機場的 equipment code 補機型。</p>
           </section>
 
           <section id="updates">

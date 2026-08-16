@@ -219,6 +219,7 @@ struct FlightView: UIViewRepresentable {
         @MainActor
         private func markReplayReady(_ webView: WKWebView) {
             isFlightReady = true
+            appModel.replayEngineDidBecomeReady()
             sendLatestLiveLocation(to: webView)
         }
     }

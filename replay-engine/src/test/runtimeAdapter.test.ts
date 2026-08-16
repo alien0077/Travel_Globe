@@ -31,6 +31,9 @@ describe('browser runtime adapter journey history', () => {
     const loaded = await adapter.loadJourneyById(olderJourney.id);
     expect(loaded?.title).toBe('Older Journey');
 
+    const restartedAdapter = new BrowserRuntimeAdapter(sampleJourney);
+    expect((await restartedAdapter.loadJourney()).title).toBe('Older Journey');
+
     await adapter.deleteJourney(olderJourney.id);
     expect((await adapter.listSavedJourneys()).map((summary) => summary.id)).toEqual([sampleJourney.id]);
   });

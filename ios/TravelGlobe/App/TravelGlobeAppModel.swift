@@ -115,6 +115,13 @@ final class TravelGlobeAppModel: ObservableObject {
         }
     }
 
+    func replayEngineDidBecomeReady() {
+        if let selectedFlightPlan {
+            enqueueBridgeMessage(type: "flightPlan.selected", payload: FlightPlanStatusPayload(plan: selectedFlightPlan, status: "restored"))
+        }
+        enqueueFlightModeMessage()
+    }
+
     func stopRecording() async {
         await locationRecorder.stop()
         recordingState = .completed

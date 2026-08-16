@@ -19,6 +19,9 @@ export interface CachedFlightRecord {
   durationMinutes?: number;
   source: 'aviationstack';
   cachedAt: string;
+  flightDate?: string;
+  departureScheduled?: string;
+  arrivalScheduled?: string;
   lastSeenFlightDate?: string;
 }
 
@@ -56,32 +59,49 @@ interface AviationstackFlight {
 }
 
 export class AviationstackFlightPreloadProvider {
-  async preloadFlight(request: PreloadFlightRequest): Promise<PreloadFlightResult> {
+  async lookupFlightCandidates(request: PreloadFlightRequest): Promise<CachedFlightRecord[]> {
     const flightNumber = normalizeFlightNumber(request.flightNumber);
     const apiKey = readAviationstackApiKey();
-    if (!flightNumber || !apiKey) {
-      return buildFromCachedOrOffline(request, flightNumber);
+    if (!flightNumber) {
+      return [];
     }
 
-    try {
-      const record = await fetchAviationstackFlight(apiKey, flightNumber);
-      if (record) {
-        writeCachedFlight(record);
-        return await buildPreloadedFlightJourneyWithRouteShapes({
-          ...request,
-          ...record,
-          source: 'aviationstack'
-        });
+    if (apiKey) {
+      try {
+        const records = await fetchAviationstackFlights(apiKey, flightNumber, request.departureDate);
+        if (records.length > 0) {
+          records.forEach(writeCachedFlight);
+          return deduplicateFlightRecords(records);
+        }
+      } catch {
+        // Network, quota, CORS, or provider errors all use the local cache path.
       }
-    } catch {
-      // Network, quota, CORS, or provider errors all use the same local fallback path.
+    }
+
+    return readCachedFlights(flightNumber).filter((record) => matchesFlightDate(record, request.departureDate));
+  }
+
+  async preloadFlight(request: PreloadFlightRequest, selectedRecord?: CachedFlightRecord): Promise<PreloadFlightResult> {
+    const flightNumber = normalizeFlightNumber(request.flightNumber);
+    const record = selectedRecord ?? (await this.lookupFlightCandidates(request))[0];
+    if (record) {
+      writeCachedFlight(record);
+      return await buildPreloadedFlightJourneyWithRouteShapes({
+        ...request,
+        ...record,
+        source: selectedRecord ? 'aviationstack' : 'aviationstack-cache'
+      });
     }
 
     return buildFromCachedOrOffline(request, flightNumber);
   }
 
   getCachedFlight(flightNumber: string): CachedFlightRecord | undefined {
-    return readCachedFlight(normalizeFlightNumber(flightNumber));
+    return this.getCachedFlights(flightNumber)[0];
+  }
+
+  getCachedFlights(flightNumber: string): CachedFlightRecord[] {
+    return readCachedFlights(normalizeFlightNumber(flightNumber));
   }
 }
 
@@ -99,12 +119,11 @@ export function writeAviationstackApiKey(value: string): void {
 }
 
 export function readCachedFlight(flightNumber: string): CachedFlightRecord | undefined {
-  const cache = readFlightCache();
-  return cache[normalizeFlightNumber(flightNumber)];
+  return readCachedFlights(flightNumber)[0];
 }
 
 async function buildFromCachedOrOffline(request: PreloadFlightRequest, flightNumber: string): Promise<PreloadFlightResult> {
-  const cached = readCachedFlight(flightNumber);
+  const cached = readCachedFlights(flightNumber).find((record) => matchesFlightDate(record, request.departureDate));
   const manualOrigin = normalizeOptionalIata(request.originIata);
   const manualDestination = normalizeOptionalIata(request.destinationIata);
   if (cached && (!manualOrigin || !manualDestination)) {
@@ -117,10 +136,13 @@ async function buildFromCachedOrOffline(request: PreloadFlightRequest, flightNum
   return await buildPreloadedFlightJourneyWithRouteShapes(request);
 }
 
-async function fetchAviationstackFlight(apiKey: string, flightNumber: string): Promise<CachedFlightRecord | undefined> {
+async function fetchAviationstackFlights(apiKey: string, flightNumber: string, flightDate: string): Promise<CachedFlightRecord[]> {
   const url = new URL(ENDPOINT);
   url.searchParams.set('access_key', apiKey);
   url.searchParams.set('flight_iata', flightNumber);
+  if (flightDate) {
+    url.searchParams.set('flight_date', flightDate);
+  }
   url.searchParams.set('limit', '10');
 
   const response = await fetch(url.href);
@@ -131,9 +153,10 @@ async function fetchAviationstackFlight(apiKey: string, flightNumber: string): P
   if (payload.error) {
     throw new Error(payload.error.message || payload.error.code || 'aviationstack error');
   }
-  const flight = payload.data?.find((candidate) => normalizeFlightNumber(candidate.flight?.iata ?? '') === flightNumber)
-    ?? payload.data?.[0];
-  return flight ? toCachedFlightRecord(flightNumber, flight) : undefined;
+  return (payload.data ?? [])
+    .filter((candidate) => normalizeFlightNumber(candidate.flight?.iata ?? '') === flightNumber)
+    .map((flight) => toCachedFlightRecord(flightNumber, flight))
+    .filter((record): record is CachedFlightRecord => Boolean(record));
 }
 
 function toCachedFlightRecord(flightNumber: string, flight: AviationstackFlight): CachedFlightRecord | undefined {
@@ -154,6 +177,9 @@ function toCachedFlightRecord(flightNumber: string, flight: AviationstackFlight)
     durationMinutes,
     source: 'aviationstack',
     cachedAt: new Date().toISOString(),
+    flightDate: flight.flight_date,
+    departureScheduled: flight.departure?.scheduled,
+    arrivalScheduled: flight.arrival?.scheduled,
     lastSeenFlightDate: flight.flight_date
   };
 }
@@ -164,16 +190,67 @@ function readFlightCache(): Record<string, CachedFlightRecord> {
     return {};
   }
   try {
-    return JSON.parse(raw) as Record<string, CachedFlightRecord>;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(parsed).flatMap(([key, value]) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+          return [];
+        }
+        const record = value as Partial<CachedFlightRecord>;
+        if (typeof record.flightNumber !== 'string' || typeof record.originIata !== 'string' || typeof record.destinationIata !== 'string') {
+          return [];
+        }
+        return [[key, record as CachedFlightRecord]];
+      })
+    );
   } catch {
     return {};
   }
 }
 
+function readCachedFlights(flightNumber: string): CachedFlightRecord[] {
+  const normalized = normalizeFlightNumber(flightNumber);
+  if (!normalized) {
+    return [];
+  }
+  return deduplicateFlightRecords(
+    Object.values(readFlightCache()).filter((record) => normalizeFlightNumber(record.flightNumber) === normalized)
+  );
+}
+
 function writeCachedFlight(record: CachedFlightRecord): void {
   const cache = readFlightCache();
-  cache[record.flightNumber] = record;
+  cache[flightCacheKey(record)] = record;
   localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cache));
+}
+
+function flightCacheKey(record: CachedFlightRecord): string {
+  return [
+    normalizeFlightNumber(record.flightNumber),
+    record.flightDate ?? record.lastSeenFlightDate ?? '',
+    record.originIata,
+    record.destinationIata,
+    record.departureScheduled ?? record.departureTime ?? ''
+  ].join('|');
+}
+
+function deduplicateFlightRecords(records: CachedFlightRecord[]): CachedFlightRecord[] {
+  const seen = new Set<string>();
+  return records.filter((record) => {
+    const key = flightCacheKey(record);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function matchesFlightDate(record: CachedFlightRecord, departureDate: string): boolean {
+  if (!departureDate || !record.flightDate) {
+    return true;
+  }
+  return record.flightDate === departureDate;
 }
 
 function timeFromIso(value?: string): string | undefined {
