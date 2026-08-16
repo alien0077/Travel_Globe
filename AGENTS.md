@@ -66,7 +66,7 @@
 - 只有在 `xcodebuild test` exit code 為 0，且輸出/`.xcresult` 顯示該 test passed 時，才可宣稱 UI test 成功。
 - 以下訊息一律判定為測試環境阻擋，不是 App assertion 結果：`CoreSimulatorService connection invalid/refused`、`filecoordinationd crashed`、`Unable to locate any simulator runtime`、`Tests must be run on a concrete device`。記錄原始錯誤並停止重試，必要時請使用者修復 Xcode/CoreSimulator runtime。
 - 若出現 `XCTAssert` 失敗、找不到 `輸入航班`、找不到 `航班號` 或找不到多航段按鈕，才進入 App/UI test 除錯；先保留 `.xcresult` 與 isolated DerivedData，再分析 WebView 載入、accessibility label、fixture 注入與輸入流程。
-- UI test 結束後，若要清理 build 暫存，必須先列出確切目標並取得明確允許；只可刪除本次產生的 `/private/tmp/TravelGlobe*`、TravelGlobe 專用 DerivedData 與 `replay-engine/dist`，禁止批量刪除其他專案或使用 `rm -rf *`。
+- 只要本次流程曾啟動 UI test，不論 test passed、XCTest assertion 失敗或被 CoreSimulator 環境阻擋，流程最後都務必清理暫存檔；不得因測試失敗或被阻擋而跳過清理。清理前先列出確切目標並取得本次使用者明確允許，只可刪除本次產生的 `/private/tmp/TravelGlobe*`、TravelGlobe 專用 DerivedData 與 `replay-engine/dist`，禁止刪除其他專案或使用 `rm -rf *`。
 
 ## Known Issues
 - GitHub Actions 可能顯示 Node 20 deprecation warning；目前不影響成功部署，但若 action 版本升級造成失敗，再更新 workflow action versions。
