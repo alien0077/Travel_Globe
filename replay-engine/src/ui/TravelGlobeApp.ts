@@ -1261,7 +1261,12 @@ export class TravelGlobeApp {
       const schedule = findScheduleByFlightNumber(this.flightNumberInput.value);
       const cachedFlights = this.flightPreloadProvider.getCachedFlights(this.flightNumberInput.value);
       if (cachedFlights.length > 1) {
-        this.preloadStatus.textContent = `${this.flightNumberInput.value.trim().toUpperCase()} 已有 ${cachedFlights.length} 個航段快取，按「套用航線」後選擇要建立的航段。`;
+        this.originInput.value = schedule?.originIata ?? '';
+        this.destinationInput.value = schedule?.destinationIata ?? '';
+        this.departureTimeInput.value = schedule?.defaultDepartureTime ?? '';
+        this.durationInput.value = schedule?.defaultDurationMinutes ? String(schedule.defaultDurationMinutes) : '';
+        this.aircraftTypeSelect.value = normalizeAircraftSelectValue(schedule?.defaultAircraftType ?? '');
+        this.preloadStatus.textContent = `${this.flightNumberInput.value.trim().toUpperCase()} 已有 ${cachedFlights.length} 個航段快取；目前顯示該航班的預設路線，按「套用航線」後請選擇實際航段。`;
         return;
       }
       const cached = cachedFlights[0];
