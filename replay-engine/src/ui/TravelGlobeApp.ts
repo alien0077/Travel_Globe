@@ -1084,7 +1084,7 @@ export class TravelGlobeApp {
     apiField?.classList.toggle('is-hidden-for-flight', kind === 'flight-data');
     const form = this.preloadPanel.querySelector('form');
     form?.querySelector('.preload-submit')?.classList.toggle('is-hidden-for-api', kind === 'api-key');
-    this.aviationstackApiKeyInput.focus();
+    (kind === 'api-key' ? this.aviationstackApiKeyInput : this.flightNumberInput).focus();
   }
 
   private closeModal(): void {
@@ -1536,6 +1536,7 @@ export class TravelGlobeApp {
         const leg = document.createElement('small');
         leg.textContent = `第 ${index + 1} 段${record.aircraftType ? ` · ${record.aircraftType}` : ''}`;
         button.append(route, timing, leg);
+        button.setAttribute('aria-label', `${route.textContent} ${timing.textContent} ${leg.textContent}`);
         list.append(button);
       });
 
@@ -3133,6 +3134,7 @@ function field(
   input.autocomplete = 'off';
   input.required = options.required ?? true;
   input.className = 'preload-input';
+  input.setAttribute('aria-label', label);
   if (options.min) {
     input.min = options.min;
   }
@@ -3152,6 +3154,7 @@ function selectField(label: string, select: HTMLSelectElement): HTMLElement {
   const text = document.createElement('span');
   text.textContent = label;
   select.className = 'preload-input';
+  select.setAttribute('aria-label', label);
   wrapper.append(text, select);
   return wrapper;
 }

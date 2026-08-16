@@ -19,6 +19,13 @@ struct FlightView: UIViewRepresentable {
             forMainFrameOnly: true
         ))
         configuration.userContentController.addUserScript(Self.diagnosticsScript)
+        if ProcessInfo.processInfo.arguments.contains("-TravelGlobeUITestFlightCandidates") {
+            configuration.userContentController.addUserScript(WKUserScript(
+                source: Self.uiTestFlightCandidatesScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        }
         configuration.userContentController.add(context.coordinator, name: "replayDiagnostics")
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -58,6 +65,28 @@ struct FlightView: UIViewRepresentable {
     }
 
     static let replayAssetBaseURL = "travelglobe://replay/"
+
+    static let uiTestFlightCandidatesScript = """
+    (() => {
+      const cache = {
+        "FD234|2026-08-19|DMK|KHH|2026-08-19T02:35:00.000Z": {
+          flightNumber: "FD234", originIata: "DMK", destinationIata: "KHH",
+          airlineName: "Thai AirAsia", aircraftType: "A320", departureTime: "09:35",
+          durationMinutes: 270, source: "aviationstack", cachedAt: "2026-08-19T00:00:00.000Z",
+          flightDate: "2026-08-19", departureScheduled: "2026-08-19T02:35:00.000Z",
+          arrivalScheduled: "2026-08-19T07:05:00.000Z", lastSeenFlightDate: "2026-08-19"
+        },
+        "FD234|2026-08-19|KHH|NRT|2026-08-19T08:05:00.000Z": {
+          flightNumber: "FD234", originIata: "KHH", destinationIata: "NRT",
+          airlineName: "Thai AirAsia", aircraftType: "A320", departureTime: "16:05",
+          durationMinutes: 290, source: "aviationstack", cachedAt: "2026-08-19T00:00:00.000Z",
+          flightDate: "2026-08-19", departureScheduled: "2026-08-19T08:05:00.000Z",
+          arrivalScheduled: "2026-08-19T12:55:00.000Z", lastSeenFlightDate: "2026-08-19"
+        }
+      };
+      try { localStorage.setItem("travelglobe.aviationstack.flightCache.v1", JSON.stringify(cache)); } catch (_) {}
+    })();
+    """
 
     static let diagnosticsScript = WKUserScript(
         source: """

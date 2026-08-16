@@ -49,6 +49,16 @@
                ReferencedContainer = "container:TravelGlobe.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D4C3E2F1A9B8478896C6D528"
+               BuildableName = "TravelGlobeUITests.xctest"
+               BlueprintName = "TravelGlobeUITests"
+               ReferencedContainer = "container:TravelGlobe.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>
