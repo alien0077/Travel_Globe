@@ -50,6 +50,24 @@
 - iOS build smoke:
   - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build -project TravelGlobe.xcodeproj -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO`
 
+## iOS UI Test Required Flow
+- TravelGlobe 的 UI test 必須使用 `TravelGlobeUITests` target 與 shared scheme；執行前先確認：
+  - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -list -project TravelGlobe.xcodeproj` 的 Targets 同時包含 `TravelGlobe`、`TravelGlobeTests`、`TravelGlobeUITests`。
+  - `TravelGlobe.xcodeproj/xcshareddata/xcschemes/TravelGlobe.xcscheme` 的 Testables 包含 `TravelGlobeUITests`。
+- 每次 UI test 使用新的、專用的 `-derivedDataPath`，例如 `/private/tmp/TravelGlobeUITestDerived`；不要共用其他專案的 DerivedData，也不要使用未解析的 `Any iOS Device`。
+- 執行前先確認 simulator runtime 與具體裝置存在：
+  - `xcrun simctl list runtimes`
+  - `xcrun simctl list devices`
+  - 優先使用已存在的具體 destination，例如 `platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2`。
+  - 若裝置未啟動，最多重啟 CoreSimulator 一次並再次確認 `xcrun simctl list devices`；不可無限重試或把服務崩潰當成測試結果。
+- TravelGlobe UI test 的標準執行命令：
+  - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test -quiet -project TravelGlobe.xcodeproj -scheme TravelGlobe -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' -derivedDataPath /private/tmp/TravelGlobeUITestDerived CODE_SIGNING_ALLOWED=NO -only-testing:TravelGlobeUITests/TravelGlobeUITests/testFlightInputShowsMultipleFlightLegs`
+- `testFlightInputShowsMultipleFlightLegs` 使用 `-TravelGlobeUITestFlightCandidates` 注入離線固定 fixture，驗證輸入 `FD234` 後同時出現 `DMK-KHH` 與 `KHH-NRT`；fixture 只在 UI test 啟動參數下啟用，不代表正式環境硬編號。
+- 只有在 `xcodebuild test` exit code 為 0，且輸出/`.xcresult` 顯示該 test passed 時，才可宣稱 UI test 成功。
+- 以下訊息一律判定為測試環境阻擋，不是 App assertion 結果：`CoreSimulatorService connection invalid/refused`、`filecoordinationd crashed`、`Unable to locate any simulator runtime`、`Tests must be run on a concrete device`。記錄原始錯誤並停止重試，必要時請使用者修復 Xcode/CoreSimulator runtime。
+- 若出現 `XCTAssert` 失敗、找不到 `輸入航班`、找不到 `航班號` 或找不到多航段按鈕，才進入 App/UI test 除錯；先保留 `.xcresult` 與 isolated DerivedData，再分析 WebView 載入、accessibility label、fixture 注入與輸入流程。
+- UI test 結束後，若要清理 build 暫存，必須先列出確切目標並取得明確允許；只可刪除本次產生的 `/private/tmp/TravelGlobe*`、TravelGlobe 專用 DerivedData 與 `replay-engine/dist`，禁止批量刪除其他專案或使用 `rm -rf *`。
+
 ## Known Issues
 - GitHub Actions 可能顯示 Node 20 deprecation warning；目前不影響成功部署，但若 action 版本升級造成失敗，再更新 workflow action versions。
 - Vite build 可能提示單一 bundle 超過 500 kB；目前是 warning，不是 deploy blocker。若後續素材/圖層變大，再做 code-splitting 或資產分層。
