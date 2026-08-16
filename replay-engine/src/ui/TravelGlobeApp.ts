@@ -1333,29 +1333,36 @@ export class TravelGlobeApp {
       input.addEventListener('input', markPending, { signal: renderSignal });
       input.addEventListener('change', markPending, { signal: renderSignal });
     }
-    this.aviationstackApiKeyInput.addEventListener('change', () => {
-      writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
-      this.preloadStatus.textContent = this.aviationstackApiKeyInput.value.trim()
-        ? 'aviationstack API key 已保存在本機。下次套用航線會先嘗試 API，成功後寫入航班快取。'
-        : 'aviationstack API key 已清除；會使用本機快取或離線 seed。';
-    }, { signal: renderSignal });
-    this.flightNumberInput.addEventListener('input', () => {
-      if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
-        applyKnownFlight();
-      }
-      const normalizedFlightNumber = normalizeFlightNumber(this.flightNumberInput.value);
+    const scheduleFlightCandidateLookup = (): void => {
       if (this.flightCandidateLookupTimer !== undefined) {
         window.clearTimeout(this.flightCandidateLookupTimer);
+        this.flightCandidateLookupTimer = undefined;
       }
-      if (normalizedFlightNumber.length < 3) {
+      if (normalizeFlightNumber(this.flightNumberInput.value).length < 3) {
         return;
       }
       this.flightCandidateLookupTimer = window.setTimeout(() => {
         void this.promptFlightCandidateSelection();
       }, 350);
+    };
+    this.aviationstackApiKeyInput.addEventListener('change', () => {
+      writeAviationstackApiKey(this.aviationstackApiKeyInput.value);
+      this.preloadStatus.textContent = this.aviationstackApiKeyInput.value.trim()
+        ? 'aviationstack API key 已保存在本機。下次套用航線會先嘗試 API，成功後寫入航班快取。'
+        : 'aviationstack API key 已清除；會使用本機快取或離線 seed。';
+      if (this.aviationstackApiKeyInput.value.trim()) {
+        scheduleFlightCandidateLookup();
+      }
+    }, { signal: renderSignal });
+    this.flightNumberInput.addEventListener('input', () => {
+      if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
+        applyKnownFlight();
+      }
+      scheduleFlightCandidateLookup();
     }, { signal: renderSignal });
     this.flightNumberInput.addEventListener('change', () => {
       applyKnownFlight();
+      scheduleFlightCandidateLookup();
     }, { signal: renderSignal });
 
     const apiKeyField = field('aviationstack API key（保存在本機）', this.aviationstackApiKeyInput, {
@@ -1448,13 +1455,25 @@ export class TravelGlobeApp {
   private async promptFlightCandidateSelection(): Promise<void> {
     const request = this.currentPreloadRequest();
     const generation = ++this.flightCandidateLookupGeneration;
+    const cachedFlights = this.flightPreloadProvider.getCachedFlights(request.flightNumber);
+    if (!readAviationstackApiKey() && cachedFlights.length <= 1) {
+      this.preloadStatus.textContent = '尚未設定 aviationstack API key；請在有網路時輸入 API key，才能查詢並選擇多航段。';
+      return;
+    }
     let candidates: CachedFlightRecord[];
     try {
       candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
     } catch {
+      this.preloadStatus.textContent = '航班查詢失敗；請確認網路與 aviationstack API key。';
       return;
     }
-    if (generation !== this.flightCandidateLookupGeneration || candidates.length <= 1) {
+    if (generation !== this.flightCandidateLookupGeneration) {
+      return;
+    }
+    if (candidates.length <= 1) {
+      this.preloadStatus.textContent = candidates.length === 1
+        ? '目前只查到一個航段；請確認航班日期或稍後重試。'
+        : '目前查不到此航班資料；請確認航班號、網路與 API key。';
       return;
     }
 
