@@ -40,7 +40,7 @@ import {
   searchAirports,
   type AirportRecord
 } from '../flight-preload/airportIndex';
-import { findScheduleByFlightNumber } from '../flight-preload/flightScheduleIndex';
+import { findScheduleByFlightNumber, normalizeFlightNumber } from '../flight-preload/flightScheduleIndex';
 import { landmarkDisplayName, loadGlobalLandmarkIndex, windowDirectionLabel, type GeographicFeature } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
@@ -166,6 +166,7 @@ export class TravelGlobeApp {
   private suppressNextPlayClick = false;
   private selectedFlightCandidate?: CachedFlightRecord;
   private flightCandidateLookupGeneration = 0;
+  private flightCandidateLookupTimer?: number;
 
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
@@ -1226,6 +1227,10 @@ export class TravelGlobeApp {
   }
 
   private renderPreloadPanel(segment: JourneySegment, renderSignal: AbortSignal): void {
+    if (this.flightCandidateLookupTimer !== undefined) {
+      window.clearTimeout(this.flightCandidateLookupTimer);
+      this.flightCandidateLookupTimer = undefined;
+    }
     this.selectedFlightCandidate = undefined;
     this.flightCandidateLookupGeneration += 1;
     const form = document.createElement('form');
@@ -1277,6 +1282,11 @@ export class TravelGlobeApp {
       }
       const cached = cachedFlights[0];
       if (!schedule && !cached) {
+        this.originInput.value = '';
+        this.destinationInput.value = '';
+        this.departureTimeInput.value = '';
+        this.durationInput.value = '';
+        this.aircraftTypeSelect.value = '';
         markPending();
         return;
       }
@@ -1332,8 +1342,17 @@ export class TravelGlobeApp {
     this.flightNumberInput.addEventListener('input', () => {
       if (findScheduleByFlightNumber(this.flightNumberInput.value)) {
         applyKnownFlight();
-        void this.promptFlightCandidateSelection();
       }
+      const normalizedFlightNumber = normalizeFlightNumber(this.flightNumberInput.value);
+      if (this.flightCandidateLookupTimer !== undefined) {
+        window.clearTimeout(this.flightCandidateLookupTimer);
+      }
+      if (normalizedFlightNumber.length < 3) {
+        return;
+      }
+      this.flightCandidateLookupTimer = window.setTimeout(() => {
+        void this.promptFlightCandidateSelection();
+      }, 350);
     }, { signal: renderSignal });
     this.flightNumberInput.addEventListener('change', () => {
       applyKnownFlight();
@@ -1429,7 +1448,12 @@ export class TravelGlobeApp {
   private async promptFlightCandidateSelection(): Promise<void> {
     const request = this.currentPreloadRequest();
     const generation = ++this.flightCandidateLookupGeneration;
-    const candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
+    let candidates: CachedFlightRecord[];
+    try {
+      candidates = await this.flightPreloadProvider.lookupFlightCandidates(request);
+    } catch {
+      return;
+    }
     if (generation !== this.flightCandidateLookupGeneration || candidates.length <= 1) {
       return;
     }
