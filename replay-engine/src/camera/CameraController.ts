@@ -134,7 +134,7 @@ export class CameraController {
         // 客艙左右排：相機位於機身側面，並固定在地表外側，避免起飛時相機貼入地球只看到藍色背景。
         const sideDistance = THREE.MathUtils.lerp(interiorScale * 0.72, interiorScale * 1.08, altitudeFactor);
         const cabinHeight = THREE.MathUtils.lerp(0.052, 0.105, altitudeFactor);
-        const lookDown = THREE.MathUtils.lerp(0.26, 0.19, altitudeFactor);
+        const lookDown = THREE.MathUtils.lerp(0.52, 0.36, altitudeFactor);
         this.setFieldOfView(74);
         this.desired
           .copy(this.target)
