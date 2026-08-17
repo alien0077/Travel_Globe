@@ -16,6 +16,7 @@ targets:
         excludes:
           - Resources
           - Tests
+          - UITests
       - path: ios/TravelGlobe/Resources/ReplayEngine
         type: folder
         buildPhase: resources
@@ -35,6 +36,7 @@ targets:
     scheme:
       testTargets:
         - TravelGlobeTests
+        - TravelGlobeUITests
   TravelGlobeTests:
     type: bundle.unit-test
     platform: iOS
@@ -47,3 +49,16 @@ targets:
         DEVELOPMENT_TEAM: "3K99Q8NGDT"
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: true
+  TravelGlobeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - ios/TravelGlobe/UITests
+    dependencies:
+      - target: TravelGlobe
+    settings:
+      base:
+        DEVELOPMENT_TEAM: "3K99Q8NGDT"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: TravelGlobe

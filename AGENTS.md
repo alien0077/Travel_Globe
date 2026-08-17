@@ -51,6 +51,7 @@
   - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild build -project TravelGlobe.xcodeproj -scheme TravelGlobe -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/TravelGlobeDerived CODE_SIGNING_ALLOWED=NO`
 
 ## iOS UI Test Required Flow
+- XcodeGen 是 iOS project 的 source of truth；凡是 `deploy.sh ios-device` 會執行 `xcodegen generate`，UI test target 必須寫在 `project.yml`，不可只手動修改 `project.pbxproj`。`TravelGlobe` App source 必須排除 `ios/TravelGlobe/UITests`，並由 `TravelGlobeUITests` 的 `bundle.ui-testing` target 專門編譯 `TravelGlobeUITests.swift`。
 - TravelGlobe 的 UI test 必須使用 `TravelGlobeUITests` target 與 shared scheme；執行前先確認：
   - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -list -project TravelGlobe.xcodeproj` 的 Targets 同時包含 `TravelGlobe`、`TravelGlobeTests`、`TravelGlobeUITests`。
   - `TravelGlobe.xcodeproj/xcshareddata/xcschemes/TravelGlobe.xcscheme` 的 Testables 包含 `TravelGlobeUITests`。
