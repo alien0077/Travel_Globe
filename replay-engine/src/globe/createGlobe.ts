@@ -8,6 +8,7 @@ export interface GlobeObjects {
   earth: THREE.Mesh;
   clouds: THREE.Mesh;
   nightLights: THREE.Mesh;
+  atmosphere: THREE.Mesh;
 }
 
 const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
@@ -99,9 +100,10 @@ export function createGlobe(radius = 2): GlobeObjects {
   globe.add(clouds);
 
   globe.add(createNaturalEarthBoundaries(radius * 1.0004));
-  globe.add(createAtmosphere(radius));
+  const atmosphere = createAtmosphere(radius);
+  globe.add(atmosphere);
 
-  return { globe, earth, clouds, nightLights };
+  return { globe, earth, clouds, nightLights, atmosphere };
 }
 
 function createFallbackEarthTexture(): THREE.CanvasTexture {

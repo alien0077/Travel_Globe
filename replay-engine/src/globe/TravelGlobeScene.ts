@@ -45,6 +45,7 @@ export class TravelGlobeScene {
   private readonly earth: THREE.Mesh;
   private readonly clouds: THREE.Mesh;
   private readonly nightLights: THREE.Mesh;
+  private readonly atmosphere: THREE.Mesh;
   private readonly skyDome: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly nightSurfaceWash: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly ambient: THREE.AmbientLight;
@@ -103,10 +104,11 @@ export class TravelGlobeScene {
     this.scene.add(this.skyDome);
     this.scene.add(createStarField(360, 46));
 
-    const { globe, earth, clouds, nightLights } = createGlobe();
+    const { globe, earth, clouds, nightLights, atmosphere } = createGlobe();
     this.earth = earth;
     this.clouds = clouds;
     this.nightLights = nightLights;
+    this.atmosphere = atmosphere;
     this.scene.add(globe);
     this.nightSurfaceWash = createNightSurfaceWash();
     this.scene.add(this.nightSurfaceWash);
@@ -461,6 +463,8 @@ export class TravelGlobeScene {
     this.earth.visible = true;
     this.clouds.visible = true;
     this.nightLights.visible = true;
+    // 大氣層是遠景用的藍色邊緣光；近距離客艙視角若保留，會覆蓋真正地表。
+    this.atmosphere.visible = !isInterior;
     // 機內窗外要看到真實地表材質；藍色 nightSurfaceWash 只適合遠景地球視角，
     // 在客艙視角會把綠色地表錯誤染成整片藍色。
     this.nightSurfaceWash.visible = !isInterior;
