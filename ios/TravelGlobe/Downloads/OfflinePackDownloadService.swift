@@ -122,7 +122,9 @@ struct OfflinePackDownloadService {
         async let geoManifest = fetchManifest("offline-packs/core-global/manifest.json")
         async let aviationManifest = fetchManifest("offline-packs/core-global/ourairports-manifest.json")
         async let airgraphManifest = fetchManifest("offline-packs/aviation/aviation-pack-manifest.json")
-        async let runtimeSignature = headSignature(relativePath: "index.js")
+        async let runtimeJavaScriptSignature = headSignature(relativePath: "index.js")
+        async let runtimeStylesheetSignature = headSignature(relativePath: "index.css")
+        async let runtimeHTMLSignature = headSignature(relativePath: "index.html")
         let remoteGeo = try await geoManifest
         let remoteAviation = try await aviationManifest
         let remoteAirgraph = try await airgraphManifest
@@ -130,7 +132,9 @@ struct OfflinePackDownloadService {
             remoteGeo.contentSignature,
             remoteAviation.contentSignature,
             remoteAirgraph.contentSignature,
-            try await runtimeSignature
+            try await runtimeJavaScriptSignature,
+            try await runtimeStylesheetSignature,
+            try await runtimeHTMLSignature
         ].joined(separator: "|")
         return RemoteReplayRevision(
             revision: sha256(Data(signature.utf8)),

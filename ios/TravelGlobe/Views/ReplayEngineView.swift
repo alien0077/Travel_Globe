@@ -61,6 +61,7 @@ struct FlightView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.reloadIfOfflinePackUpdated(webView)
         context.coordinator.sendLatestLiveLocation(to: webView)
     }
 
@@ -127,11 +128,27 @@ struct FlightView: UIViewRepresentable {
         private var hasRuntimeDiagnostic = false
         private var didInjectReplayBundle = false
         private var isFlightReady = false
+        private var didReloadForOfflinePackUpdate = false
         private var lastSentLiveLocationId: UUID?
         private var sentBridgeMessageIds = Set<UUID>()
 
         init(appModel: TravelGlobeAppModel) {
             self.appModel = appModel
+        }
+
+        @MainActor
+        func reloadIfOfflinePackUpdated(_ webView: WKWebView) {
+            guard
+                !didReloadForOfflinePackUpdate,
+                appModel.offlinePackUpdateStatus.hasPrefix("Offline data: updated")
+            else {
+                return
+            }
+            didReloadForOfflinePackUpdate = true
+            hasRuntimeDiagnostic = false
+            didInjectReplayBundle = false
+            isFlightReady = false
+            webView.reload()
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
