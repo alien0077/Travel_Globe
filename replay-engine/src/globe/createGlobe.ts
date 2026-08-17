@@ -256,7 +256,7 @@ export function shouldRenderGlobeLabel(feature: GeographicFeature): boolean {
     return true;
   }
   if (feature.type === 'majorCity') {
-    return feature.importance >= 0.76 && feature.minZoomRank <= 8;
+    return feature.importance >= 0.76;
   }
   return feature.importance >= 0.9 && feature.minZoomRank <= 1;
 }

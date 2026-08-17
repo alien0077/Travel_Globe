@@ -607,7 +607,12 @@ input {
 }
 
 .is-pilot-view .globe-label-layer {
-  display: none;
+  display: block;
+  z-index: 6;
+}
+
+.is-window-view .globe-label-layer {
+  z-index: 6;
 }
 
 .cockpit-window {
