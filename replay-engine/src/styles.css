@@ -2608,7 +2608,7 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-hidden-data { display: none !important; }
 .inflight-modal-layer { position: absolute; inset: 0; display: grid; place-items: center; padding: 72px 14px 58px; background: rgba(0,0,0,.36); pointer-events: auto; }
 .inflight-modal-layer[hidden] { display: none; }
-.inflight-modal-card { position: relative; width: min(480px,calc(100vw - 32px)); max-height: min(82vh,560px); overflow: auto; overscroll-behavior: contain; padding: 14px 16px 13px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; color: #f8ffff; background: rgba(5,16,24,.94); box-shadow: 0 18px 60px rgba(0,0,0,.45); touch-action: pan-y; }
+.inflight-modal-card { position: relative; width: min(480px,calc(100vw - 32px)); min-width: 0; max-height: min(82vh,560px); overflow: auto; overscroll-behavior: contain; padding: 14px 16px 13px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; color: #f8ffff; background: rgba(5,16,24,.94); box-shadow: 0 18px 60px rgba(0,0,0,.45); touch-action: pan-y; }
 .inflight-modal-title { margin: 0 0 12px; text-align: center; font-size: clamp(17px,2vw,24px); }
 .inflight-modal-close { position: absolute; top: 7px; right: 11px; border: 0; color: #fff; background: transparent; font-size: 24px; cursor: pointer; }
 .inflight-airport-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; margin-bottom: 17px; }
@@ -2618,7 +2618,7 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-info-value strong { color: #fff; font-size: clamp(13px,1.35vw,18px); overflow-wrap: anywhere; }
 .inflight-info-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 13px 18px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.16); border-bottom: 1px solid rgba(255,255,255,.16); }
 .inflight-gold-button { display: block; width: min(260px,100%); min-height: 40px; margin: 17px auto 0; border: 0; border-radius: 4px; color: #33250b; background: linear-gradient(110deg,#e6bd57,#ffe28d); font-weight: 900; cursor: pointer; }
-.inflight-modal-card .preload-panel { display: block; }
+.inflight-modal-card .preload-panel { display: block; min-width: 0; }
 .inflight-modal-card .preload-form { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px 12px; align-items: start; }
 .inflight-modal-card .preload-form > .preload-field:nth-child(2) { grid-column: 1 / -1; }
 .inflight-modal-card .preload-field,
@@ -2644,32 +2644,37 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-modal-card input[type="date"]::-webkit-datetime-edit-text,
 .inflight-modal-card input[type="time"]::-webkit-datetime-edit-text { padding: 0; }
 .inflight-modal-card input[type="date"]::-webkit-date-and-time-value { text-align: left; }
-.inflight-modal-card .preload-flight-choices { max-height: 230px; overflow-y: auto; }
+.inflight-modal-card .preload-flight-choices { max-height: 230px; min-width: 0; overflow-y: auto; }
 .inflight-modal-card .preload-api-key-field, .inflight-modal-card .preload-submit { grid-column: 1 / -1; }
 .inflight-modal-card .api-only > .preload-field:not(.preload-api-key-field), .inflight-modal-card .api-only > .preload-submit, .inflight-modal-card .is-hidden-for-flight, .inflight-modal-card .is-hidden-for-api { display: none !important; }
 .inflight-modal-card .preload-status { margin-top: 10px; }
 @media (min-width: 901px) {
-  .inflight-modal-card.has-flight-choices {
+  .inflight-modal-card.has-flight-choices,
+  .inflight-modal-card:has(.preload-flight-choices) {
     width: min(760px, calc(100vw - 32px));
     margin-left: clamp(-140px, -10vw, -64px);
   }
-  .inflight-modal-card.has-flight-choices .preload-panel {
+  .inflight-modal-card.has-flight-choices .preload-panel,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-panel {
     display: grid;
     grid-template-columns: minmax(0, 1.08fr) minmax(230px, .92fr);
     gap: 12px;
     align-items: start;
   }
-  .inflight-modal-card.has-flight-choices .preload-form {
+  .inflight-modal-card.has-flight-choices .preload-form,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-form {
     grid-column: 1;
     min-width: 0;
   }
-  .inflight-modal-card.has-flight-choices .preload-flight-choices {
+  .inflight-modal-card.has-flight-choices .preload-flight-choices,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-flight-choices {
     grid-column: 2;
     grid-row: 1;
     max-height: min(340px, calc(82vh - 120px));
     margin: 0;
   }
-  .inflight-modal-card.has-flight-choices .preload-status {
+  .inflight-modal-card.has-flight-choices .preload-status,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-status {
     grid-column: 1 / -1;
   }
 }
@@ -2695,23 +2700,35 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
   .inflight-modal-card .preload-form > .preload-field:nth-child(2) { grid-column: 1; }
   .inflight-info-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
-@media (max-width: 720px) {
+@media (max-width: 900px), (pointer: coarse) {
   .inflight-modal-card {
     width: min(360px, calc(100vw - 20px));
     padding: 12px;
   }
-  .inflight-modal-card.has-flight-choices {
+  .inflight-modal-card.has-flight-choices,
+  .inflight-modal-card:has(.preload-flight-choices) {
     width: min(360px, calc(100vw - 20px));
     margin-left: 0;
   }
-  .inflight-modal-card.has-flight-choices .preload-form {
+  .inflight-modal-card.has-flight-choices .preload-form,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-form {
     display: none;
   }
-  .inflight-modal-card.has-flight-choices .preload-flight-choices {
+  .inflight-modal-card.has-flight-choices .preload-flight-choices,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-flight-choices {
     max-height: none;
+    width: 100%;
     margin: 0;
   }
-  .inflight-modal-card.has-flight-choices .preload-status {
+  .inflight-modal-card.has-flight-choices .preload-status,
+  .inflight-modal-card:has(.preload-flight-choices) .preload-status {
     display: none;
+  }
+  .inflight-modal-card .preload-flight-choice,
+  .inflight-modal-card .preload-flight-choice strong,
+  .inflight-modal-card .preload-flight-choice span,
+  .inflight-modal-card .preload-flight-choice small {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
