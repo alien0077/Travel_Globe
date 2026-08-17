@@ -2628,10 +2628,21 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-modal-card input[type="date"],
 .inflight-modal-card input[type="time"],
 .inflight-modal-card input[type="number"] { min-width: 0; max-width: 100%; font-size: 14px; }
+.inflight-modal-card input[type="date"],
+.inflight-modal-card input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-inline: 9px;
+  text-align: left;
+}
 .inflight-modal-card input[type="date"]::-webkit-calendar-picker-indicator,
 .inflight-modal-card input[type="time"]::-webkit-calendar-picker-indicator { width: 0; margin: 0; padding: 0; opacity: 0; }
 .inflight-modal-card input[type="date"]::-webkit-datetime-edit,
-.inflight-modal-card input[type="date"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+.inflight-modal-card input[type="time"]::-webkit-datetime-edit,
+.inflight-modal-card input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.inflight-modal-card input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+.inflight-modal-card input[type="date"]::-webkit-datetime-edit-text,
+.inflight-modal-card input[type="time"]::-webkit-datetime-edit-text { padding: 0; }
 .inflight-modal-card input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 .inflight-modal-card .preload-flight-choices { max-height: 230px; overflow-y: auto; }
 .inflight-modal-card .preload-api-key-field, .inflight-modal-card .preload-submit { grid-column: 1 / -1; }
