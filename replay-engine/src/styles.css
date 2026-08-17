@@ -2648,6 +2648,31 @@ html:has(.inflight-shell), body:has(.inflight-shell), .inflight-shell {
 .inflight-modal-card .preload-api-key-field, .inflight-modal-card .preload-submit { grid-column: 1 / -1; }
 .inflight-modal-card .api-only > .preload-field:not(.preload-api-key-field), .inflight-modal-card .api-only > .preload-submit, .inflight-modal-card .is-hidden-for-flight, .inflight-modal-card .is-hidden-for-api { display: none !important; }
 .inflight-modal-card .preload-status { margin-top: 10px; }
+@media (min-width: 901px) {
+  .inflight-modal-card.has-flight-choices {
+    width: min(760px, calc(100vw - 32px));
+    margin-left: clamp(-140px, -10vw, -64px);
+  }
+  .inflight-modal-card.has-flight-choices .preload-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(230px, .92fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .inflight-modal-card.has-flight-choices .preload-form {
+    grid-column: 1;
+    min-width: 0;
+  }
+  .inflight-modal-card.has-flight-choices .preload-flight-choices {
+    grid-column: 2;
+    grid-row: 1;
+    max-height: min(340px, calc(82vh - 120px));
+    margin: 0;
+  }
+  .inflight-modal-card.has-flight-choices .preload-status {
+    grid-column: 1 / -1;
+  }
+}
 @media (max-width: 900px) {
   .inflight-topbar { grid-template-columns: minmax(148px,.62fr) minmax(0,2.38fr); gap: 5px; padding-inline: 7px; }
   .inflight-top-actions { justify-content: flex-start; }

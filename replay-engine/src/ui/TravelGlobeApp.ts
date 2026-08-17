@@ -1091,6 +1091,7 @@ export class TravelGlobeApp {
   private closeModal(): void {
     this.activeModal = undefined;
     this.modalLayer.hidden = true;
+    this.modalCard.classList.remove('has-flight-choices');
     this.referenceSidePanel.hidden = true;
   }
 
@@ -1514,6 +1515,7 @@ export class TravelGlobeApp {
   private chooseFlightCandidate(candidates: CachedFlightRecord[]): Promise<CachedFlightRecord | undefined> {
     const panel = document.createElement('div');
     panel.className = 'preload-flight-choices';
+    this.modalCard.classList.add('has-flight-choices');
 
     const title = document.createElement('strong');
     title.textContent = `查到 ${candidates.length} 個相同航班號的航段，請選擇`;
@@ -1530,6 +1532,7 @@ export class TravelGlobeApp {
         if (resolved) return;
         resolved = true;
         panel.remove();
+        this.modalCard.classList.remove('has-flight-choices');
         resolve(record);
       };
 
