@@ -3,6 +3,7 @@ import {
   AviationstackFlightPreloadProvider,
   writeAviationstackApiKey
 } from '../flight-preload/aviationstackProvider';
+import { preloadRequestForCandidate } from '../ui/TravelGlobeApp';
 
 describe('aviationstack flight candidates', () => {
   beforeEach(() => {
@@ -50,6 +51,66 @@ describe('aviationstack flight candidates', () => {
     expect(requestedURLs[0]).toContain('flight_iata=XY987');
     expect(requestedURLs[0]).not.toContain('flight_date=');
     expect(provider.getCachedFlights('XY987')).toHaveLength(2);
+  });
+
+  it('keeps the selected leg authoritative when building a preload request', () => {
+    const request = preloadRequestForCandidate(
+      {
+        flightNumber: 'XY987',
+        originIata: 'KHH',
+        destinationIata: 'NRT',
+        departureDate: '2026-07-22',
+        departureTime: '18:05',
+        durationMinutes: 180,
+        aircraftType: 'A320'
+      },
+      {
+        flightNumber: 'XY987',
+        originIata: 'DMK',
+        destinationIata: 'KHH',
+        flightDate: '2026-07-22',
+        departureTime: '02:35',
+        durationMinutes: 210,
+        aircraftType: 'B737',
+        source: 'aviationstack',
+        cachedAt: '2026-07-22T00:00:00.000Z'
+      }
+    );
+
+    expect(request.originIata).toBe('DMK');
+    expect(request.destinationIata).toBe('KHH');
+    expect(request.departureDate).toBe('2026-07-22');
+    expect(request.departureTime).toBe('02:35');
+    expect(request.durationMinutes).toBe(210);
+    expect(request.aircraftType).toBe('B737');
+    expect(request.source).toBe('aviationstack');
+  });
+
+  it('builds the selected leg instead of the form default route', async () => {
+    const provider = new AviationstackFlightPreloadProvider();
+    const result = await provider.preloadFlight(
+      {
+        flightNumber: 'XY987',
+        originIata: 'KHH',
+        destinationIata: 'NRT',
+        departureDate: '2026-07-22',
+        departureTime: '18:05'
+      },
+      {
+        flightNumber: 'XY987',
+        originIata: 'DMK',
+        destinationIata: 'KHH',
+        flightDate: '2026-07-22',
+        departureTime: '02:35',
+        durationMinutes: 210,
+        source: 'aviationstack',
+        cachedAt: '2026-07-22T00:00:00.000Z'
+      }
+    );
+
+    expect(result.journey.title).toContain('DMK to KHH');
+    expect(result.journey.segments[0].origin.iataCode).toBe('DMK');
+    expect(result.journey.segments[0].destination.iataCode).toBe('KHH');
   });
 });
 

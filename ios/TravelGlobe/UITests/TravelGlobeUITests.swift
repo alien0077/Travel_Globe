@@ -29,5 +29,14 @@ final class TravelGlobeUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(candidates.count, 2)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'DMK'" )).firstMatch.exists)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'NRT'" )).firstMatch.exists)
+
+        let bangkokToKaohsiung = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS 'DMK' AND label CONTAINS 'KHH'")
+        ).firstMatch
+        XCTAssertTrue(bangkokToKaohsiung.waitForExistence(timeout: 3))
+        bangkokToKaohsiung.tap()
+
+        XCTAssertEqual((app.textFields["起飛"].value as? String), "DMK")
+        XCTAssertEqual((app.textFields["抵達"].value as? String), "KHH")
     }
 }

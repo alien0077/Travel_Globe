@@ -40,7 +40,7 @@ import {
   searchAirports,
   type AirportRecord
 } from '../flight-preload/airportIndex';
-import { findScheduleByFlightNumber, normalizeFlightNumber } from '../flight-preload/flightScheduleIndex';
+import { findScheduleByFlightNumber, normalizeFlightNumber, normalizeOptionalIata } from '../flight-preload/flightScheduleIndex';
 import { landmarkDisplayName, loadGlobalLandmarkIndex, windowDirectionLabel, type GeographicFeature } from '../geo/landmarks';
 import { formatDistance } from '../geo/geodesy';
 import { TravelGlobeScene } from '../globe/TravelGlobeScene';
@@ -165,6 +165,7 @@ export class TravelGlobeApp {
   private playLongPressTimer?: number;
   private suppressNextPlayClick = false;
   private selectedFlightCandidate?: CachedFlightRecord;
+  private flightCandidateSelectionRequired = false;
   private flightCandidateLookupGeneration = 0;
   private flightCandidateLookupTimer?: number;
 
@@ -1232,6 +1233,7 @@ export class TravelGlobeApp {
       this.flightCandidateLookupTimer = undefined;
     }
     this.selectedFlightCandidate = undefined;
+    this.flightCandidateSelectionRequired = false;
     this.flightCandidateLookupGeneration += 1;
     const form = document.createElement('form');
     form.className = 'preload-form';
@@ -1272,14 +1274,12 @@ export class TravelGlobeApp {
       const schedule = findScheduleByFlightNumber(this.flightNumberInput.value);
       const cachedFlights = this.flightPreloadProvider.getCachedFlights(this.flightNumberInput.value);
       if (cachedFlights.length > 1) {
-        this.originInput.value = schedule?.originIata ?? '';
-        this.destinationInput.value = schedule?.destinationIata ?? '';
-        this.departureTimeInput.value = schedule?.defaultDepartureTime ?? '';
-        this.durationInput.value = schedule?.defaultDurationMinutes ? String(schedule.defaultDurationMinutes) : '';
-        this.aircraftTypeSelect.value = normalizeAircraftSelectValue(schedule?.defaultAircraftType ?? '');
-        this.preloadStatus.textContent = `${this.flightNumberInput.value.trim().toUpperCase()} 已有 ${cachedFlights.length} 個航段快取；目前顯示該航班的預設路線，按「套用航線」後請選擇實際航段。`;
+        this.flightCandidateSelectionRequired = true;
+        clearFlightCandidateForm(this.originInput, this.destinationInput, this.departureTimeInput, this.durationInput, this.aircraftTypeSelect);
+        this.preloadStatus.textContent = `${this.flightNumberInput.value.trim().toUpperCase()} 已有 ${cachedFlights.length} 個航段快取，請選擇實際航段後再套用。`;
         return;
       }
+      this.flightCandidateSelectionRequired = false;
       const cached = cachedFlights[0];
       if (!schedule && !cached) {
         this.originInput.value = '';
@@ -1424,9 +1424,16 @@ export class TravelGlobeApp {
         this.preloadStatus.textContent = '已取消航段選擇。';
         return;
       }
+      if (this.flightCandidateSelectionRequired && !chosenRecord) {
+        this.preloadStatus.textContent = '此航班有多個航段，請先選擇要套用的航段。';
+        return;
+      }
 
       this.preloadStatus.textContent = '正在建立預載航線...';
-      const result = await this.flightPreloadProvider.preloadFlight(this.currentPreloadRequest(), chosenRecord);
+      const selectedRequest = chosenRecord
+        ? preloadRequestForCandidate(request, chosenRecord)
+        : request;
+      const result = await this.flightPreloadProvider.preloadFlight(selectedRequest, chosenRecord);
       await this.loadJourney(result.journey);
       const sentToNative = postNativeMessage('flightPlan.apply', flightPlanPayloadFromJourney(result.journey));
       const message = `${result.journey.title} 已預載。${result.warnings[0] ?? ''}`;
@@ -1477,11 +1484,14 @@ export class TravelGlobeApp {
       return;
     }
 
+    this.flightCandidateSelectionRequired = true;
+    clearFlightCandidateForm(this.originInput, this.destinationInput, this.departureTimeInput, this.durationInput, this.aircraftTypeSelect);
     const selected = await this.chooseFlightCandidate(candidates);
     if (generation !== this.flightCandidateLookupGeneration || !selected) {
       return;
     }
     this.selectedFlightCandidate = selected;
+    this.flightCandidateSelectionRequired = false;
     this.applyFlightCandidateToForm(selected);
     this.preloadStatus.textContent = `${selected.flightNumber} 已選擇 ${selected.originIata} → ${selected.destinationIata}；請按「套用航線」建立航跡。`;
   }
@@ -3198,9 +3208,44 @@ function formatScheduledTime(value?: string, separator = ' '): string {
 }
 
 function candidateMatchesRequest(record: CachedFlightRecord, request: PreloadFlightRequest): boolean {
-  const requestedFlightNumber = request.flightNumber.trim().toUpperCase().replace(/\s+/g, '');
-  return record.flightNumber === requestedFlightNumber
-    && (!record.flightDate || !request.departureDate || record.flightDate === request.departureDate);
+  const requestedFlightNumber = normalizeFlightNumber(request.flightNumber);
+  const requestedOrigin = normalizeOptionalIata(request.originIata);
+  const requestedDestination = normalizeOptionalIata(request.destinationIata);
+  return normalizeFlightNumber(record.flightNumber) === requestedFlightNumber
+    && (!record.flightDate || !request.departureDate || record.flightDate === request.departureDate)
+    && (!requestedOrigin || record.originIata === requestedOrigin)
+    && (!requestedDestination || record.destinationIata === requestedDestination);
+}
+
+export function preloadRequestForCandidate(
+  request: PreloadFlightRequest,
+  candidate: CachedFlightRecord
+): PreloadFlightRequest {
+  return {
+    ...request,
+    originIata: candidate.originIata,
+    destinationIata: candidate.destinationIata,
+    departureDate: candidate.flightDate ?? request.departureDate,
+    departureTime: candidate.departureTime ?? request.departureTime,
+    durationMinutes: candidate.durationMinutes ?? request.durationMinutes,
+    aircraftType: candidate.aircraftType ?? request.aircraftType,
+    airlineName: candidate.airlineName,
+    source: 'aviationstack'
+  };
+}
+
+function clearFlightCandidateForm(
+  originInput: HTMLInputElement,
+  destinationInput: HTMLInputElement,
+  departureTimeInput: HTMLInputElement,
+  durationInput: HTMLInputElement,
+  aircraftTypeSelect: HTMLSelectElement
+): void {
+  originInput.value = '';
+  destinationInput.value = '';
+  departureTimeInput.value = '';
+  durationInput.value = '';
+  aircraftTypeSelect.value = '';
 }
 
 function airportField(
