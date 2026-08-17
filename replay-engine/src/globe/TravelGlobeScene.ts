@@ -461,7 +461,9 @@ export class TravelGlobeScene {
     this.earth.visible = true;
     this.clouds.visible = true;
     this.nightLights.visible = true;
-    this.nightSurfaceWash.visible = true;
+    // 機內窗外要看到真實地表材質；藍色 nightSurfaceWash 只適合遠景地球視角，
+    // 在客艙視角會把綠色地表錯誤染成整片藍色。
+    this.nightSurfaceWash.visible = !isInterior;
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
     this.airportMarkers.visible = true;
     this.routeTrack.visible = true;
