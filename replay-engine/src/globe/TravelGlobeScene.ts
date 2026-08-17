@@ -464,6 +464,19 @@ export class TravelGlobeScene {
     // 機內窗外要看到真實地表材質；藍色 nightSurfaceWash 只適合遠景地球視角，
     // 在客艙視角會把綠色地表錯誤染成整片藍色。
     this.nightSurfaceWash.visible = !isInterior;
+    // 客艙視角不能把包住整個場景的藍色 sky dome 當成窗外地面；
+    // 同時移除夜間色彩乘色，讓窗外使用原始衛星地表貼圖的顏色。
+    this.skyDome.visible = !isInterior;
+    if (isInterior) {
+      this.scene.background = new THREE.Color(0x05090d);
+      this.renderer.setClearColor(0x05090d, 1);
+      const earthMaterial = this.earth.material;
+      if (earthMaterial instanceof THREE.MeshStandardMaterial) {
+        earthMaterial.color.set(0xffffff);
+        earthMaterial.emissive.set(0x000000);
+        earthMaterial.emissiveIntensity = 0;
+      }
+    }
     this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
     this.airportMarkers.visible = true;
     this.routeTrack.visible = true;
