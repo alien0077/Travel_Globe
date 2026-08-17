@@ -209,7 +209,30 @@ struct OfflinePackDownloadService {
         "index.html",
         "index.js",
         "index.css",
-        "readme.html"
+        "readme.html",
+        // Replay Engine 的地球材質必須跟著遠端 runtime 一起更新；
+        // 少了這些檔案時，WebGL 會退回藍色的內建 fallback 地球。
+        "blue-marble-land-ocean-ice-2048.jpg",
+        "earth-lights-2048.png",
+        "earth-clouds-1024.png",
+        "earth-specular-2048.jpg",
+        "models/aircraft/library.json",
+        "assets/aircraft/a320-200/a320-200-lod0.glb",
+        "assets/aircraft/a320-200/license.json",
+        "assets/aircraft/a321neo/a321neo-lod0.glb",
+        "assets/aircraft/a321neo/license.json",
+        "assets/aircraft/a350-900/a350-900-lod0.glb",
+        "assets/aircraft/a350-900/license.json",
+        "assets/aircraft/a380-800/a380-800-lod0.glb",
+        "assets/aircraft/a380-800/license.json",
+        "assets/aircraft/b737-800/b737-800-lod0.glb",
+        "assets/aircraft/b737-800/license.json",
+        "assets/aircraft/b767-300/b767-300-lod0.glb",
+        "assets/aircraft/b767-300/license.json",
+        "assets/aircraft/b777-300er/b777-300er-lod0.glb",
+        "assets/aircraft/b777-300er/license.json",
+        "assets/aircraft/b787-9/b787-9-lod0.glb",
+        "assets/aircraft/b787-9/license.json"
     ]
 
     private static let bundledReplayRootURL = Bundle.main.resourceURL?.appendingPathComponent("ReplayEngine", isDirectory: true)
