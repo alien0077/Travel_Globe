@@ -168,6 +168,11 @@ export class TravelGlobeApp {
   private flightCandidateSelectionRequired = false;
   private flightCandidateLookupGeneration = 0;
   private flightCandidateLookupTimer?: number;
+  private activeFlightCandidateSelection?: {
+    key: string;
+    promise: Promise<CachedFlightRecord | undefined>;
+    cancel: () => void;
+  };
 
   constructor(root: HTMLElement, journey: Journey) {
     this.root = root;
@@ -1091,6 +1096,7 @@ export class TravelGlobeApp {
   private closeModal(): void {
     this.activeModal = undefined;
     this.modalLayer.hidden = true;
+    this.cancelActiveFlightCandidateSelection();
     this.modalCard.classList.remove('has-flight-choices');
     this.referenceSidePanel.hidden = true;
   }
@@ -1233,6 +1239,7 @@ export class TravelGlobeApp {
       window.clearTimeout(this.flightCandidateLookupTimer);
       this.flightCandidateLookupTimer = undefined;
     }
+    this.cancelActiveFlightCandidateSelection();
     this.selectedFlightCandidate = undefined;
     this.flightCandidateSelectionRequired = false;
     this.flightCandidateLookupGeneration += 1;
@@ -1267,6 +1274,7 @@ export class TravelGlobeApp {
     this.preloadStatus.textContent = '可輸入 aviationstack API key 自動查航班；查到後會存在本機，API 失敗時用歷史航班 fallback。';
 
     const markPending = (): void => {
+      this.cancelActiveFlightCandidateSelection();
       this.selectedFlightCandidate = undefined;
       this.flightCandidateLookupGeneration += 1;
       this.preloadStatus.textContent = '已修改設定，請按「套用航線」更新地球、時間與航跡。';
@@ -1513,6 +1521,19 @@ export class TravelGlobeApp {
   }
 
   private chooseFlightCandidate(candidates: CachedFlightRecord[]): Promise<CachedFlightRecord | undefined> {
+    const key = candidates.map((record) => [
+      record.flightNumber,
+      record.originIata,
+      record.destinationIata,
+      record.flightDate,
+      record.departureScheduled,
+      record.arrivalScheduled
+    ].join('|')).join('||');
+    if (this.activeFlightCandidateSelection?.key === key) {
+      return this.activeFlightCandidateSelection.promise;
+    }
+    this.cancelActiveFlightCandidateSelection();
+
     const panel = document.createElement('div');
     panel.className = 'preload-flight-choices';
     this.modalCard.classList.add('has-flight-choices');
@@ -1526,40 +1547,55 @@ export class TravelGlobeApp {
     panel.append(list);
     this.preloadPanel.insertBefore(panel, this.preloadStatus);
 
-    return new Promise((resolve) => {
-      let resolved = false;
-      const finish = (record: CachedFlightRecord | undefined): void => {
-        if (resolved) return;
-        resolved = true;
-        panel.remove();
-        this.modalCard.classList.remove('has-flight-choices');
-        resolve(record);
-      };
-
-      candidates.forEach((record, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'preload-flight-choice';
-        button.addEventListener('click', () => finish(record));
-
-        const route = document.createElement('strong');
-        route.textContent = `${record.flightNumber}｜${airportLabel(record.originIata)} → ${airportLabel(record.destinationIata)}`;
-        const timing = document.createElement('span');
-        timing.textContent = `${record.flightDate ?? '日期未提供'}${formatScheduledTime(record.departureScheduled)}${formatScheduledTime(record.arrivalScheduled, ' → ')}`;
-        const leg = document.createElement('small');
-        leg.textContent = `第 ${index + 1} 段${record.aircraftType ? ` · ${record.aircraftType}` : ''}`;
-        button.append(route, timing, leg);
-        button.setAttribute('aria-label', `${route.textContent} ${timing.textContent} ${leg.textContent}`);
-        list.append(button);
-      });
-
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'preload-flight-choice-cancel';
-      cancel.textContent = '取消';
-      cancel.addEventListener('click', () => finish(undefined));
-      panel.append(cancel);
+    let resolveSelection: (record: CachedFlightRecord | undefined) => void = () => undefined;
+    let resolved = false;
+    const promise = new Promise<CachedFlightRecord | undefined>((resolve) => {
+      resolveSelection = resolve;
     });
+    const finish = (record: CachedFlightRecord | undefined): void => {
+      if (resolved) return;
+      resolved = true;
+      panel.remove();
+      this.modalCard.classList.remove('has-flight-choices');
+      if (this.activeFlightCandidateSelection?.promise === promise) {
+        this.activeFlightCandidateSelection = undefined;
+      }
+      resolveSelection(record);
+    };
+    this.activeFlightCandidateSelection = {
+      key,
+      promise,
+      cancel: () => finish(undefined)
+    };
+
+    candidates.forEach((record, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preload-flight-choice';
+      button.addEventListener('click', () => finish(record));
+
+      const route = document.createElement('strong');
+      route.textContent = `${record.flightNumber}｜${airportLabel(record.originIata)} → ${airportLabel(record.destinationIata)}`;
+      const timing = document.createElement('span');
+      timing.textContent = `${record.flightDate ?? '日期未提供'}${formatScheduledTime(record.departureScheduled)}${formatScheduledTime(record.arrivalScheduled, ' → ')}`;
+      const leg = document.createElement('small');
+      leg.textContent = `第 ${index + 1} 段${record.aircraftType ? ` · ${record.aircraftType}` : ''}`;
+      button.append(route, timing, leg);
+      button.setAttribute('aria-label', `${route.textContent} ${timing.textContent} ${leg.textContent}`);
+      list.append(button);
+    });
+
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'preload-flight-choice-cancel';
+    cancel.textContent = '取消';
+    cancel.addEventListener('click', () => finish(undefined));
+    panel.append(cancel);
+    return promise;
+  }
+
+  private cancelActiveFlightCandidateSelection(): void {
+    this.activeFlightCandidateSelection?.cancel();
   }
 
   private renderTimeline(): void {
