@@ -462,7 +462,9 @@ export class TravelGlobeScene {
     this.renderer.domElement.classList.toggle('is-cockpit-render', isInterior);
     this.earth.visible = true;
     this.clouds.visible = true;
-    this.nightLights.visible = true;
+    // 夜間全球貼圖是整張不透明底圖，近距離客艙視角會把紅圈地表整塊染暗；
+    // 客艙改用獨立的城市光點標記，讓每一個可見地表面都露出原始材質。
+    this.nightLights.visible = !isInterior;
     // 大氣層是遠景用的藍色邊緣光；近距離客艙視角若保留，會覆蓋真正地表。
     this.atmosphere.visible = !isInterior;
     // 機內窗外要看到真實地表材質；藍色 nightSurfaceWash 只適合遠景地球視角，
