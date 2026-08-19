@@ -107,6 +107,21 @@ describe('camera controller interaction', () => {
     expect(camera.fov).toBeLessThan(43);
   });
 
+  it('keeps the cockpit horizon level while aircraft pitch and roll change', () => {
+    const levelCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    const bankedCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    const levelController = new CameraController(levelCamera);
+    const bankedController = new CameraController(bankedCamera);
+    const point = { latitude: 25.1, longitude: 121.6, altitudeMeters: 5_000 };
+
+    levelController.setMode('pilotView');
+    bankedController.setMode('pilotView');
+    levelController.update(point, 52, { snap: true, aircraftPitchDegrees: 0, aircraftRollDegrees: 0 });
+    bankedController.update(point, 52, { snap: true, aircraftPitchDegrees: 8, aircraftRollDegrees: 18 });
+
+    expect(levelCamera.up.dot(bankedCamera.up)).toBeGreaterThan(0.999);
+  });
+
   it('widens pilot view and shrinks scene objects as altitude increases', () => {
     const lowCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const highCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
@@ -123,5 +138,28 @@ describe('camera controller interaction', () => {
     expect(highCamera.fov).toBeGreaterThan(lowCamera.fov + 10);
     expect(firstPersonRouteLookAheadMeters(highPoint)).toBeGreaterThan(firstPersonRouteLookAheadMeters(lowPoint) * 10);
     expect(sceneObjectScaleForAltitude(highPoint)).toBeLessThan(sceneObjectScaleForAltitude(lowPoint));
+  });
+
+  it('keeps both cabin side cameras outside the globe and aimed at the surface at every flight height', () => {
+    for (const mode of ['leftWindow', 'rightWindow'] as const) {
+      for (const altitudeMeters of [0, 500, 5_000, 11_000, 50_000]) {
+        const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
+        const controller = new CameraController(camera);
+        controller.setMode(mode);
+        controller.update(
+          { latitude: 25.1, longitude: 121.6, altitudeMeters },
+          52,
+          { snap: true, aircraftPitchDegrees: 6, aircraftRollDegrees: 8 }
+        );
+
+        const surfaceNormal = camera.position.clone().normalize();
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        expect(camera.position.length()).toBeGreaterThan(2);
+        // 側窗視線只需略朝地表，不能像 global/overhead 一樣直指地心。
+        expect(direction.dot(surfaceNormal)).toBeLessThan(-0.03);
+        expect(direction.dot(surfaceNormal)).toBeGreaterThan(-0.8);
+      }
+    }
   });
 });

@@ -6,46 +6,84 @@ import type { GeographicFeature } from '../geo/landmarks';
 export interface GlobeObjects {
   globe: THREE.Group;
   earth: THREE.Mesh;
+  boundaries: THREE.Group;
   clouds: THREE.Mesh;
   nightLights: THREE.Mesh;
   atmosphere: THREE.Mesh;
 }
 
-const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
+// NASA Blue Marble 5400×2700 gives the same detailed land texture in Web and
+// iOS. iPhone WebGL commonly reports a 4096 texture limit, so keep a 4096
+// delivery instead of silently dropping all the way to the old 2048 asset.
+const BLUE_MARBLE_FILENAME = 'blue-marble-land-ocean-ice-5400.jpg';
+const BLUE_MARBLE_MOBILE_FILENAME = 'blue-marble-land-ocean-ice-4096.jpg';
+const BLUE_MARBLE_FALLBACK_FILENAME = 'blue-marble-land-ocean-ice-2048.jpg';
 const EARTH_LIGHTS_FILENAME = 'earth-lights-2048.png';
 const EARTH_CLOUDS_FILENAME = 'earth-clouds-1024.png';
 const EARTH_SPECULAR_FILENAME = 'earth-specular-2048.jpg';
+// SphereGeometry 的經度起點與 Blue Marble 的影像起點不同；這個值讓
+// geographicToVector3(台灣) 正好落在影像中的台灣，而不是太平洋。
+const EARTH_TEXTURE_OFFSET_X = 0.25;
 
-export function createGlobe(radius = 2): GlobeObjects {
+export function createGlobe(radius = 2, textureAnisotropy = 8, maxTextureSize = Number.POSITIVE_INFINITY): GlobeObjects {
   const globe = new THREE.Group();
+  const anisotropy = Math.max(1, textureAnisotropy);
+  const preferredTextureFilename = maxTextureSize >= 5400
+    ? BLUE_MARBLE_FILENAME
+    : maxTextureSize >= 4096
+      ? BLUE_MARBLE_MOBILE_FILENAME
+      : BLUE_MARBLE_FALLBACK_FILENAME;
 
   const earthTexture = createFallbackEarthTexture();
   const textureLoader = new THREE.TextureLoader();
-  textureLoader.load(
-    resolveBundledAsset(BLUE_MARBLE_FILENAME),
-    (loadedTexture) => {
-      loadedTexture.colorSpace = THREE.SRGBColorSpace;
-      loadedTexture.anisotropy = 8;
-      loadedTexture.wrapS = THREE.RepeatWrapping;
-      loadedTexture.offset.x = 0.25;
-      earthMaterial.map = loadedTexture;
-      earthMaterial.bumpMap = loadedTexture;
-      earthMaterial.needsUpdate = true;
+  const applyEarthTexture = (loadedTexture: THREE.Texture): void => {
+    loadedTexture.colorSpace = THREE.SRGBColorSpace;
+    loadedTexture.anisotropy = anisotropy;
+    loadedTexture.wrapS = THREE.RepeatWrapping;
+    loadedTexture.offset.x = EARTH_TEXTURE_OFFSET_X;
+    earthMaterial.map = loadedTexture;
+    earthMaterial.bumpMap = loadedTexture;
+    earthMaterial.userData.externalTextureLoaded = true;
+    earthMaterial.userData.earthTextureFilename = loadedTexture.userData.sourceFilename;
+    earthMaterial.needsUpdate = true;
+  };
+  const fallbackTextureFilename = preferredTextureFilename === BLUE_MARBLE_FILENAME
+    ? BLUE_MARBLE_MOBILE_FILENAME
+    : BLUE_MARBLE_FALLBACK_FILENAME;
+  const loadFallbackEarthTexture = (): void => {
+    if (preferredTextureFilename === BLUE_MARBLE_FALLBACK_FILENAME) {
+      return;
     }
+    textureLoader.load(resolveBundledAsset(fallbackTextureFilename), (loadedTexture) => {
+      loadedTexture.userData.sourceFilename = fallbackTextureFilename;
+      applyEarthTexture(loadedTexture);
+    });
+  };
+  textureLoader.load(
+    resolveBundledAsset(preferredTextureFilename),
+    (loadedTexture) => {
+      loadedTexture.userData.sourceFilename = preferredTextureFilename;
+      applyEarthTexture(loadedTexture);
+    },
+    undefined,
+    () => loadFallbackEarthTexture()
   );
   textureLoader.load(resolveBundledAsset(EARTH_SPECULAR_FILENAME), (loadedTexture) => {
-    loadedTexture.anisotropy = 8;
+    loadedTexture.anisotropy = anisotropy;
     loadedTexture.wrapS = THREE.RepeatWrapping;
-    loadedTexture.offset.x = 0.25;
+    loadedTexture.offset.x = EARTH_TEXTURE_OFFSET_X;
     earthMaterial.roughnessMap = loadedTexture;
     earthMaterial.needsUpdate = true;
   });
   earthTexture.colorSpace = THREE.SRGBColorSpace;
-  earthTexture.anisotropy = 8;
+  earthTexture.anisotropy = anisotropy;
   earthTexture.wrapS = THREE.RepeatWrapping;
-  earthTexture.offset.x = 0.25;
+  earthTexture.offset.x = EARTH_TEXTURE_OFFSET_X;
 
-  const earthGeometry = new THREE.SphereGeometry(radius, 96, 64);
+  // 客艙側窗相機會貼近球面；低細分球面會讓一整個大三角形
+  // 覆蓋窗戶，造成「地表只有一塊單色」的錯覺。提高地表網格密度，
+  // 讓 Blue Marble 在低空、側視與駕駛艙視角仍能保留地形細節。
+  const earthGeometry = new THREE.SphereGeometry(radius, 256, 128);
   const earthMaterial = new THREE.MeshStandardMaterial({
     map: earthTexture,
     bumpMap: earthTexture,
@@ -56,6 +94,7 @@ export function createGlobe(radius = 2): GlobeObjects {
     roughness: 0.92,
     metalness: 0.0
   });
+  earthMaterial.userData.externalTextureLoaded = false;
   const earth = new THREE.Mesh(earthGeometry, earthMaterial);
   globe.add(earth);
 
@@ -68,9 +107,9 @@ export function createGlobe(radius = 2): GlobeObjects {
   });
   textureLoader.load(resolveBundledAsset(EARTH_LIGHTS_FILENAME), (loadedTexture) => {
     loadedTexture.colorSpace = THREE.SRGBColorSpace;
-    loadedTexture.anisotropy = 8;
+    loadedTexture.anisotropy = anisotropy;
     loadedTexture.wrapS = THREE.RepeatWrapping;
-    loadedTexture.offset.x = 0.25;
+    loadedTexture.offset.x = EARTH_TEXTURE_OFFSET_X;
     nightLightsMaterial.map = loadedTexture;
     nightLightsMaterial.needsUpdate = true;
   });
@@ -91,7 +130,7 @@ export function createGlobe(radius = 2): GlobeObjects {
   if (cloudMaterial instanceof THREE.MeshLambertMaterial) {
     textureLoader.load(resolveBundledAsset(EARTH_CLOUDS_FILENAME), (loadedTexture) => {
       loadedTexture.colorSpace = THREE.SRGBColorSpace;
-      loadedTexture.anisotropy = 8;
+      loadedTexture.anisotropy = anisotropy;
       loadedTexture.wrapS = THREE.RepeatWrapping;
       cloudMaterial.map = loadedTexture;
       cloudMaterial.needsUpdate = true;
@@ -99,11 +138,13 @@ export function createGlobe(radius = 2): GlobeObjects {
   }
   globe.add(clouds);
 
-  globe.add(createNaturalEarthBoundaries(radius * 1.0004));
+  const boundaries = createNaturalEarthBoundaries(radius * 1.0004);
+  boundaries.name = 'natural earth boundaries';
+  globe.add(boundaries);
   const atmosphere = createAtmosphere(radius);
   globe.add(atmosphere);
 
-  return { globe, earth, clouds, nightLights, atmosphere };
+  return { globe, earth, boundaries, clouds, nightLights, atmosphere };
 }
 
 function createFallbackEarthTexture(): THREE.CanvasTexture {
@@ -154,7 +195,7 @@ function createFallbackEarthTexture(): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
-  texture.offset.x = 0.25;
+  texture.offset.x = EARTH_TEXTURE_OFFSET_X;
   return texture;
 }
 
@@ -351,6 +392,6 @@ function createFallbackNightLightsTexture(): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
-  texture.offset.x = 0.25;
+  texture.offset.x = EARTH_TEXTURE_OFFSET_X;
   return texture;
 }

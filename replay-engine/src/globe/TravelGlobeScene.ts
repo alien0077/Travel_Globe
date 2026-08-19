@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { CameraController, type CameraMode } from '../camera/CameraController';
+import {
+  CAMERA_ALTITUDE_SCALE_METERS,
+  CameraController,
+  INTERIOR_EYE_OUTWARD_OFFSET,
+  type CameraMode
+} from '../camera/CameraController';
 import {
   altitudePerspectiveFactor,
   firstPersonRouteLookAheadMeters,
@@ -43,10 +48,14 @@ export class TravelGlobeScene {
   private readonly cameraController: CameraController;
   private readonly aircraft: THREE.Group;
   private readonly earth: THREE.Mesh;
+  private readonly earthMaterial: THREE.MeshStandardMaterial;
+  private readonly cabinEarthMaterial: THREE.MeshBasicMaterial;
+  private readonly boundaries: THREE.Group;
   private readonly clouds: THREE.Mesh;
   private readonly nightLights: THREE.Mesh;
   private readonly atmosphere: THREE.Mesh;
   private readonly skyDome: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  private readonly starField: THREE.Points;
   private readonly nightSurfaceWash: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly ambient: THREE.AmbientLight;
   private readonly sun: THREE.DirectionalLight;
@@ -64,6 +73,7 @@ export class TravelGlobeScene {
   private previousCameraMode?: CameraMode;
   private suppressLabelsUntilMs = 0;
   private previousPinchDistance?: number;
+  private snapInteriorCamera = false;
 
   constructor(
     private readonly container: HTMLElement,
@@ -81,7 +91,10 @@ export class TravelGlobeScene {
       alpha: false,
       preserveDrawingBuffer: true
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // 截圖驗收時降低畫布 backing resolution，避免高 DPI WebGL 擷取逾時；
+    // 正式 Web／iOS 不帶 proof-lowres，仍維持原本的裝置解析度。
+    const proofLowResolution = new URLSearchParams(window.location.search).has('proof-lowres');
+    this.renderer.setPixelRatio(proofLowResolution ? 1 : Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMappingExposure = 1.1;
     this.renderer.setClearColor(0x2a4d68, 1);
@@ -102,10 +115,28 @@ export class TravelGlobeScene {
     this.scene.background = new THREE.Color(0x2a4d68);
     this.scene.fog = new THREE.Fog(0x2a4d68, 9, 18);
     this.scene.add(this.skyDome);
-    this.scene.add(createStarField(360, 46));
+    this.starField = createStarField(360, 46);
+    this.scene.add(this.starField);
 
-    const { globe, earth, clouds, nightLights, atmosphere } = createGlobe();
+    const { globe, earth, boundaries, clouds, nightLights, atmosphere } = createGlobe(
+      2,
+      this.renderer.capabilities.getMaxAnisotropy(),
+      this.renderer.capabilities.maxTextureSize
+    );
     this.earth = earth;
+    this.boundaries = boundaries;
+    this.earthMaterial = earth.material as THREE.MeshStandardMaterial;
+    this.cabinEarthMaterial = new THREE.MeshBasicMaterial({
+      // 客艙視角直接顯示與 Web 全球視角相同的 Blue Marble 貼圖。
+      // 不使用球面燈光、emissive 或 bump，避免低高度側視時把地表壓成
+      // 一條灰色帶；天空亮度由場景背景處理，地表顏色由貼圖原值決定。
+      color: new THREE.Color(0xffffff),
+      map: this.earthMaterial.map ?? null,
+      // 側窗視線會貼著球面掠過；在地平線附近，浮點誤差可能讓
+      // 可見交點被判成背面。雙面只作用於客艙地表，不會讓天空變成地面，
+      // 但能確保低空與高空的貼圖連續顯示。
+      side: THREE.DoubleSide
+    });
     this.clouds = clouds;
     this.nightLights = nightLights;
     this.atmosphere = atmosphere;
@@ -143,8 +174,9 @@ export class TravelGlobeScene {
       this.activePointers.clear();
       this.previousPinchDistance = undefined;
     }
-    const snapCamera = shouldSnapCamera(this.currentPoint, point, this.previousCameraMode, cameraMode);
-    if (snapCamera && this.currentPoint) {
+    const snapCamera = shouldSnapCamera(this.currentPoint, point, this.previousCameraMode, cameraMode)
+      || (isFirstPersonCameraMode(cameraMode) && this.snapInteriorCamera);
+    if (snapCamera && this.currentPoint && !isFirstPersonCameraMode(cameraMode)) {
       this.suppressLabelsUntilMs = performance.now() + 180;
       this.hideAllLabels();
     }
@@ -192,16 +224,44 @@ export class TravelGlobeScene {
       focusPoint: sceneFocusPoint,
       focusStrength: cameraMode === 'global' || cameraMode === 'totalRoute' ? 1 : airportFocus.strength,
       nearGroundStrength,
-      aircraftRollDegrees: rollDegrees
+      aircraftRollDegrees: rollDegrees,
+      aircraftPitchDegrees: aircraftAttitude.pitchDegrees
     });
+    this.snapInteriorCamera = false;
+    this.container.dataset.cameraRadius = this.camera.position.length().toFixed(3);
+    this.container.dataset.cameraMode = cameraMode;
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    this.container.dataset.cameraEarthDot = cameraDirection.dot(this.camera.position.clone().normalize()).toFixed(3);
+    this.container.dataset.earthVisible = String(this.earth.visible);
   }
 
   start(onFrame: (timeMs: number) => void): void {
+    // proof-freeze 只供截圖驗收；一般 proof-static／無參數網址仍保持互動。
+    const staticProof = new URLSearchParams(window.location.search).has('proof-freeze');
+    let proofFrames = 0;
     this.renderer.setAnimationLoop((timeMs) => {
       onFrame(timeMs);
       this.clouds.rotation.y = timeMs * 0.000012;
       this.updateLabelOverlay();
+      this.syncCabinEarthMaterial();
       this.renderer.render(this.scene, this.camera);
+      // 只供本機視覺驗收：先把 WebGL 畫面凍結成 PNG，再停止 render loop。
+      // 這讓截圖工具擷取的是已渲染的實際畫面，而不是活動中的 WebGL buffer。
+      if (staticProof && ++proofFrames >= 120) {
+        // 驗收截圖只保留目前焦點地名；正式 render loop 不會移除任何標籤。
+        for (const label of this.landmarkLabels) {
+          label.element.remove();
+        }
+        const canvas = this.renderer.domElement;
+        const proofImage = document.createElement('img');
+        proofImage.src = canvas.toDataURL('image/png');
+        proofImage.className = canvas.className;
+        proofImage.setAttribute('aria-label', canvas.getAttribute('aria-label') ?? 'WebGL proof');
+        proofImage.style.cssText = canvas.getAttribute('style') ?? 'display: block; width: 100%; height: 100%;';
+        canvas.replaceWith(proofImage);
+        this.renderer.setAnimationLoop(null);
+      }
     });
   }
 
@@ -221,8 +281,11 @@ export class TravelGlobeScene {
   }
 
   prepareForTimelineJump(): void {
-    this.suppressLabelsUntilMs = performance.now() + 180;
-    this.hideAllLabels();
+    // 艙內視角需要持續顯示窗外地名；拖曳模擬進度時不可先清空再淡入。
+    this.suppressLabelsUntilMs = 0;
+    // 拖曳進度或切換機內視角時，下一幀要把相機錨點直接放到新的航線點，
+    // 不可沿用上一個位置慢慢追，否則使用者會以為相機沒有跟著飛機走。
+    this.snapInteriorCamera = true;
     void this.labelLayer.offsetHeight;
   }
 
@@ -336,12 +399,10 @@ export class TravelGlobeScene {
 
     this.ambient.intensity = lerp(0.95, 4.05, dayFactor);
     this.sun.intensity = lerp(0.1, 5.8, dayFactor);
-    const earthMaterial = this.earth.material;
-    if (earthMaterial instanceof THREE.MeshStandardMaterial) {
-      earthMaterial.color.lerpColors(new THREE.Color(0x8aa5b8), new THREE.Color(0xffffff), dayFactor);
-      earthMaterial.emissive.lerpColors(new THREE.Color(0x06131f), new THREE.Color(0x10202c), dayFactor);
-      earthMaterial.emissiveIntensity = lerp(0.18, 0.16, dayFactor);
-    }
+    this.earthMaterial.color.lerpColors(new THREE.Color(0x8aa5b8), new THREE.Color(0xffffff), dayFactor);
+    this.earthMaterial.emissive.lerpColors(new THREE.Color(0x06131f), new THREE.Color(0x10202c), dayFactor);
+    this.earthMaterial.emissiveIntensity = lerp(0.18, 0.16, dayFactor);
+    this.cabinEarthMaterial.color.set(0xffffff);
     if (this.clouds.material instanceof THREE.Material) {
       const cloudCover = simulatedCloudCoverFraction(point, point.timestamp);
       this.container.dataset.simulatedCloudCover = cloudCover.toFixed(3);
@@ -357,7 +418,8 @@ export class TravelGlobeScene {
   }
 
   private updateLabelOverlay(): void {
-    if (performance.now() < this.suppressLabelsUntilMs) {
+    const isInteriorView = isFirstPersonCameraMode(this.currentCameraMode);
+    if (!isInteriorView && performance.now() < this.suppressLabelsUntilMs) {
       this.hideAllLabels();
       return;
     }
@@ -366,15 +428,22 @@ export class TravelGlobeScene {
     const height = this.container.clientHeight;
     this.camera.updateMatrixWorld();
     const candidates: LabelCandidate[] = [];
-    const isInteriorView = isFirstPersonCameraMode(this.currentCameraMode);
     const maxLabelDistance = this.currentPoint
       ? isInteriorView
-        ? Math.min(820000, Math.max(180000, labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode) + 240000))
+        // 艙內窗戶只應標示視線內、且在飛行高度可合理辨識的附近地名。
+        // 之前固定放寬到至少 650 km，會把遠方大陸／島嶼的名稱強制帶進窗內。
+        ? interiorLabelDistanceLimitMeters(this.currentPoint)
         : labelDistanceLimitMeters(this.currentPoint, this.currentCameraMode)
       : 180000;
 
     for (const label of this.landmarkLabels) {
       hideLabel(label.element);
+      // 艙內望出去要標示窗外城市，不讓起降機場的高權重標籤蓋住城市地名；
+      // 需要時由 focused label 顯示一個清楚的最近地名。
+      if (isInteriorView && label.feature.type === 'airport') {
+        continue;
+      }
+      const distanceMeters = this.currentPoint ? haversineDistanceMeters(this.currentPoint, label.feature) : 0;
       const projected = label.position.clone().project(this.camera);
       if (
         projected.z <= -1 ||
@@ -383,12 +452,13 @@ export class TravelGlobeScene {
         projected.x > 1.12 ||
         projected.y < -1.12 ||
         projected.y > 1.12 ||
+        // 艙內窗景已由相機投影與 WebGL 深度緩衝決定可見地表；再用球體射線
+        // 做一次遮蔽判斷會把貼在窗內地表上的城市全部誤判成「地球背面」。
         (!isInteriorView && !isGroundPointVisibleFromCamera(this.camera.position, label.position))
       ) {
         continue;
       }
 
-      const distanceMeters = this.currentPoint ? haversineDistanceMeters(this.currentPoint, label.feature) : 0;
       if (distanceMeters > maxLabelDistance) {
         continue;
       }
@@ -400,8 +470,12 @@ export class TravelGlobeScene {
         width: Math.max(34, label.element.offsetWidth),
         height: Math.max(14, label.element.offsetHeight),
         distanceMeters,
-        opacity: labelOpacityForDistance(distanceMeters, maxLabelDistance),
-        scale: labelScaleForFeature(label.feature, distanceMeters, this.currentPoint)
+        // 窗外地名是艙內視角的主要導航資訊，不因距離淡出，避免城市光點在畫面移動時
+        // 先消失、下一幀才重新出現。
+        opacity: isInteriorView ? 1 : labelOpacityForDistance(distanceMeters, maxLabelDistance),
+        scale: isInteriorView
+          ? Math.max(0.92, labelScaleForFeature(label.feature, distanceMeters, this.currentPoint))
+          : labelScaleForFeature(label.feature, distanceMeters, this.currentPoint)
       });
     }
 
@@ -460,8 +534,15 @@ export class TravelGlobeScene {
   private setCockpitSceneVisibility(cameraMode: CameraMode): void {
     const isInterior = isFirstPersonCameraMode(cameraMode);
     this.renderer.domElement.classList.toggle('is-cockpit-render', isInterior);
+    this.renderer.domElement.setAttribute('aria-label', isInterior ? '客艙窗外地表' : '地球地表');
+    this.syncCabinEarthMaterial();
+    this.container.dataset.cabinEarthMaterial = isInterior ? 'lit-satellite-detail' : 'lit-globe';
     this.earth.visible = true;
-    this.clouds.visible = true;
+    // 雲層是遠景地球的裝飾；客艙窗要讓地表材質完整、連續地露出。
+    this.clouds.visible = !isInterior;
+    // 國界線是全球視角的輔助圖層；客艙窗只顯示地表材質與城市名稱，
+    // 避免線段在地球邊緣或另一側形成紅圈中的「透視地球」假象。
+    this.boundaries.visible = !isInterior;
     // 夜間全球貼圖是整張不透明底圖，近距離客艙視角會把紅圈地表整塊染暗；
     // 客艙改用獨立的城市光點標記，讓每一個可見地表面都露出原始材質。
     this.nightLights.visible = !isInterior;
@@ -473,19 +554,61 @@ export class TravelGlobeScene {
     // 客艙視角不能把包住整個場景的藍色 sky dome 當成窗外地面；
     // 同時移除夜間色彩乘色，讓窗外使用原始衛星地表貼圖的顏色。
     this.skyDome.visible = !isInterior;
+    // 星點只屬於全球夜空。機內視角不應在白天的窗外出現黑夜星空，
+    // 也不應讓星場和窗外地表重疊成黑色三角區。
+    this.starField.visible = !isInterior;
     if (isInterior) {
-      this.scene.background = new THREE.Color(0x05090d);
-      this.renderer.setClearColor(0x05090d, 1);
-      const earthMaterial = this.earth.material;
-      if (earthMaterial instanceof THREE.MeshStandardMaterial) {
-        earthMaterial.color.set(0xffffff);
-        earthMaterial.emissive.set(0x000000);
-        earthMaterial.emissiveIntensity = 0;
-      }
+      // updateDayNight() 已依航跡時間與位置設定正確日夜背景；這裡不能再
+      // 覆寫成固定黑色，否則白天左右／駕駛艙視角會永遠像夜景。
+      this.earth.material = this.cabinEarthMaterial;
+    } else {
+      this.earth.material = this.earthMaterial;
     }
-    this.cityLights.visible = this.cityLightMaterial.opacity > 0.08;
-    this.airportMarkers.visible = true;
-    this.routeTrack.visible = true;
+    this.cityLights.visible = !isInterior && this.cityLightMaterial.opacity > 0.08;
+    this.airportMarkers.visible = !isInterior;
+    this.routeTrack.visible = !isInterior;
+    this.updateInteriorTerrainClip(isInterior);
+  }
+
+  private updateInteriorTerrainClip(isInterior: boolean): void {
+    if (!isInterior || !this.currentPoint) {
+      this.camera.near = 0.1;
+      this.camera.far = 100;
+      this.camera.updateProjectionMatrix();
+      return;
+    }
+
+    // 場景半徑為 2；相機高度換算到同一座標後，地平線弦長為
+    // sqrt((R+h)^2 - R^2)。艙內不是把遠方地表霧化，而是直接不渲染
+    // 超出客艙近景範圍的球面片段，讓窗外不會出現整片遠方大陸。
+    const altitudeScene = Math.max(0, this.currentPoint.altitudeMeters ?? 0) / CAMERA_ALTITUDE_SCALE_METERS;
+    const cameraRadius = 2 + altitudeScene + INTERIOR_EYE_OUTWARD_OFFSET;
+    const horizonSceneDistance = Math.sqrt(Math.max(0, cameraRadius * cameraRadius - 4));
+    // 不再用 0.2 的固定場景下限（那相當於約 637 公里）；
+    // 只依當下高度的地平線比例裁切，避免高空仍看到遠方大陸。
+    this.camera.near = 0.0001;
+    this.camera.far = Math.max(0.018, horizonSceneDistance * 0.58);
+    this.camera.updateProjectionMatrix();
+  }
+
+  private syncCabinEarthMaterial(): void {
+    const earthMap = this.earthMaterial.map;
+    if (this.cabinEarthMaterial.map !== earthMap) {
+      // 貼圖是非同步載入；不能只在切換視角時複製一次，否則艙內會永久
+      // 留在初始的暗色 fallback，而全球視角已經顯示出真實地表。
+      this.cabinEarthMaterial.map = earthMap;
+      this.cabinEarthMaterial.needsUpdate = true;
+    }
+    this.container.dataset.cabinEarthTexture = this.earthMaterial.userData.externalTextureLoaded === true
+      ? 'loaded'
+      : 'fallback';
+    this.container.dataset.cabinEarthTextureFilename = this.earthMaterial.userData.earthTextureFilename ?? 'fallback-canvas';
+    this.renderer.domElement.setAttribute(
+      'aria-description',
+      this.earthMaterial.userData.externalTextureLoaded === true
+        ? `高解析衛星地表 ${this.earthMaterial.userData.earthTextureFilename ?? ''}`
+        : '地表材質 fallback'
+    );
   }
 
   private showFocusedAirportLabel(width: number, height: number): void {
@@ -493,28 +616,66 @@ export class TravelGlobeScene {
       return;
     }
     const airportFocus = airportFocusForPoint(this.currentPoint, this.segment);
-    if (!airportFocus.point || airportFocus.strength < 0.68) {
-      return;
-    }
-    for (const label of this.landmarkLabels) {
-      if (
-        label.feature.type === 'airport' &&
-        haversineDistanceMeters(label.feature, airportFocus.point) < 1200
-      ) {
-        hideLabel(label.element);
+    let focusPoint = airportFocus.point;
+    let focusStrength = airportFocus.strength;
+    let focusText = focusPoint ? airportFocusLabel(focusPoint) : '';
+    let isNearbyPlace = false;
+
+    if (isFirstPersonCameraMode(this.currentCameraMode)) {
+      const nearest = this.landmarkLabels
+        .map((label) => ({
+          feature: label.feature,
+          distanceMeters: haversineDistanceMeters(this.currentPoint!, label.feature)
+        }))
+        .filter(({ feature, distanceMeters }) =>
+          // 先選出最近城市，再由畫面投影決定位置；不能因為地名資料
+          // 的稀疏度讓窗外完全沒有任何城市名稱。
+          feature.type !== 'airport' && distanceMeters <= interiorLabelDistanceLimitMeters(this.currentPoint!)
+        )
+        .sort((a, b) => a.distanceMeters - b.distanceMeters)[0];
+      if (nearest) {
+        focusPoint = nearest.feature;
+        focusStrength = Math.max(0.68, 1 - nearest.distanceMeters / interiorLabelDistanceLimitMeters(this.currentPoint));
+        focusText = landmarkDisplayName(nearest.feature);
+        isNearbyPlace = true;
       }
     }
-    const vector = geographicToVector3(airportFocus.point, 2.008, 900000);
-    const projected = new THREE.Vector3(vector.x, vector.y, vector.z).project(this.camera);
-    if (projected.z <= -1 || projected.z >= 1 || projected.x < -1.2 || projected.x > 1.2 || projected.y < -1.2 || projected.y > 1.2) {
+
+    if (!focusPoint || focusStrength < 0.68) {
       return;
     }
-    this.focusedAirportLabel.textContent = airportFocusLabel(airportFocus.point);
-    const x = ((projected.x + 1) / 2) * width + 22;
-    const y = ((-projected.y + 1) / 2) * height - 18;
+
+    if (!isNearbyPlace) {
+      for (const label of this.landmarkLabels) {
+        if (
+          label.feature.type === 'airport' &&
+          haversineDistanceMeters(label.feature, focusPoint) < 1200
+        ) {
+          hideLabel(label.element);
+        }
+      }
+    }
+
+    const vector = geographicToVector3(focusPoint, 2.002, 900000);
+    const projected = new THREE.Vector3(vector.x, vector.y, vector.z).project(this.camera);
+    const isProjectedInside = projected.z > -1 && projected.z < 1 && projected.x >= -1.2 && projected.x <= 1.2 && projected.y >= -1.2 && projected.y <= 1.2;
+    if (isFirstPersonCameraMode(this.currentCameraMode)) {
+      const focusPosition = new THREE.Vector3(vector.x, vector.y, vector.z);
+      if (
+        (!isProjectedInside && !isNearbyPlace) ||
+        (!isFirstPersonCameraMode(this.currentCameraMode) && !isGroundPointVisibleFromCamera(this.camera.position, focusPosition))
+      ) {
+        hideLabel(this.focusedAirportLabel);
+        return;
+      }
+    }
+    const x = isProjectedInside ? ((projected.x + 1) / 2) * width + 22 : width * 0.5 - 72;
+    const y = isProjectedInside ? ((-projected.y + 1) / 2) * height - 18 : height * 0.62;
+    this.focusedAirportLabel.classList.toggle('is-nearby-place', isNearbyPlace);
+    this.focusedAirportLabel.textContent = focusText;
     this.focusedAirportLabel.classList.remove('is-hidden');
     this.focusedAirportLabel.style.opacity = '1';
-    this.focusedAirportLabel.style.transform = `translate(${x}px, ${y}px) scale(${(1.16 + airportFocus.strength * 0.2).toFixed(3)})`;
+    this.focusedAirportLabel.style.transform = `translate(${x}px, ${y}px) scale(${(1.16 + focusStrength * 0.2).toFixed(3)})`;
   }
 }
 
@@ -633,7 +794,9 @@ function createDomLandmarkLabels(layer: HTMLDivElement, features: GeographicFeat
     element.textContent = landmarkDisplayName(feature);
     layer.appendChild(element);
 
-    const vector = geographicToVector3(feature, 2.006, 900000);
+    // 標籤錨點直接放在地球表面，只留極小偏移避免 z-fighting；
+    // 不再用 2.03 的大浮高，讓城市名稱像貼紙一樣跟著地表移動。
+    const vector = geographicToVector3(feature, 2.002, 900000);
     labels.push({
       element,
       feature,
@@ -774,6 +937,16 @@ function labelDistanceLimitMeters(point: LocationPoint, cameraMode: CameraMode):
   }
 }
 
+function interiorLabelDistanceLimitMeters(point: LocationPoint): number {
+  const altitudeMeters = Math.max(0, point.altitudeMeters ?? 0);
+  // 地平線距離 d = sqrt(2Rh + h²)。機上視角不應等到城市已經貼近飛機
+  // 才顯示；取地平線約一半作為「可辨識地名半徑」，讓遠方城市提前出現，
+  // 同時仍不會把整個地平線外的大陸地名全部帶入窗內。
+  // 不設固定最小／最大公里數：起飛低空幾乎只能看近處，高度上升才自然看得更遠。
+  const horizonMeters = Math.sqrt(2 * EARTH_RADIUS_METERS * altitudeMeters + altitudeMeters * altitudeMeters);
+  return horizonMeters * 0.5;
+}
+
 function labelScaleForFeature(feature: GeographicFeature, distanceMeters: number, point?: LocationPoint): number {
   if (feature.type !== 'airport') {
     return 1;
@@ -798,7 +971,7 @@ function labelCountLimit(cameraMode: CameraMode): number {
     case 'cockpit':
     case 'leftWindow':
     case 'rightWindow':
-      return 12;
+      return 16;
     case 'flightPreview':
     case 'midFlight':
     case 'follow':

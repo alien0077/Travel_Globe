@@ -291,6 +291,7 @@ final class ReplayAssetSchemeHandler: NSObject, WKURLSchemeHandler {
                 httpVersion: "HTTP/1.1",
                 headerFields: [
                     "Content-Type": Self.mimeType(for: fileURL),
+                    "Content-Length": String(data.count),
                     "Access-Control-Allow-Origin": "*",
                     "Cache-Control": "no-cache"
                 ]

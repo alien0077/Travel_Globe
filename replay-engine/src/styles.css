@@ -89,6 +89,12 @@ input {
     radial-gradient(ellipse at 50% 24%, rgb(224 247 255 / 22%), rgb(74 164 224 / 0%) 62%);
 }
 
+/* 左右客艙窗只顯示 Three.js 的地球表面；不能再把整個窗洞覆蓋成藍色濾鏡。 */
+.is-window-view .globe-viewport::after,
+.is-window-view .globe-viewport.is-daylight::after {
+  background: transparent;
+}
+
 .globe-viewport canvas:active {
   cursor: grabbing;
 }
@@ -117,7 +123,8 @@ input {
     0 0 5px rgb(0 0 0 / 74%);
   white-space: nowrap;
   transform: translate(-9999px, -9999px);
-  translate: -3px -50%;
+  transform-origin: left bottom;
+  translate: -3px -100%;
   transition: opacity 180ms ease-out;
 }
 
@@ -163,6 +170,31 @@ input {
   color: #fff7cf;
   font-size: 14px;
   text-overflow: ellipsis;
+}
+
+.globe-place-label.is-nearby-place {
+  max-width: min(240px, calc(100vw - 80px));
+  color: #eaffdb;
+  font-size: 15px;
+}
+
+/* 艙內往外看時，地名是窗外導航資訊：保持穩定、不做淡出，避免地名在
+   相機移動或模擬進度更新時短暫消失。 */
+.is-pilot-view .globe-place-label,
+.is-window-view .globe-place-label {
+  max-width: 180px;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow:
+    0 2px 3px rgb(0 0 0 / 98%),
+    0 0 7px rgb(0 0 0 / 96%),
+    0 0 12px rgb(0 0 0 / 72%);
+  transition: none;
+}
+
+.is-pilot-view .globe-place-label.is-airport,
+.is-window-view .globe-place-label.is-airport {
+  font-size: 15px;
 }
 
 .overlay {
@@ -606,13 +638,37 @@ input {
   opacity: 1;
 }
 
+/* 機內視角只把 WebGL 畫面送進真正的窗孔；窗孔外由機身層完全遮住。
+   這個裁切跟著飛機 bank 旋轉，避免 canvas 在窗框外透視到地球或背景。 */
+.is-window-view .globe-viewport,
+.is-pilot-view .globe-viewport {
+  z-index: 6;
+  overflow: hidden;
+  transform: rotate(var(--cabin-bank-angle, 0deg));
+  transform-origin: 50% 50%;
+}
+
+.is-window-view .globe-viewport {
+  /* 比黑色窗框內緣再縮一點，旋轉時四角也不能露出 canvas。 */
+  clip-path: inset(16% 14% 32% round 13% 13% 18% 18% / 14% 14% 18% 18%);
+}
+
+.is-pilot-view .globe-viewport {
+  clip-path: inset(6% 7% 11% round 13% 13% 18% 18% / 14% 14% 18% 18%);
+}
+
 .is-pilot-view .globe-label-layer {
   display: block;
-  z-index: 6;
+  /* 地名必須蓋在窗外 WebGL 景色上；原本 z-index 6 被 cockpit-window
+     的機身層完全遮住，所以畫面有地表卻沒有城市名稱。 */
+  z-index: 8;
+  clip-path: inset(6% 7% 11% round 13% 13% 18% 18% / 14% 14% 18% 18%);
 }
 
 .is-window-view .globe-label-layer {
-  z-index: 6;
+  /* 地名跟著窗洞顯示，機身層級較高時不會在機身外浮出。 */
+  z-index: 8;
+  clip-path: inset(16% 14% 32% round 13% 13% 18% 18% / 14% 14% 18% 18%);
 }
 
 .cockpit-window {
@@ -621,7 +677,7 @@ input {
   display: none;
   overflow: hidden;
   pointer-events: none;
-  z-index: 3;
+  z-index: 7;
   background: transparent;
 }
 
@@ -631,10 +687,107 @@ input {
 
 /* 左右客艙窗：中央保留 3D 景色，外圍以客艙窗框與座位側壁包住畫面。 */
 .is-window-view .cockpit-window {
+  z-index: 7;
   display: block;
   transform: rotate(var(--cabin-bank-angle, 0deg));
   transform-origin: 50% 50%;
   overflow: visible;
+}
+
+/* 客艙側窗外不是整個畫面都能透視；窗洞以外必須是不透明的機身內襯。 */
+.cabin-fuselage-shell {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+}
+
+.is-window-view .cabin-fuselage-shell {
+  z-index: 3;
+  display: block;
+  background: transparent;
+}
+
+.is-pilot-view .cabin-fuselage-shell {
+  z-index: 3;
+  display: block;
+  background: transparent;
+}
+
+/*
+   這兩條是窗孔外的「實體機身」遮罩，不是裝飾陰影。
+   WebGL canvas 會因 bank 旋轉而在圓角窗框附近露出三角形；
+   讓遮罩在 cockpit-window 內先蓋住左右邊緣，確保窗外永遠不會透視到地球。
+*/
+.is-window-view .cabin-fuselage-shell::before,
+.is-window-view .cabin-fuselage-shell::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 22%;
+  background:
+    linear-gradient(155deg, rgb(55 64 68 / 96%), rgb(19 25 29 / 98%) 42%, rgb(5 8 10 / 99%)),
+    repeating-linear-gradient(96deg, rgb(255 255 255 / 8%) 0 1px, transparent 1px 9px);
+  box-shadow: inset 0 0 22px rgb(0 0 0 / 78%);
+  content: "";
+  pointer-events: none;
+}
+
+.is-window-view .cabin-fuselage-shell::before {
+  left: 0;
+}
+
+.is-window-view .cabin-fuselage-shell::after {
+  right: 0;
+}
+
+/* 機身板與窗框共同形成客艙內襯；不再用整面 pseudo-element 覆蓋窗洞，
+   避免把窗內地表誤染成灰色。 */
+.is-window-view .cabin-fuselage-shell > div,
+.is-pilot-view .cabin-fuselage-shell > div {
+  display: block;
+}
+
+.cabin-fuselage-shell > div {
+  position: absolute;
+  background:
+    linear-gradient(155deg, rgb(55 64 68 / 96%), rgb(19 25 29 / 98%) 42%, rgb(5 8 10 / 99%)),
+    repeating-linear-gradient(96deg, rgb(255 255 255 / 8%) 0 1px, transparent 1px 9px);
+  box-shadow: inset 0 0 22px rgb(0 0 0 / 78%), inset 0 -1px 0 rgb(225 235 236 / 18%);
+}
+
+.cabin-fuselage-top {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 16%;
+  border-bottom: 1px solid rgb(220 230 232 / 14%);
+}
+
+.cabin-fuselage-left {
+  top: 12%;
+  bottom: 30%;
+  left: 0;
+  width: 18%;
+  border-right: 1px solid rgb(220 230 232 / 14%);
+}
+
+.cabin-fuselage-right {
+  top: 12%;
+  right: 0;
+  bottom: 30%;
+  width: 18%;
+  border-left: 1px solid rgb(220 230 232 / 14%);
+}
+
+.cabin-fuselage-bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 30%;
+  border-top: 1px solid rgb(220 230 232 / 14%);
 }
 
 .is-pilot-view .cockpit-window {
@@ -644,11 +797,11 @@ input {
 .is-window-view .cockpit-window::before {
   position: absolute;
   z-index: 4;
-  inset: 3% 4% 8%;
+  inset: 10% 6% 26%;
   border: 22px solid rgb(18 21 24 / 92%);
   border-bottom-width: 34px;
   border-radius: 47% 47% 18% 18% / 43% 43% 18% 18%;
-  box-shadow: inset 0 0 0 2px rgb(214 221 224 / 22%), inset 0 0 28px rgb(0 0 0 / 52%), 0 0 0 2px rgb(4 7 10 / 84%), 0 0 0 100vmax rgb(10 12 14 / 96%);
+  box-shadow: inset 0 0 0 2px rgb(214 221 224 / 22%), inset 0 0 28px rgb(0 0 0 / 52%), 0 0 0 2px rgb(4 7 10 / 84%);
   content: "";
 }
 
@@ -660,7 +813,7 @@ input {
   border: 22px solid rgb(18 21 24 / 92%);
   border-bottom-width: 34px;
   border-radius: 47% 47% 18% 18% / 43% 43% 18% 18%;
-  box-shadow: inset 0 0 0 2px rgb(214 221 224 / 22%), inset 0 0 28px rgb(0 0 0 / 52%), 0 0 0 2px rgb(4 7 10 / 84%), 0 0 0 100vmax rgb(10 12 14 / 96%);
+  box-shadow: inset 0 0 0 2px rgb(214 221 224 / 22%), inset 0 0 28px rgb(0 0 0 / 52%), 0 0 0 2px rgb(4 7 10 / 84%);
   content: "";
 }
 
@@ -671,17 +824,17 @@ input {
   bottom: 0;
   left: 0;
   height: 16%;
-  background: linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
-  box-shadow: 0 -2px 0 rgb(239 244 244 / 18%);
+  background: transparent;
+  box-shadow: none;
   content: "";
 }
 
 .is-left-window .cockpit-window::after {
-  background: linear-gradient(90deg, rgb(8 10 12 / 62%), transparent 20%), linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
+  background: transparent;
 }
 
 .is-right-window .cockpit-window::after {
-  background: linear-gradient(270deg, rgb(8 10 12 / 62%), transparent 20%), linear-gradient(180deg, rgb(32 35 38 / 12%), rgb(8 10 12 / 94%) 30%, rgb(4 5 6 / 98%));
+  background: transparent;
 }
 
 .cockpit-sky {

@@ -246,6 +246,7 @@ export class TravelGlobeApp {
     this.referenceMenuButton.hidden = true;
     this.cockpitWindow.className = 'cockpit-window';
     this.cockpitWindow.replaceChildren(
+      createCabinFuselageShell(),
       Object.assign(document.createElement('div'), { className: 'cockpit-sky' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-terrain' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-clouds' }),
@@ -452,6 +453,7 @@ export class TravelGlobeApp {
     this.cockpitWindow.className = 'cockpit-window';
     this.cockpitWindow.setAttribute('aria-hidden', 'true');
     this.cockpitWindow.replaceChildren(
+      createCabinFuselageShell(),
       Object.assign(document.createElement('div'), { className: 'cockpit-sky' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-terrain' }),
       Object.assign(document.createElement('div'), { className: 'cockpit-clouds' }),
@@ -869,7 +871,8 @@ export class TravelGlobeApp {
     const actualRoute = getActualRouteThrough(this.segment, this.clock.currentSeconds);
     const simulatedAttitude = buildPilotAttitude(this.segment, sample, undefined, 'route');
     this.scene.update(sample.point, sample.bearingDegrees, this.cameraMode, actualRoute, {
-      rollDegrees: simulatedAttitude.rollDegrees
+      rollDegrees: simulatedAttitude.rollDegrees,
+      pitchDegrees: simulatedAttitude.pitchDegrees
     });
 
     this.scrubber.value = String(Math.round(this.clock.progressPercent * 1000));
@@ -2948,11 +2951,19 @@ function liveAircraftAttitude(
 }
 
 function routeBankAngleForTurnRate(turnRateDegreesPerMinute: number): number {
-  const deadbandDegreesPerMinute = 1.2;
-  if (Math.abs(turnRateDegreesPerMinute) < deadbandDegreesPerMinute) {
+  // Replay route 的相鄰點可能有幾度 course jitter；那不是飛機正在轉彎。
+  // 機內視角只在明確的大幅轉彎時傾斜，直飛／小幅修正必須完全水平。
+  const deadbandDegreesPerMinute = 30;
+  const turnMagnitude = Math.abs(turnRateDegreesPerMinute);
+  if (turnMagnitude <= deadbandDegreesPerMinute) {
     return 0;
   }
-  return clamp(-turnRateDegreesPerMinute * 3.1, -8, 8);
+  const effectiveTurn = turnMagnitude - deadbandDegreesPerMinute;
+  return clamp(
+    -Math.sign(turnRateDegreesPerMinute) * effectiveTurn * 0.45,
+    -8,
+    8
+  );
 }
 
 function liveBankAngleForTurn(turnDegrees: number): number {
@@ -3538,6 +3549,17 @@ function keepDetailsOpenDuringContentGestures(signal: AbortSignal, ...elements: 
     element.addEventListener('touchend', (event) => event.stopPropagation(), { passive: true, signal });
     element.addEventListener('click', (event) => event.stopPropagation(), { signal });
   }
+}
+
+function createCabinFuselageShell(): HTMLDivElement {
+  const shell = document.createElement('div');
+  shell.className = 'cabin-fuselage-shell';
+  for (const side of ['top', 'left', 'right', 'bottom']) {
+    const panel = document.createElement('div');
+    panel.className = `cabin-fuselage-${side}`;
+    shell.append(panel);
+  }
+  return shell;
 }
 
 function toInputDate(timestamp: string): string {

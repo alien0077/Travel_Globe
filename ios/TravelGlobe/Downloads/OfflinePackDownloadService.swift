@@ -3,6 +3,7 @@ import Foundation
 
 struct OfflinePackDownloadService {
     private let remoteBaseURL = URL(string: "https://alien0077.github.io/Travel_Globe/")!
+    private static let requiredRuntimeVersion = "cabin-camera-ground-follow-v2"
     private let session: URLSession
     private let fileManager: FileManager
 
@@ -85,9 +86,12 @@ struct OfflinePackDownloadService {
     }
 
     static func effectiveReplayRootURL() -> URL? {
+        let downloadedVersionURL = downloadedReplayRootURL.appendingPathComponent("replay-runtime-version.txt")
+        let downloadedVersion = try? String(contentsOf: downloadedVersionURL, encoding: .utf8)
         if
             FileManager.default.fileExists(atPath: downloadedReplayRootURL.appendingPathComponent("index.html").path),
-            FileManager.default.fileExists(atPath: downloadedReplayRootURL.appendingPathComponent("index.js").path)
+            FileManager.default.fileExists(atPath: downloadedReplayRootURL.appendingPathComponent("index.js").path),
+            downloadedVersion?.trimmingCharacters(in: .whitespacesAndNewlines) == requiredRuntimeVersion
         {
             return downloadedReplayRootURL
         }
@@ -210,8 +214,11 @@ struct OfflinePackDownloadService {
         "index.js",
         "index.css",
         "readme.html",
+        "replay-runtime-version.txt",
         // Replay Engine 的地球材質必須跟著遠端 runtime 一起更新；
         // 少了這些檔案時，WebGL 會退回藍色的內建 fallback 地球。
+        "blue-marble-land-ocean-ice-5400.jpg",
+        "blue-marble-land-ocean-ice-4096.jpg",
         "blue-marble-land-ocean-ice-2048.jpg",
         "earth-lights-2048.png",
         "earth-clouds-1024.png",

@@ -3,7 +3,6 @@ set -euo pipefail
 
 MODE="${1:-web}"
 SCHEME="TravelGlobe"
-BUNDLE_ID="com.alienchang.TravelGlobe"
 DEVICE_KEYWORD="${DEVICE_KEYWORD:-iPhone}"
 XCODE_PATH="${XCODE_PATH:-/Applications/Xcode.app/Contents/Developer}"
 XCODEGEN="${XCODEGEN:-/Users/alien/Desktop/xcodegen/bin/xcodegen}"
@@ -18,7 +17,7 @@ Usage:
 
 Modes:
   web         Verify, push main, watch GitHub Pages workflow, and check live URLs.
-  ios-device Build, install, and launch the iOS app on a connected physical iPhone.
+  ios-device Build and install the iOS app on a connected physical iPhone without launching it.
 
 Environment:
   REMOTE=origin
@@ -159,7 +158,7 @@ deploy_ios_device() {
     -quiet \
     CODE_SIGN_STYLE=Automatic
 
-  echo "[5/5] Locating connected device matching: $DEVICE_KEYWORD"
+  echo "[5/5] Locating connected device and installing without launching: $DEVICE_KEYWORD"
   local device_target=""
   for attempt in {1..15}; do
     device_target="$(resolve_device)"
@@ -187,14 +186,13 @@ deploy_ios_device() {
     require_command ios-deploy
     local udid="${device_target#ios-deploy:}"
     echo "Installing $app_path on $udid with ios-deploy..."
-    ios-deploy --id "$udid" --bundle "$app_path" --justlaunch
+    ios-deploy --id "$udid" --bundle "$app_path" --nostart
   else
     local coredevice_id="${device_target#devicectl:}"
     echo "Installing $app_path on $coredevice_id with devicectl..."
     DEVELOPER_DIR="$XCODE_PATH" xcrun devicectl device install app --device "$coredevice_id" "$app_path"
-    DEVELOPER_DIR="$XCODE_PATH" xcrun devicectl device process launch --device "$coredevice_id" --terminate-existing "$BUNDLE_ID"
   fi
-  echo "Travel Globe iOS app deployed and launched."
+  echo "Travel Globe iOS app installed successfully; it was not launched."
 }
 
 case "$MODE" in
